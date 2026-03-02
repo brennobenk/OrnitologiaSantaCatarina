@@ -4,7 +4,7 @@
 
 # 👉 [CLIQUE AQUI PARA VISITAR O SITE](https://brennobenk.github.io/OrnitologiaSantaCatarina/)
 
-#Site desenvolvido completamente para fins científicos, sem fins lucrativos © Brenno Benk
+# Site desenvolvido completamente para fins científicos, sem fins lucrativos © Brenno Benk
 
 <br>
 
