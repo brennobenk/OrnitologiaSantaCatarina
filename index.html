@@ -13,6 +13,11 @@
     <script src="https://cdn.jsdelivr.net/npm/lossless-image-compressor@2.0.0/dist/lossless-image-compressor.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+
     <style>
         /* ===== NOVA PALETA: VERDE FOLHA E BEGE ===== */
         * {
@@ -955,6 +960,27 @@
             padding-top: 0;
         }
 
+        .help-btn {
+    background-color: #3b8c3b;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: background-color 0.3s;
+    margin-left: auto; /* para empurrar o botão para a direita */
+}
+.help-btn:hover {
+    background-color: #2d6e2d;
+}
+
         .conservation-charts > div {
     display: flex;
     gap: 20px;
@@ -982,6 +1008,7 @@
         <h1>Ornitologia Avançada estado de Santa Catarina</h1>
         <p class="description">Importe dados taxonômicos de aves e visualize a árvore genealógica com a estrutura filogenética atualizada baseada em estudos genômicos recentes.</p>
     </div>
+
 </header>
         
         <main>
@@ -1000,6 +1027,7 @@
                         <button id="compare-tables-btn" class="sources-btn">Comparar Tabelas</button>
                         <button id="debug-visualizer" class="debug-btn">Debug Visualizer</button>
                         <button id="query-species-btn" class="query-btn">Lista de Consulta</button>
+                        <button id="help-button" class="help-btn" title="Ajuda">?</button>
                     </div>
                     
                     <textarea id="import-data" placeholder="Adicione aqui nomes populares ou científicos de aves, banco de dados restringido a Santa Catarina no momento."></textarea>
@@ -3583,6 +3611,31 @@ document.addEventListener('click', (e) => {
             updateImportTextareaStats();
         }
 
+        document.addEventListener('DOMContentLoaded', function() {
+    // Abrir modal de ajuda
+    const helpBtn = document.getElementById('help-button');
+    const helpModal = document.getElementById('help-modal');
+    const closeHelp = document.getElementById('close-help-modal');
+
+    if (helpBtn && helpModal && closeHelp) {
+        helpBtn.addEventListener('click', () => {
+            helpModal.style.display = 'block';
+        });
+
+        closeHelp.addEventListener('click', () => {
+            helpModal.style.display = 'none';
+        });
+
+        window.addEventListener('click', (event) => {
+            if (event.target === helpModal) {
+                helpModal.style.display = 'none';
+            }
+        });
+    } else {
+        console.error('Elementos do modal de ajuda não encontrados');
+    }
+});
+
         function loadExampleData() {
     // Número de espécies a sortear (entre 5 e 10)
     const numExamples = Math.floor(Math.random() * 6) + 5; // 5 a 10
@@ -5797,7 +5850,188 @@ function processList(textarea, tbody) {
     // Atualiza a comparação e os gráficos
     runComparisonBtn.click();
 }
-    </script>
-</body>
 
+// Abrir modal de ajuda
+document.getElementById('help-button').addEventListener('click', () => {
+    document.getElementById('help-modal').style.display = 'block';
+});
+
+// Fechar modal de ajuda
+document.getElementById('close-help-modal').addEventListener('click', () => {
+    document.getElementById('help-modal').style.display = 'none';
+});
+
+// Fechar ao clicar fora do conteúdo
+window.addEventListener('click', (event) => {
+    const modal = document.getElementById('help-modal');
+    if (event.target === modal) {
+        modal.style.display = 'none';
+    }
+});
+    </script>
+
+<!-- Modal de Ajuda -->
+<div id="help-modal" class="modal">
+    <div class="modal-content" style="max-width: 800px;">
+        <span class="close-modal" id="close-help-modal">&times;</span>
+        <h2 class="modal-title">Guia de Uso – Ornitologia Avançada de Santa Catarina</h2>
+        <div class="sources-list" style="max-height: 70vh; overflow-y: auto; padding-right: 10px;">
+    <h2 class="modal-title" style="margin-top:0;">Guia de Uso – Ornitologia Avançada de Santa Catarina</h2>
+    <p style="color: #2c3e2f;">Este site é uma ferramenta interativa para explorar a taxonomia e o status de conservação das aves registradas em Santa Catarina. Abaixo você encontra um passo a passo de todas as funcionalidades disponíveis.</p>
+
+    <hr style="border: 1px solid #c5d0b5; margin: 20px 0;">
+
+    <h3 style="color: #2d5a2d; margin-top: 20px;">1. Importação de Dados</h3>
+    
+    <h4 style="color: #3b6e3b; margin-bottom: 5px;">Modo Básico (padrão)</h4>
+    <ul style="margin-left: 20px; color: #2c3e2f;">
+        <li><strong>Para que serve:</strong> Você digita apenas o nome da espécie (científico ou popular) e o sistema completa automaticamente os campos taxonômicos.</li>
+        <li><strong>Como usar:</strong>
+            <ol style="margin-top: 5px; margin-left: 20px;">
+                <li>No campo de texto principal, digite o nome de uma ave. Enquanto digita, sugestões aparecem.</li>
+                <li>Use as setas ↑ ↓ para navegar e pressione <strong>Tab</strong> ou <strong>Enter</strong> para preencher.</li>
+                <li>Você também pode colar uma lista (um nome por linha) e clicar em <strong>Processar Dados Importados</strong> – cada linha será adicionada como uma nova linha na tabela.</li>
+                <li>Os campos <em>Filo, Classe, Ordem, Família, Subfamília</em> serão preenchidos automaticamente com base no banco de dados.</li>
+            </ol>
+        </li>
+    </ul>
+
+    <h4 style="color: #3b6e3b; margin-bottom: 5px;">Modo Avançado</h4>
+    <ul style="margin-left: 20px;">
+        <li><strong>Para que serve:</strong> Para importar dados tabulares (copiados de Excel, planilhas ou arquivos de texto) que já contenham todas as colunas taxonômicas.</li>
+        <li><strong>Como usar:</strong>
+            <ol style="margin-top: 5px; margin-left: 20px;">
+                <li>Clique no botão <strong>Avançado</strong>.</li>
+                <li>Cole os dados no formato: <code>Filo\tClasse\tOrdem\tFamília\tSubfamília\tGênero/Espécie</code> (tabulação é o separador recomendado; vírgulas ou espaços também funcionam).</li>
+                <li>Clique em <strong>Processar Dados Importados</strong> para preencher a tabela.</li>
+            </ol>
+        </li>
+    </ul>
+
+    <h4 style="color: #3b6e3b;">Botões auxiliares da importação</h4>
+    <ul style="margin-left: 20px;">
+        <li><strong>Carregar Exemplo Ornitológico:</strong> insere automaticamente de 5 a 10 espécies aleatórias para teste.</li>
+        <li><strong>Limpar Área de Importação:</strong> apaga o conteúdo da caixa de texto.</li>
+        <li><strong>Fontes de Estudo:</strong> abre um modal com as referências científicas usadas na filogenia.</li>
+        <li><strong>Comparar Tabelas:</strong> abre o modal de comparação (explicado na seção 7).</li>
+        <li><strong>Debug Visualizer:</strong> mostra um painel com logs de depuração (útil para desenvolvedores).</li>
+        <li><strong>Lista de Consulta:</strong> abre uma janela com todas as espécies do banco de dados (explicado na seção 8).</li>
+    </ul>
+
+    <hr style="border: 1px solid #c5d0b5; margin: 20px 0;">
+
+    <h3 style="color: #2d5a2d;">2. Tabela de Dados</h3>
+    <p>Após a importação, as informações aparecem em uma tabela editável.</p>
+    <ul style="margin-left: 20px;">
+        <li><strong>Adicionar Linha Manualmente:</strong> insere uma nova linha em branco.</li>
+        <li><strong>Remover Linha:</strong> clique no botão "Remover" ao lado de cada linha.</li>
+        <li><strong>Editar células:</strong> você pode alterar qualquer campo diretamente na tabela. Qualquer modificação atualiza automaticamente a árvore após alguns segundos.</li>
+        <li><strong>Limpar Tabela:</strong> remove todas as linhas.</li>
+        <li><strong>Copiar Tabela:</strong> copia o conteúdo da tabela (incluindo cabeçalhos) para a área de transferência, com separadores por tabulação.</li>
+    </ul>
+    <p>💡 <strong>Dica:</strong> No modo básico, ao digitar no campo "Gênero/Espécie", o autocomplete também funciona dentro da tabela.</p>
+
+    <hr style="border: 1px solid #c5d0b5; margin: 20px 0;">
+
+    <h3 style="color: #2d5a2d;">3. Visualização da Árvore Taxonômica</h3>
+    <p>A árvore é gerada automaticamente sempre que você adiciona ou modifica dados. Há dois tipos de visualização:</p>
+    <ul style="margin-left: 20px;">
+        <li><strong>Árvore Hierárquica:</strong> Exibe os dados em uma estrutura de pastas aninhadas, seguindo a ordem dos níveis taxonômicos selecionados. As cores representam cada nível (Filo, Classe, Ordem, etc.).</li>
+        <li><strong>Árvore Genealógica (D3.js):</strong> Apresenta um diagrama interativo com nós e conexões, baseado na filogenia moderna das aves.
+            <ul style="margin-top: 5px; margin-left: 20px;">
+                <li><strong>Zoom:</strong> use os botões <strong>+</strong> e <strong>−</strong> no canto superior direito ou o scroll do mouse.</li>
+                <li><strong>Arrastar:</strong> clique e segure no fundo da árvore para mover a visualização.</li>
+                <li><strong>Modos de exibição:</strong> <em>Mostrar Completa</em> (exibe toda a filogenia) ou <em>Apenas Adicionados</em> (mostra somente os táxons com dados).</li>
+            </ul>
+        </li>
+    </ul>
+    <h4 style="color: #3b6e3b;">Exportar a árvore</h4>
+    <ul style="margin-left: 20px;">
+        <li><strong>Baixar Imagem da Árvore:</strong> gera uma imagem PNG de alta qualidade.</li>
+        <li><strong>Exportar Árvore:</strong> salva um arquivo HTML contendo a árvore interativa, com funcionalidade de busca e zoom embutida.</li>
+    </ul>
+
+    <hr style="border: 1px solid #c5d0b5; margin: 20px 0;">
+
+    <h3 style="color: #2d5a2d;">4. Status de Conservação</h3>
+    <p>Esta seção apresenta os dados de ameaça das espécies segundo as listas de Santa Catarina (SC), ICMBio e IUCN.</p>
+    <ul style="margin-left: 20px;">
+        <li><strong>Carregar Dados:</strong> clique em <strong>Carregar Dados do PDF (SC) e WikiAves (IUCN)</strong> – a tabela será preenchida com as espécies que você adicionou na tabela principal.</li>
+        <li><strong>Ordenação:</strong> use os botões <strong>A-Z</strong>, <strong>Conservação ▲</strong> (do menos para o mais ameaçado) e <strong>Conservação ▼</strong> (inverso).</li>
+        <li><strong>Mostrar/Esconder Tabela:</strong> exibe ou oculta a tabela.</li>
+        <li><strong>Mais informações:</strong> abre uma janela com links para o WikiAves de cada espécie.</li>
+        <li><strong>Exportar Excel (CSV):</strong> baixa a tabela em formato CSV.</li>
+        <li><strong>Copiar Tabela:</strong> copia para a área de transferência.</li>
+    </ul>
+    <p><strong>Gráficos de pizza:</strong> Abaixo da tabela, três gráficos mostram a distribuição percentual dos status de conservação para SC, ICMBio e IUCN. Eles são atualizados automaticamente.</p>
+
+    <hr style="border: 1px solid #c5d0b5; margin: 20px 0;">
+
+    <h3 style="color: #2d5a2d;">5. Distribuição Taxonômica</h3>
+    <p>Gráficos que resumem a composição das suas espécies:</p>
+    <ul style="margin-left: 20px;">
+        <li><strong>Distribuição por Ordens:</strong> gráfico de barras e pizza.</li>
+        <li><strong>Distribuição por Famílias:</strong> gráfico de barras e pizza.</li>
+    </ul>
+    <p>Dinâmicos e refletem os dados atuais da tabela.</p>
+
+    <hr style="border: 1px solid #c5d0b5; margin: 20px 0;">
+
+    <h3 style="color: #2d5a2d;">6. Controles de Seções (Colapsáveis)</h3>
+    <p>Todas as seções principais (Importação, Tabela, Árvore, Conservação, Distribuição) podem ser recolhidas clicando no cabeçalho (ícone <strong>−</strong> ou <strong>+</strong>).</p>
+
+    <hr style="border: 1px solid #c5d0b5; margin: 20px 0;">
+
+    <h3 style="color: #2d5a2d;">7. Comparador de Listas</h3>
+    <p>Acesse pelo botão <strong>Comparar Tabelas</strong> na área de importação.</p>
+    <ul style="margin-left: 20px;">
+        <li>Você pode ter quantas listas quiser (mínimo 2). Use <strong>Adicionar Lista</strong> para incluir mais.</li>
+        <li>Em cada lista:
+            <ol style="margin-left: 20px;">
+                <li>Cole os nomes das espécies (um por linha).</li>
+                <li>Clique em <strong>Processar Lista</strong>.</li>
+                <li>Edite a <strong>legenda</strong> da lista.</li>
+                <li>Use <strong>Limpar</strong> para apagar.</li>
+                <li>O botão <strong>×</strong> remove a lista.</li>
+            </ol>
+        </li>
+        <li>Após processar todas, clique em <strong>Executar Comparação</strong>.</li>
+        <li><strong>Resultados:</strong> tabela comparativa e três gráficos (número de espécies, similaridade, espécies únicas).</li>
+        <li>Botões para <strong>Copiar Tabela</strong> e <strong>Exportar CSV</strong>.</li>
+    </ul>
+
+    <hr style="border: 1px solid #c5d0b5; margin: 20px 0;">
+
+    <h3 style="color: #2d5a2d;">8. Consulta de Espécies</h3>
+    <p>Botão <strong>Lista de Consulta</strong> abre uma janela com todas as aves do banco de dados (mais de 800 espécies).</p>
+    <ul style="margin-left: 20px;">
+        <li><strong>Busca:</strong> digite no campo para filtrar.</li>
+        <li><strong>Adicionar à tabela:</strong> clique em qualquer linha da consulta.</li>
+        <li><strong>Links WikiAves:</strong> cada espécie tem link direto.</li>
+    </ul>
+
+    <hr style="border: 1px solid #c5d0b5; margin: 20px 0;">
+
+    <h3 style="color: #2d5a2d;">9. Informações Adicionais</h3>
+    <ul style="margin-left: 20px;">
+        <li><strong>Rodapé:</strong> atribuição de autoria.</li>
+        <li><strong>Logotipo:</strong> no canto superior esquerdo.</li>
+        <li><strong>Debug Visualizer:</strong> painel técnico.</li>
+    </ul>
+
+    <hr style="border: 1px solid #c5d0b5; margin: 20px 0;">
+
+    <h3 style="color: #2d5a2d;">10. Dicas Gerais</h3>
+    <ul style="margin-left: 20px;">
+        <li>Árvore genealógica baseada em estudos genômicos recentes (Jarvis 2014, Prum 2015).</li>
+        <li>Espécies não reconhecidas são incluídas, mas campos taxonômicos podem ficar vazios.</li>
+        <li>Categorias IUCN: LC, NT, VU, EN, CR, DD, NE.</li>
+        <li>Use navegador atualizado.</li>
+    </ul>
+
+    <p style="text-align: center; margin-top: 30px; color: #3b8c3b;"><strong>Aproveite a ferramenta para explorar a rica avifauna catarinense! se tiver mais dúvidas, contate Brenno Benk!</strong></p>
+</div>
+    </div>
+</div>
+</body>
 </html>
