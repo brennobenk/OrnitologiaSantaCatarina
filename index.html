@@ -4430,38 +4430,51 @@ document.getElementById('copy-taxonomy-table').addEventListener('click', copyTax
 
 function copyTaxonomyTable() {
     const table = document.getElementById('taxonomy-table');
+    const isBasicMode = table.classList.contains('basic-mode');
     const rows = [];
     
-    // Cabeçalhos
+    // --- Cabeçalhos ---
     const headers = [];
-    const headerCells = table.querySelectorAll('thead th');
-    headerCells.forEach(th => {
-        // Pula a coluna de ações? Se quiser incluir, mantenha. Vamos incluir todas.
-        headers.push(th.textContent.trim());
-    });
-    rows.push(headers.join('\t')); // separador tab
-    
-    // Linhas de dados
+    if (isBasicMode) {
+        // Modo básico: apenas o cabeçalho da coluna "Gênero/Espécie"
+        const speciesTh = table.querySelector('th.species-col');
+        if (speciesTh) {
+            headers.push(speciesTh.textContent.trim());
+        }
+    } else {
+        // Modo avançado: todos os cabeçalhos, exceto o último (Ações)
+        const headerCells = table.querySelectorAll('thead th');
+        for (let i = 0; i < headerCells.length - 1; i++) {
+            headers.push(headerCells[i].textContent.trim());
+        }
+    }
+    rows.push(headers.join('\t'));
+
+    // --- Linhas de dados ---
     const bodyRows = table.querySelectorAll('tbody tr');
     bodyRows.forEach(tr => {
-        const cells = tr.querySelectorAll('td');
         const rowData = [];
-        // Itera sobre todas as células exceto a última (que contém o botão Remover)
-        for (let i = 0; i < cells.length - 1; i++) {
-            // Para células com input, pega o valor do input
-            const input = cells[i].querySelector('input');
-            if (input) {
-                rowData.push(input.value);
-            } else {
-                rowData.push(cells[i].textContent.trim());
+        if (isBasicMode) {
+            // Pega apenas a célula da espécie
+            const speciesCell = tr.querySelector('td.species-col');
+            if (speciesCell) {
+                const input = speciesCell.querySelector('input');
+                rowData.push(input ? input.value : speciesCell.textContent.trim());
+            }
+        } else {
+            // Pega todas as células de dados (ignora a última, que é o botão)
+            const cells = tr.querySelectorAll('td');
+            for (let i = 0; i < cells.length - 1; i++) {
+                const input = cells[i].querySelector('input');
+                rowData.push(input ? input.value : cells[i].textContent.trim());
             }
         }
         rows.push(rowData.join('\t'));
     });
-    
+
     const textToCopy = rows.join('\n');
-    
-    // Copiar para área de transferência
+
+    // Copia para a área de transferência
     if (navigator.clipboard) {
         navigator.clipboard.writeText(textToCopy).then(() => {
             alert('Tabela copiada para a área de transferência!');
