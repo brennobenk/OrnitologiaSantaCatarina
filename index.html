@@ -993,6 +993,12 @@
     width: 100% !important;
 }
 
+#toggle-popular-names.active {
+    background-color: #2d5a2d;
+    color: white;
+    border-color: #2d5a2d;
+}
+
     </style>
 </head>
 <body>
@@ -1006,7 +1012,7 @@
 </div>
     <div>
         <h1>Ornitologia Avançada estado de Santa Catarina</h1>
-        <p class="description">Importe dados taxonômicos de aves e visualize a árvore genealógica com a estrutura filogenética atualizada baseada em estudos genômicos recentes.</p>
+        <p class="description">Importe dados taxonômicos de aves e visualize a árvore Filogenética com a estrutura filogenética atualizada baseada em estudos genômicos recentes.</p>
     </div>
 
 </header>
@@ -1056,37 +1062,26 @@
                 <!-- INSTRUÇÕES DINÂMICAS -->
                 <div class="instructions" id="instructions-text">
                     <!-- Preenchido via JS -->
-                </div>
+                            </div>
                 
-                <div class="tree-note">
-                    <strong>Nota:</strong> A árvore genealógica das aves segue a estrutura filogenética baseada em estudos genômicos recentes (Jarvis et al., 2014; Prum et al., 2015). Apenas os ramos correspondentes aos dados inseridos serão mostrados.
+                <div class="tree-note" style="margin-bottom: 20px;">
+                    <strong>Nota:</strong> A árvore Filogenética das aves segue a estrutura baseada em estudos genômicos recentes (Jarvis et al., 2014; Prum et al., 2015). Apenas os ramos correspondentes aos dados inseridos serão mostrados.
                 </div>
-                
-                <div class="tree-type-selector">
-                    <button class="tree-type-btn active" data-type="hierarchical">Árvore Hierárquica</button>
-                    <button class="tree-type-btn" data-type="genealogical">Árvore Genealógica</button>
-                    <div class="genealogical-view-selector" id="genealogical-view-selector" style="display:none;">
-                        <button id="view-full" class="genealogical-view-btn active">Mostrar Completa</button>
-                        <button id="view-user" class="genealogical-view-btn">Apenas Adicionados</button>
-                    </div>
-                </div>
-                    <!-- Área de botões (já existente) -->
-                    <div class="buttons">
-                        <button id="add-row">Adicionar Linha Manualmente</button>
-                        <button id="download-image" class="download-btn">Baixar Imagem da Árvore</button>
-                        <button id="download-html" class="download-btn">Exportar Árvore</button>
-                        <button id="clear-data" class="delete-btn">Limpar Tabela</button>
-                        <button id="copy-taxonomy-table" class="export-btn">Copiar Tabela</button>  
-                    </div>
 
-                    <!-- Cabeçalho para colapsar a tabela -->
-                    <div class="section-header" id="table-header">
-                        <span class="collapse-indicator" id="table-indicator">-</span>
-                        <h3>Dados da Tabela</h3>
-                    </div>
+                <!-- Cabeçalho para colapsar a tabela -->
+                <div class="section-header" id="table-header">
+                    <span class="collapse-indicator" id="table-indicator">-</span>
+                    <h3>Dados da Tabela</h3>
+                </div>
 
 <!-- Área colapsável da tabela -->
 <div class="section-content" id="table-content">
+    <!-- Área de botões (já existente) -->
+                    <div class="buttons">
+                        <button id="add-row">Adicionar Linha Manualmente</button>
+                        <button id="clear-data" class="delete-btn">Limpar Tabela</button>
+                        <button id="copy-taxonomy-table" class="export-btn">Copiar Tabela</button>  
+                    </div>
     <div class="table-container">
         <table id="taxonomy-table">
             <thead>
@@ -1113,24 +1108,34 @@
             
             <!-- Seção da Árvore Taxonômica com cabeçalho colapsável -->
             <section class="app-section" id="tree-section">
-                <div class="section-header" id="tree-header">
-                    <span class="collapse-indicator" id="tree-indicator">-</span>
-                    <h2>Visualização da Árvore Taxonômica</h2>
-                </div>
-                <div class="section-content" id="tree-content">
-                    <div class="tree-container" id="tree-container">
-                        <div id="tree-display">
-                            <p style="text-align: center; color: #7f8c8d; margin-top: 150px;">
-                                A árvore taxonômica será exibida aqui automaticamente conforme você adiciona dados.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="legend">
-                        <!-- Legenda será gerada dinamicamente -->
-                    </div>
-                </div>
-            </section>
+    <div class="section-header" id="tree-header">
+        <span class="collapse-indicator" id="tree-indicator">-</span>
+        <h2>Visualização da Árvore Taxonômica</h2>
+    </div>
+    <div class="section-content" id="tree-content">
+        <div class="tree-type-selector">
+            <button class="tree-type-btn active" data-type="hierarchical">Árvore Hierárquica</button>
+            <button class="tree-type-btn" data-type="genealogical">Árvore Filogenética</button>
+            <div class="genealogical-view-selector" id="genealogical-view-selector" style="display:none;">
+                <button id="view-full" class="genealogical-view-btn active">Mostrar Completa</button>
+                <button id="view-user" class="genealogical-view-btn">Apenas Adicionados</button>
+            </div>
+            <button id="download-image" class="download-btn">Baixar Imagem da Árvore</button>
+                        <button id="download-html" class="download-btn">Exportar Árvore</button>
+                         <button id="toggle-popular-names" class="genealogical-view-btn" style="margin-left: auto;" title="Mostrar nomes populares">Nomes populares</button>
+        </div>
+        <div class="tree-container" id="tree-container">
+            <div id="tree-display">
+                <p style="text-align: center; color: #7f8c8d; margin-top: 150px;">
+                    A árvore taxonômica será exibida aqui automaticamente conforme você adiciona dados.
+                </p>
+            </div>
+        </div>
+        <div class="legend">
+            <!-- Legenda será gerada dinamicamente -->
+        </div>
+    </div>
+</section>
 
             <!-- Seção de Status de Conservação com cabeçalho colapsável -->
             <section class="conservation-section" id="conservation-section">
@@ -1246,11 +1251,8 @@
 
         </main>
         <footer>
-           Desenvolvido por Brenno Alef Benk (BENK, B.) – 2026
-Projeto acadêmico de conclusão de curso de Ciências Biológicas (Univille), sem fins lucrativos.
-Os links para o WikiAves têm como único objetivo redirecionar o usuário para informações complementares; nenhum dado da plataforma é armazenado ou reproduzido neste site.
-
-Caso utilize ou cite este trabalho, por favor, atribua os créditos a (BENK, B.) conforme indicado.
+            Desenvolvido por Brenno Alef Benk (BENK, B.) em 2026, caso utilize, favor citar :)
+            Este é um projeto acadêmico de conclusão de curso de Biologia em desenvolvimento, sem fins lucrativos, qualquer menção ao Wikiaves tem total direito foi feita apenas para redirecionamento e não usa exclusivamente nenhum dado do mesmo.
         </footer>
     </div>
 
@@ -2924,6 +2926,7 @@ function findBirdByNormalizedName(input) {
         let currentTreeData = null;
         let currentMode = 'basic';
         let genealogicalZoom = null;
+        let showPopularNames = false; // false = só nome científico; true = com nome popular
         let genealogicalSvg = null;
         let genealogicalViewMode = 'full'; // 'full' ou 'user'
         let treeUpdateTimer = null;
@@ -3092,7 +3095,7 @@ function generateColorMap(categories) {
             if (event.target === sourcesModal) sourcesModal.style.display = 'none';
         });
 
-        // Botões de visualização genealógica
+        // Botões de visualização Filogenética
         viewFullBtn.addEventListener('click', () => {
             viewFullBtn.classList.add('active');
             viewUserBtn.classList.remove('active');
@@ -3571,49 +3574,57 @@ document.addEventListener('click', (e) => {
 
         // ==================== PROCESSAMENTO DE IMPORTAÇÃO ====================
         function processImportedData() {
-            const text = importDataTextarea.value.trim();
-            if (!text) { alert("Cole dados primeiro."); return; }
-            const lines = text.split('\n').filter(l => l.trim() !== '');
-            lines.forEach(line => {
-                if (currentMode === 'basic') {
-                    const especie = line.trim();
-                    // Tentar encontrar no banco de dados
-                    const match = findBirdByNormalizedName(especie);
-                    if (match) {
-                        addTableRow({
-                            filo: match.filo,
-                            classe: match.classe,
-                            ordem: match.ordem,
-                            familia: match.familia,
-                            subfamilia: match.subfamilia || '',
-                            generoEspecie: match.scientificName
-                        });
-                    } else {
-                        addTableRow({ generoEspecie: especie });
-                    }
-                } else {
-                    // Modo avançado: tenta separar por tab, vírgula ou espaço
-                    let columns = line.split('\t');
-                    if (columns.length === 1) columns = line.split(',').map(s => s.trim());
-                    if (columns.length === 1) columns = line.split(/\s+/);
-                    while (columns.length < 6) columns.push("");
-                    if (columns.length > 6) {
-                        const extra = columns.slice(5).join(" ");
-                        columns = columns.slice(0,5).concat(extra);
-                    }
-                    addTableRow({
-                        filo: columns[0],
-                        classe: columns[1],
-                        ordem: columns[2],
-                        familia: columns[3],
-                        subfamilia: columns[4],
-                        generoEspecie: columns[5]
-                    });
-                }
-            });
-            importDataTextarea.value = "";
-            updateImportTextareaStats();
+    const text = importDataTextarea.value.trim();
+    if (!text) { alert("Cole dados primeiro."); return; }
+    const lines = text.split('\n').filter(l => l.trim() !== '');
+    
+    lines.forEach(line => {
+        // Tenta separar por tabulação (formato avançado)
+        let columns = line.split('\t').map(s => s.trim());
+        
+        // Se não tiver 6 colunas, tenta por vírgula
+        if (columns.length !== 6) {
+            columns = line.split(',').map(s => s.trim());
         }
+        
+        // Se ainda não tiver 6 colunas, considera como uma única coluna (modo básico)
+        if (columns.length !== 6) {
+            // Modo básico: a linha inteira é o nome da espécie
+            const especie = line.trim();
+            const match = findBirdByNormalizedName(especie);
+            if (match) {
+                addTableRow({
+                    filo: match.filo,
+                    classe: match.classe,
+                    ordem: match.ordem,
+                    familia: match.familia,
+                    subfamilia: match.subfamilia || '',
+                    generoEspecie: match.scientificName
+                });
+            } else {
+                addTableRow({ generoEspecie: especie });
+            }
+        } else {
+            // Modo avançado: tem 6 colunas
+            // Se houver mais de 6 (ex: por espaços no nome), junta o excedente na última
+            if (columns.length > 6) {
+                const extra = columns.slice(5).join(" ");
+                columns = columns.slice(0,5).concat(extra);
+            }
+            addTableRow({
+                filo: columns[0],
+                classe: columns[1],
+                ordem: columns[2],
+                familia: columns[3],
+                subfamilia: columns[4],
+                generoEspecie: columns[5]
+            });
+        }
+    });
+    
+    importDataTextarea.value = "";
+    updateImportTextareaStats();
+}
 
         document.addEventListener('DOMContentLoaded', function() {
     // Abrir modal de ajuda
@@ -3757,7 +3768,14 @@ document.addEventListener('click', (e) => {
                     nodeHtml += `<div class="node ${colId}" style="margin-left:${depth*20}px; border-left-color:${color} !important;">`;
                     nodeHtml += `<div class="node-content"><div class="node-title">${label}: ${key}</div>`;
                     if (isLast && Array.isArray(val) && val.length) {
-                        nodeHtml += '<div class="node-items">' + val.map(v => `<span>${v}</span>`).join('') + '</div>';
+                        const itemsHtml = val.map(v => {
+    let displayName = v;
+    if (showPopularNames && speciesInfo[v]) {
+        displayName = `${v} (${speciesInfo[v].nomePopular})`;
+    }
+    return `<span>${displayName}</span>`;
+}).join('');
+nodeHtml += '<div class="node-items">' + itemsHtml + '</div>';
                     } else if (!isLast) {
                         nodeHtml += renderNode(val, depth+1, colIdx+1);
                     }
@@ -3898,8 +3916,11 @@ function buildGenealogicalTree(data) {
                     }
                     // Adiciona a espécie sob o gênero
                     if (especie && !genNode.children.find(n => n.name === especie)) {
-                        genNode.children.push({ name: especie, taxonLevel: "especie" });
-                    }
+    genNode.children.push({ 
+        name: especie,                      // epíteto (para exibição)
+        taxonLevel: "especie" 
+    });
+}
                 }
             } else if (familia) {
                 if (!famNode.children) famNode.children = [];
@@ -3910,8 +3931,12 @@ function buildGenealogicalTree(data) {
                         famNode.children.push(genNode);
                     }
                     if (especie && !genNode.children.find(n => n.name === especie)) {
-                        genNode.children.push({ name: especie, taxonLevel: "especie" });
-                    }
+    genNode.children.push({ 
+        name: especie,                      // epíteto (para exibição)
+        fullScientificName: item.generoEspecie, // nome completo (para busca)
+        taxonLevel: "especie" 
+    });
+}
                 }
             }
         });
@@ -4004,15 +4029,31 @@ function renderGenealogicalTree(treeData) {
             .style('cursor', 'pointer');
 
         node.append('text')
-            .attr('dy', d => d.children ? -15 : 18)
-            .attr('dx', d => d.children ? -10 : 10)
-            .style('text-anchor', d => d.children ? 'end' : 'start')
-            .style('font-size', '13px')
-            .style('font-weight', d => d.depth===0 ? 'bold' : 'normal')
-            .style('fill', '#2c3e2f')
-            .style('paint-order', 'stroke')
-            .style('stroke', 'white').style('stroke-width', '2px')
-            .text(d => d.data.name);
+    .attr('dy', d => d.children ? -15 : 18)
+    .attr('dx', d => d.children ? -10 : 10)
+    .style('text-anchor', d => d.children ? 'end' : 'start')
+    .style('font-size', '13px')
+    .style('font-weight', d => d.depth===0 ? 'bold' : 'normal')
+    .style('fill', '#2c3e2f')
+    .style('paint-order', 'stroke')
+    .style('stroke', 'white').style('stroke-width', '2px')
+    .text(d => {
+    // Se for um nó de espécie
+    if (d.data.taxonLevel === 'especie') {
+        // Reconstrói o nome científico completo: gênero (pai) + epíteto (atual)
+        const genero = d.parent ? d.parent.data.name : '';
+        const nomeCientifico = genero ? `${genero} ${d.data.name}` : d.data.name;
+
+        if (showPopularNames && speciesInfo[nomeCientifico]) {
+            // Exibe: epíteto (nome popular)
+            return `${d.data.name} (${speciesInfo[nomeCientifico].nomePopular})`;
+        }
+        // Se não houver nome popular ou o interruptor estiver desligado, mostra só o epíteto
+        return d.data.name;
+    }
+    // Para outros níveis (gênero, família, ordem...), mostra o nome normal
+    return d.data.name;
+})
 
         const zoomControls = document.createElement('div');
         zoomControls.className = 'zoom-controls';
@@ -4030,9 +4071,9 @@ function renderGenealogicalTree(treeData) {
             if (d.data.taxonLevel && !['root','outros'].includes(d.data.taxonLevel)) taxonLevels.add(d.data.taxonLevel);
         });
         updateLegend(taxonLevels);
-        logDebug('Árvore genealógica renderizada');
+        logDebug('Árvore Filogenética renderizada');
     } catch (error) {
-        logDebug(`Erro na árvore genealógica: ${error.message}`, 'error');
+        logDebug(`Erro na árvore Filogenética: ${error.message}`, 'error');
         treeDisplay.innerHTML = `<p style="color:#e74c3c;">Erro ao gerar árvore: ${error.message}</p>`;
     }
 }
@@ -4716,7 +4757,7 @@ function exportHTML() {
 
     if (currentTreeType === 'genealogical') {
         const svg = document.getElementById('genealogical-svg');
-        if (!svg) { alert("SVG da árvore genealógica não encontrado."); return; }
+        if (!svg) { alert("SVG da árvore Filogenética não encontrado."); return; }
 
         // Clona o SVG
         const svgClone = svg.cloneNode(true);
@@ -4777,7 +4818,7 @@ function exportHTML() {
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Árvore Genealógica</title>
+    <title>Árvore Filogenética</title>
     <style>
         body { margin: 0; background: #f5f7e9; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
         #container {
@@ -5872,6 +5913,14 @@ window.addEventListener('click', (event) => {
         modal.style.display = 'none';
     }
 });
+
+document.getElementById('toggle-popular-names').addEventListener('click', function() {
+    showPopularNames = !showPopularNames; // inverte o estado
+    this.classList.toggle('active'); // muda a aparência do botão
+    this.innerHTML = showPopularNames ? '🌿 Nomes populares (ON)' : '🌿 Nomes populares (OFF)'; // opcional
+    scheduleTreeUpdate(); // recria a árvore com a nova configuração
+});
+
     </script>
 
 <!-- Modal de Ajuda -->
@@ -5937,7 +5986,7 @@ window.addEventListener('click', (event) => {
     <p>A árvore é gerada automaticamente sempre que você adiciona ou modifica dados. Há dois tipos de visualização:</p>
     <ul style="margin-left: 20px;">
         <li><strong>Árvore Hierárquica:</strong> Exibe os dados em uma estrutura de pastas aninhadas, seguindo a ordem dos níveis taxonômicos selecionados. As cores representam cada nível (Filo, Classe, Ordem, etc.).</li>
-        <li><strong>Árvore Genealógica (D3.js):</strong> Apresenta um diagrama interativo com nós e conexões, baseado na filogenia moderna das aves.
+        <li><strong>Árvore Filogenética (D3.js):</strong> Apresenta um diagrama interativo com nós e conexões, baseado na filogenia moderna das aves.
             <ul style="margin-top: 5px; margin-left: 20px;">
                 <li><strong>Zoom:</strong> use os botões <strong>+</strong> e <strong>−</strong> no canto superior direito ou o scroll do mouse.</li>
                 <li><strong>Arrastar:</strong> clique e segure no fundo da árvore para mover a visualização.</li>
@@ -6023,7 +6072,7 @@ window.addEventListener('click', (event) => {
 
     <h3 style="color: #2d5a2d;">10. Dicas Gerais</h3>
     <ul style="margin-left: 20px;">
-        <li>Árvore genealógica baseada em estudos genômicos recentes (Jarvis 2014, Prum 2015).</li>
+        <li>Árvore Filogenética baseada em estudos genômicos recentes (Jarvis 2014, Prum 2015).</li>
         <li>Espécies não reconhecidas são incluídas, mas campos taxonômicos podem ficar vazios.</li>
         <li>Categorias IUCN: LC, NT, VU, EN, CR, DD, NE.</li>
         <li>Use navegador atualizado.</li>
@@ -6035,5 +6084,3 @@ window.addEventListener('click', (event) => {
 </div>
 </body>
 </html>
-
-
