@@ -1327,7 +1327,7 @@
 <section class="app-section" id="map-section">
     <div class="section-header" id="map-header">
         <span class="collapse-indicator" id="map-indicator">-</span>
-        <h2>Mapa de Ocorrências (Arraste as aves para o mapa)</h2>
+        <h2>Mapa de cálculos e ocorrências</h2>
     </div>
     <div class="section-content" id="map-content">
         <!-- Painel lateral com lista de aves -->
@@ -1347,6 +1347,7 @@
                 <input type="file" id="shapefile-upload" accept=".zip" style="display:none;">
                 <button id="calculate-species" class="generate-btn" style="background:#8e6b3c;">🔢 Calcular espécies nas áreas</button>
                 <button id="edit-mode-btn" class="sources-btn">✏️ Modo edição</button>
+                <button id="toggle-gbif" class="sources-btn" style="background:#1e7e6b;">🌍 GBIF (OFF)</button>
             </div>
             <div id="map-container" style="height: 500px; width: 100%; border-radius: 8px; border: 1px solid #c5d0b5;"></div>
             <!-- Tabela de resultados -->
@@ -6047,6 +6048,11 @@ let markersLayer = L.layerGroup(); // camada para todos os marcadores
 let currentEditMarker = null; // marcador sendo editado
 let editMode = false;
 let speciesColors = {}; // mapa: espécie -> cor
+let gbifLayer = L.layerGroup();       // camada para os pontos do GBIF
+let gbifVisible = false;              // estado do interruptor
+let gbifMarkers = [];                 // armazena os marcadores (opcional)
+let gbifLoading = false;              // evita múltiplas buscas
+
 
 // Função para gerar uma cor única a partir do nome da espécie
 function getColorForSpecies(species) {
@@ -6095,6 +6101,13 @@ function updateSpeciesList() {
         
         listDiv.appendChild(item);
     });
+}
+
+// Retorna lista de nomes científicos únicos da tabela
+function getUniqueSpeciesFromTable() {
+    const data = collectTableData();
+    const speciesSet = new Set(data.map(item => item.generoEspecie).filter(Boolean));
+    return Array.from(speciesSet);
 }
 
 function handleDragStart(e) {
@@ -6202,7 +6215,44 @@ if (editModeBtn) {
     });
 } else {
     console.error('Botão #edit-mode-btn não encontrado');
-}}
+}
+const toggleGBIFBtn = document.getElementById('toggle-gbif');
+if (toggleGBIFBtn) {
+    toggleGBIFBtn.addEventListener('click', async function() {
+        if (!gbifVisible) {
+            // Se não há dados carregados, busca
+            if (gbifMarkers.length === 0) {
+                const species = getUniqueSpeciesFromTable();
+                if (species.length === 0) {
+                    alert('Não há espécies na tabela para buscar.');
+                    return;
+                }
+                this.textContent = '🌍 GBIF (carregando...Aproveite para pegar um café☕)';
+                await fetchGBIFOccurrences(species);
+                this.textContent = '🌍 GBIF (ON)';
+            } else {
+                this.textContent = '🌍 GBIF (ON)';
+            }
+            // Adiciona a camada ao mapa se necessário
+            if (!map.hasLayer(gbifLayer)) {
+                gbifLayer.addTo(map);
+            }
+            gbifVisible = true;
+            this.style.background = '#2d5a2d'; // verde quando ativo
+        } else {
+            // Esconde a camada
+            if (map.hasLayer(gbifLayer)) {
+                map.removeLayer(gbifLayer);
+            }
+            gbifVisible = false;
+            this.textContent = '🌍 GBIF (OFF)';
+            this.style.background = ''; // volta ao padrão
+        }
+    });
+} else {
+    console.error('Botão #toggle-gbif não encontrado');
+}
+}
 
 function handleDropOnMap(e) {
     e.preventDefault();
@@ -6471,6 +6521,47 @@ function addAllSpeciesToPolygon() {
     alert(`${speciesArray.length} espécies adicionadas ao polígono!`);
 }
 
+
+// Busca ocorrências no GBIF para cada espécie e cria marcadores laranja
+async function fetchGBIFOccurrences(speciesList) {
+    if (gbifLoading) return;
+    gbifLoading = true;
+
+    gbifLayer.clearLayers();
+    gbifMarkers = [];
+
+    for (const species of speciesList) {
+        try {
+            const url = `https://api.gbif.org/v1/occurrence/search?scientificName=${encodeURIComponent(species)}&country=BR&hasCoordinate=true&limit=1000`;
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.results && data.results.length > 0) {
+                const color = getColorForSpecies(species); // obtém a cor da espécie
+                data.results.forEach(occ => {
+                    if (occ.decimalLatitude && occ.decimalLongitude) {
+                        const marker = L.circleMarker([occ.decimalLatitude, occ.decimalLongitude], {
+                            radius: 3,
+                            color: color,
+                            weight: 1,
+                            opacity: 1,
+                            fillColor: color,
+                            fillOpacity: 0.5   // 50% de opacidade
+                        }).bindTooltip(`${species} (GBIF)`, { permanent: false });
+
+                        gbifMarkers.push(marker);
+                        marker.addTo(gbifLayer);
+                    }
+                });
+            }
+        } catch (e) {
+            console.error(`Erro ao buscar ${species}:`, e);
+        }
+    }
+
+    gbifLoading = false;
+    console.log(`GBIF: ${gbifMarkers.length} pontos carregados.`);
+}
 // Integrar com a tabela: atualizar a lista sempre que a tabela mudar
 // Vamos modificar scheduleTreeUpdate para incluir a atualização da lista.
 const originalScheduleTreeUpdate = scheduleTreeUpdate;
