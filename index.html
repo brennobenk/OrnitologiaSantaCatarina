@@ -13,6 +13,12 @@
     <script src="https://cdn.jsdelivr.net/npm/lossless-image-compressor@2.0.0/dist/lossless-image-compressor.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+<script src="https://unpkg.com/shpjs@4.0.4/dist/shp.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
 
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
@@ -999,6 +1005,72 @@
     border-color: #2d5a2d;
 }
 
+/* Estilo para a lista de espécies */
+.species-item {
+    padding: 8px 12px;
+    background-color: white;
+    border: 1px solid #b8c6aa;
+    border-radius: 4px;
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background-color 0.2s;
+}
+.species-item:hover {
+    background-color: #e5f0da;
+}
+.species-item:active {
+    cursor: grabbing;
+}
+.species-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+/* Ícone personalizado para os marcadores */
+.custom-div-icon {
+    background: transparent;
+    border: none;
+}
+
+.marker-label {
+    background: rgba(255,255,255,0.9);
+    border: 1px solid #2d5a2d;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+/* Para quando passar o mouse, mostrar completo? */
+.marker-label:hover {
+    white-space: normal;
+    word-break: break-word;
+    max-width: 300px;
+}
+
+#map-content {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+#map-content.collapsed {
+    display: none;
+}
+
+#map-results td:first-child + td { /* a segunda coluna */
+    max-width: 300px;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
     </style>
 </head>
 <body>
@@ -1137,6 +1209,8 @@
     </div>
 </section>
 
+
+
             <!-- Seção de Status de Conservação com cabeçalho colapsável -->
             <section class="conservation-section" id="conservation-section">
                 <div class="section-header" id="conservation-header">
@@ -1248,6 +1322,57 @@
                         </div>
                     </div>
                 </section>
+
+                <!-- ========== SEÇÃO DE MAPA E ANÁLISE ESPACIAL ========== -->
+<section class="app-section" id="map-section">
+    <div class="section-header" id="map-header">
+        <span class="collapse-indicator" id="map-indicator">-</span>
+        <h2>Mapa de Ocorrências (Arraste as aves para o mapa)</h2>
+    </div>
+    <div class="section-content" id="map-content">
+        <!-- Painel lateral com lista de aves -->
+        <div style="width: 250px; background: #f5f7e9; border-radius: 8px; padding: 10px; border: 1px solid #c5d0b5; max-height: 500px; overflow-y: auto;">
+            <h3 style="margin-top:0;">Espécies na tabela</h3>
+            <div id="species-list" style="display: flex; flex-direction: column; gap: 5px;">
+                <!-- Itens serão inseridos via JS -->
+            </div>
+        </div>
+        <!-- Container do mapa e controles -->
+        <div style="flex: 1; min-width: 500px;">
+            <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+                <button id="draw-polygon" class="sources-btn">🔷 Desenhar área</button>
+                <button id="add-all-to-polygon" class="generate-btn" style="background:#4c8b4c;">➕ Adicionar todas</button>
+                <button id="clear-drawings" class="delete-btn">🗑️ Limpar desenhos</button>
+                <label for="shapefile-upload" class="import-btn" style="padding:10px 20px; cursor:pointer;">📁 Carregar Shapefile (ZIP)</label>
+                <input type="file" id="shapefile-upload" accept=".zip" style="display:none;">
+                <button id="calculate-species" class="generate-btn" style="background:#8e6b3c;">🔢 Calcular espécies nas áreas</button>
+                <button id="edit-mode-btn" class="sources-btn">✏️ Modo edição</button>
+            </div>
+            <div id="map-container" style="height: 500px; width: 100%; border-radius: 8px; border: 1px solid #c5d0b5;"></div>
+            <!-- Tabela de resultados -->
+        
+<div id="map-results" style="display:none; margin-top: 15px;">
+    <h3>Resultados por polígono</h3>
+    <table class="conservation-table" style="width:100%;">
+        <thead>
+    <tr>
+        <th>Área #</th>
+        <th style="min-width: 200px; max-width: 400px;">Espécies encontradas</th>
+        <th>Nº espécies</th>
+        <th>Nº pontos</th>
+        <th>Área (m²)</th>
+        <th>Pontos/m²</th>
+        <th>Espécies/m²</th>
+        <th>Famílias/m²</th>
+        <th>Ordens/m²</th>
+    </tr>
+</thead>
+        <tbody id="map-results-body"></tbody>
+    </table>
+</div>
+        </div>
+    </div>
+</section>
 
         </main>
         <footer>
@@ -5909,30 +6034,480 @@ function processList(textarea, tbody) {
     runComparisonBtn.click();
 }
 
-// Abrir modal de ajuda
-document.getElementById('help-button').addEventListener('click', () => {
-    document.getElementById('help-modal').style.display = 'block';
-});
-
-// Fechar modal de ajuda
-document.getElementById('close-help-modal').addEventListener('click', () => {
-    document.getElementById('help-modal').style.display = 'none';
-});
-
-// Fechar ao clicar fora do conteúdo
-window.addEventListener('click', (event) => {
-    const modal = document.getElementById('help-modal');
-    if (event.target === modal) {
-        modal.style.display = 'none';
-    }
-});
-
 document.getElementById('toggle-popular-names').addEventListener('click', function() {
     showPopularNames = !showPopularNames; // inverte o estado
     this.classList.toggle('active'); // muda a aparência do botão
     this.innerHTML = showPopularNames ? '🌿 Nomes populares (ON)' : '🌿 Nomes populares (OFF)'; // opcional
     scheduleTreeUpdate(); // recria a árvore com a nova configuração
 });
+
+// ==================== NOVA SEÇÃO: MAPA COM DRAG AND DROP ====================
+let map, drawnItems, drawControl;
+let markersLayer = L.layerGroup(); // camada para todos os marcadores
+let currentEditMarker = null; // marcador sendo editado
+let editMode = false;
+let speciesColors = {}; // mapa: espécie -> cor
+
+// Função para gerar uma cor única a partir do nome da espécie
+function getColorForSpecies(species) {
+    if (speciesColors[species]) return speciesColors[species];
+    // Gera uma cor HSL determinística
+    let hash = 0;
+    for (let i = 0; i < species.length; i++) {
+        hash = species.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const hue = Math.abs(hash % 360);
+    const color = `hsl(${hue}, 70%, 60%)`;
+    speciesColors[species] = color;
+    return color;
+}
+
+// Atualiza a lista de espécies baseada na tabela
+function updateSpeciesList() {
+    const data = collectTableData();
+    const speciesSet = new Set(data.map(item => item.generoEspecie).filter(Boolean));
+    const speciesArray = Array.from(speciesSet).sort();
+    
+    const listDiv = document.getElementById('species-list');
+    listDiv.innerHTML = '';
+    
+    speciesArray.forEach(sp => {
+        const color = getColorForSpecies(sp);
+        const item = document.createElement('div');
+        item.className = 'species-item';
+        item.draggable = true;
+        item.setAttribute('data-species', sp);
+        item.setAttribute('data-color', color);
+        
+        const colorSpan = document.createElement('span');
+        colorSpan.className = 'species-color';
+        colorSpan.style.backgroundColor = color;
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = sp;
+        
+        item.appendChild(colorSpan);
+        item.appendChild(nameSpan);
+        
+        // Eventos de drag
+        item.addEventListener('dragstart', handleDragStart);
+        item.addEventListener('dragend', handleDragEnd);
+        
+        listDiv.appendChild(item);
+    });
+}
+
+function handleDragStart(e) {
+    const item = e.target.closest('.species-item');
+    if (!item) return;
+    e.dataTransfer.setData('text/plain', JSON.stringify({
+        species: item.getAttribute('data-species'),
+        color: item.getAttribute('data-color')
+    }));
+    e.dataTransfer.effectAllowed = 'copy';
+}
+
+function handleDragEnd(e) {
+    // Nada necessário
+}
+
+// Inicializa o mapa
+function initMap() {
+    if (map) return;
+    
+    map = L.map('map-container').setView([-27.5, -50.5], 7);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+    
+    drawnItems = new L.FeatureGroup();
+    map.addLayer(drawnItems);
+    markersLayer.addTo(map);
+    
+    drawControl = new L.Control.Draw({
+        edit: { featureGroup: drawnItems },
+        draw: {
+            polygon: true,
+            polyline: false,
+            rectangle: false,
+            circle: false,
+            marker: false,
+            circlemarker: false
+        }
+    });
+    map.addControl(drawControl);
+    
+    // Eventos de desenho
+    map.on(L.Draw.Event.CREATED, function (event) {
+        drawnItems.addLayer(event.layer);
+    });
+    
+    // Evento de drop no mapa
+    map.getContainer().addEventListener('dragover', (e) => e.preventDefault());
+    map.getContainer().addEventListener('drop', handleDropOnMap);
+    
+    // Botões com verificação de existência
+const drawPolygonBtn = document.getElementById('draw-polygon');
+if (drawPolygonBtn) {
+    drawPolygonBtn.addEventListener('click', function() {
+        new L.Draw.Polygon(map).enable();
+    });
+} else {
+    console.error('Botão #draw-polygon não encontrado');
+}
+
+const addAllBtn = document.getElementById('add-all-to-polygon');
+if (addAllBtn) {
+    addAllBtn.addEventListener('click', addAllSpeciesToPolygon);
+} else {
+    console.error('Botão #add-all-to-polygon não encontrado');
+}
+
+const clearDrawingsBtn = document.getElementById('clear-drawings');
+if (clearDrawingsBtn) {
+    clearDrawingsBtn.addEventListener('click', function() {
+        drawnItems.clearLayers();
+        markersLayer.clearLayers();
+        document.getElementById('map-results').style.display = 'none';
+    });
+} else {
+    console.error('Botão #clear-drawings não encontrado');
+}
+
+const shapefileUpload = document.getElementById('shapefile-upload');
+if (shapefileUpload) {
+    shapefileUpload.addEventListener('change', handleShapefileUpload);
+} else {
+    console.error('Input #shapefile-upload não encontrado');
+}
+
+const calculateBtn = document.getElementById('calculate-species');
+if (calculateBtn) {
+    calculateBtn.addEventListener('click', calculateSpeciesInPolygons);
+} else {
+    console.error('Botão #calculate-species não encontrado');
+}
+
+const editModeBtn = document.getElementById('edit-mode-btn');
+if (editModeBtn) {
+    editModeBtn.addEventListener('click', function() {
+        editMode = !editMode;
+        this.style.background = editMode ? '#2d5a2d' : '';
+        this.textContent = editMode ? '✏️ Modo edição (ON)' : '✏️ Modo edição (OFF)';
+        // Se desligar o modo enquanto algum marcador estiver em edição, desabilita
+        if (!editMode && currentEditMarker) {
+            currentEditMarker.dragging.disable();
+            currentEditMarker = null;
+        }
+    });
+} else {
+    console.error('Botão #edit-mode-btn não encontrado');
+}}
+
+function handleDropOnMap(e) {
+    e.preventDefault();
+    const data = e.dataTransfer.getData('text/plain');
+    if (!data) return;
+    
+    try {
+        const { species, color } = JSON.parse(data);
+        const point = map.mouseEventToLatLng(e);
+        if (!point) {
+            alert('Clique em uma área válida do mapa.');
+            return;
+        }
+        
+        // Ícone apenas com círculo colorido
+        const customIcon = L.divIcon({
+            className: 'custom-div-icon',
+            html: `<div style="background-color: ${color || '#3388ff'}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
+        });
+        
+        const marker = L.marker(point, { 
+            icon: customIcon, 
+            draggable: true,
+            species: species, 
+            color: color 
+        }).addTo(markersLayer);
+        marker.dragging.disable();  // desabilita inicialmente
+        
+        // Tooltip com nome científico e popular
+        const popularName = speciesInfo[species] ? speciesInfo[species].nomePopular : '';
+        const tooltipText = popularName ? `${species} (${popularName})` : species;
+        marker.bindTooltip(tooltipText, { permanent: false, direction: 'top' });
+        
+        marker.on('click', function(e) {
+            L.DomEvent.stopPropagation(e);
+            if (!editMode) return; // só permite arrastar se o modo edição estiver ativo
+            if (currentEditMarker && currentEditMarker !== this) {
+                currentEditMarker.dragging.disable();
+            }
+            currentEditMarker = this;
+            this.dragging.enable();
+            this.once('dragend', function() {
+                this.dragging.disable();
+                currentEditMarker = null;
+            });
+        });
+        
+    } catch (err) {
+        console.error('Erro ao processar drop:', err);
+    }
+}
+
+// Função para ler shapefile (igual à anterior)
+function handleShapefileUpload(event) {
+    const files = event.target.files;
+    if (files.length === 0) return;
+    
+    const file = files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const arrayBuffer = e.target.result;
+        shp(arrayBuffer).then(function(geojson) {
+            let features = [];
+            if (Array.isArray(geojson)) {
+                geojson.forEach(fc => features = features.concat(fc.features));
+            } else {
+                features = geojson.features;
+            }
+            
+            features.forEach(feature => {
+                if (feature.geometry.type.includes('Polygon')) {
+                    const layer = L.geoJSON(feature).getLayers()[0];
+                    drawnItems.addLayer(layer);
+                }
+            });
+            
+            if (drawnItems.getLayers().length > 0) {
+                map.fitBounds(drawnItems.getBounds());
+            }
+        }).catch(err => {
+            alert('Erro ao ler shapefile: ' + err.message);
+        });
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+// Calcular espécies dentro de cada polígono
+function calculateSpeciesInPolygons() {
+    const polygons = drawnItems.getLayers().filter(layer => layer instanceof L.Polygon);
+    if (polygons.length === 0) {
+        alert('Desenhe ou carregue pelo menos um polígono.');
+        return;
+    }
+    
+    const markers = markersLayer.getLayers();
+    if (markers.length === 0) {
+        alert('Adicione marcadores arrastando aves para o mapa.');
+        return;
+    }
+    
+    const results = [];
+    polygons.forEach((polygon, idx) => {
+        const polyGeoJSON = polygon.toGeoJSON();
+        
+        // Calcular área
+        let areaSqMeters = 0;
+        try {
+            areaSqMeters = turf.area(polyGeoJSON);
+        } catch (e) {
+            console.warn('Erro ao calcular área:', e);
+        }
+        
+        const speciesInside = new Set();
+        const familiesInside = new Set();
+        const ordersInside = new Set();
+        let pointCount = 0;
+        
+        markers.forEach(marker => {
+            const latlng = marker.getLatLng();
+            const point = turf.point([latlng.lng, latlng.lat]);
+            if (turf.booleanPointInPolygon(point, polyGeoJSON)) {
+                const sciName = marker.options.species;
+                speciesInside.add(sciName);
+                pointCount++;
+                
+                // Pega informações da espécie
+                const info = speciesInfo[sciName];
+                if (info) {
+                    if (info.familia) familiesInside.add(info.familia);
+                    if (info.ordem) ordersInside.add(info.ordem);
+                }
+            }
+        });
+        
+        const speciesList = Array.from(speciesInside).map(sciName => {
+            const common = speciesInfo[sciName] ? speciesInfo[sciName].nomePopular : 'Desconhecido';
+            return `${sciName} (${common})`;
+        }).join(', ');
+        
+        // Calcula densidades
+        const pontosPorM2 = pointCount / areaSqMeters;
+        const especiesPorM2 = speciesInside.size / areaSqMeters;
+        const familiasPorM2 = familiesInside.size / areaSqMeters;
+        const ordensPorM2 = ordersInside.size / areaSqMeters;
+        
+        results.push({
+            index: idx + 1,
+            species: speciesList,
+            speciesCount: speciesInside.size,
+            pointCount: pointCount,
+            areaSqMeters: areaSqMeters.toFixed(2),
+            pontosPorM2: pontosPorM2.toExponential(2),
+            especiesPorM2: especiesPorM2.toExponential(2),
+            familiasPorM2: familiasPorM2.toExponential(2),
+            ordensPorM2: ordensPorM2.toExponential(2)
+        });
+    });
+    
+    const tbody = document.getElementById('map-results-body');
+    tbody.innerHTML = '';
+    results.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>Área ${r.index}</td>
+                        <td style="max-width:300px; overflow-x:auto; white-space:nowrap;">${r.species}</td>
+                        <td>${r.speciesCount}</td>
+                        <td>${r.pointCount}</td>
+                        <td>${r.areaSqMeters}</td>
+                        <td>${r.pontosPorM2}</td>
+                        <td>${r.especiesPorM2}</td>
+                        <td>${r.familiasPorM2}</td>
+                        <td>${r.ordensPorM2}</td>`;
+        tbody.appendChild(tr);
+    });
+    document.getElementById('map-results').style.display = 'block';
+}
+
+// Função para adicionar todas as espécies da tabela dentro do primeiro polígono desenhado
+function addAllSpeciesToPolygon() {
+    const polygons = drawnItems.getLayers().filter(layer => layer instanceof L.Polygon);
+    if (polygons.length === 0) {
+        alert('Desenhe ou carregue pelo menos um polígono primeiro.');
+        return;
+    }
+
+    // Pega o primeiro polígono
+    const polygon = polygons[0];
+    const polyGeoJSON = polygon.toGeoJSON();
+
+    // Se for MultiPolygon, pegar o primeiro polígono
+    let geom = polyGeoJSON.geometry;
+    if (geom.type === 'MultiPolygon') {
+        // Cria um novo polígono a partir do primeiro anel do MultiPolygon
+        geom = {
+            type: 'Polygon',
+            coordinates: geom.coordinates[0]
+        };
+    }
+
+    const data = collectTableData();
+    const speciesSet = new Set(data.map(item => item.generoEspecie).filter(Boolean));
+    const speciesArray = Array.from(speciesSet);
+
+    if (speciesArray.length === 0) {
+        alert('Não há espécies na tabela para adicionar.');
+        return;
+    }
+
+    speciesArray.forEach(sciName => {
+        try {
+            // Tenta gerar ponto aleatório até 10 tentativas
+            let point;
+            for (let attempt = 0; attempt < 10; attempt++) {
+                const randomPoint = turf.randomPosition(geom); // retorna [lng, lat]
+                const pt = turf.point(randomPoint);
+                if (turf.booleanPointInPolygon(pt, geom)) {
+                    point = randomPoint;
+                    break;
+                }
+            }
+            if (!point) {
+                console.warn(`Não foi possível gerar ponto para ${sciName} dentro do polígono.`);
+                return;
+            }
+
+            const latlng = L.latLng(point[1], point[0]);
+            const color = getColorForSpecies(sciName);
+            const customIcon = L.divIcon({
+                className: 'custom-div-icon',
+                html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+
+            const marker = L.marker(latlng, {
+                icon: customIcon,
+                draggable: true,
+                species: sciName,
+                color: color
+            }).addTo(markersLayer);
+            marker.dragging.disable();
+
+            const popularName = speciesInfo[sciName] ? speciesInfo[sciName].nomePopular : '';
+            const tooltipText = popularName ? `${sciName} (${popularName})` : sciName;
+            marker.bindTooltip(tooltipText, { permanent: false, direction: 'top' });
+
+            marker.on('click', function(e) {
+                L.DomEvent.stopPropagation(e);
+                if (!editMode) return;
+                if (currentEditMarker && currentEditMarker !== this) {
+                    currentEditMarker.dragging.disable();
+                }
+                currentEditMarker = this;
+                this.dragging.enable();
+                this.once('dragend', function() {
+                    this.dragging.disable();
+                    currentEditMarker = null;
+                });
+            });
+        } catch (e) {
+            console.error('Erro ao gerar ponto para', sciName, e);
+        }
+    });
+
+    alert(`${speciesArray.length} espécies adicionadas ao polígono!`);
+}
+
+// Integrar com a tabela: atualizar a lista sempre que a tabela mudar
+// Vamos modificar scheduleTreeUpdate para incluir a atualização da lista.
+const originalScheduleTreeUpdate = scheduleTreeUpdate;
+scheduleTreeUpdate = function() {
+    originalScheduleTreeUpdate();
+    // Atualiza a lista de espécies após um pequeno delay para garantir que a tabela foi atualizada
+    setTimeout(updateSpeciesList, 100);
+};
+
+// Inicializar o mapa quando a seção for aberta pela primeira vez
+(function() {
+    const mapHeader = document.getElementById('map-header');
+    const mapContent = document.getElementById('map-content');
+    const mapIndicator = document.getElementById('map-indicator');
+    let mapInitialized = false;
+    
+    if (mapHeader && mapContent && mapIndicator) {
+        mapHeader.addEventListener('click', () => {
+            mapContent.classList.toggle('collapsed');
+            mapIndicator.textContent = mapContent.classList.contains('collapsed') ? '+' : '-';
+            if (!mapInitialized && !mapContent.classList.contains('collapsed')) {
+                initMap();
+                mapInitialized = true;
+                updateSpeciesList();
+            }
+        });
+    }
+    
+    // Se a seção não for colapsável, inicializa direto
+    // Mas como temos o collapse, faremos assim.
+})();
+
+// Também inicializa se a seção já estiver visível no carregamento
+if (document.getElementById('map-content') && !document.getElementById('map-content').classList.contains('collapsed')) {
+    initMap();
+    updateSpeciesList();
+}
 
     </script>
 
