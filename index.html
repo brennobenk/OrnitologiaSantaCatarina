@@ -14,15 +14,15 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
-<script src="https://unpkg.com/shpjs@4.0.4/dist/shp.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
-
-<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-<link rel="icon" type="image/x-icon" href="favicon.ico">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <script src="https://unpkg.com/shpjs@4.0.4/dist/shp.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+    <!-- shp-write removido: exportação implementada manualmente com JSZip -->
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
 
     <style>
         /* ===== NOVA PALETA: VERDE FOLHA E BEGE ===== */
@@ -699,6 +699,17 @@
             border-left: 4px solid #3b8c3b;
         }
         
+        .leaflet-compass-rose {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            padding: 4px;
+            cursor: default;
+        }
+        .leaflet-compass-rose svg {
+            display: block;
+        }
+
         footer {
             text-align: center;
             margin-top: 40px;
@@ -843,6 +854,14 @@
             padding: 0;
             border: none;
             flex-grow: 1;
+        }
+        .section-header h3 {
+            margin: 0;
+            padding: 0;
+            border: none;
+            flex-grow: 1;
+            font-size: 1.5em;
+            font-weight: bold;
         }
         .collapse-indicator {
             font-size: 24px;
@@ -1007,22 +1026,47 @@
 
 /* Estilo para a lista de espécies */
 .species-item {
-    padding: 8px 12px;
+    padding: 6px 10px;
     background-color: white;
     border: 1px solid #b8c6aa;
     border-radius: 4px;
-    cursor: grab;
+    cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     transition: background-color 0.2s;
+    justify-content: space-between;
 }
 .species-item:hover {
     background-color: #e5f0da;
 }
-.species-item:active {
-    cursor: grabbing;
+.species-item-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
 }
+.species-item-name {
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.species-eye-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0 2px;
+    opacity: 0.7;
+    flex-shrink: 0;
+    line-height: 1;
+    transition: opacity 0.15s;
+}
+.species-eye-btn:hover { opacity: 1; }
+.species-eye-btn.hidden { opacity: 0.3; }
 .species-color {
     width: 16px;
     height: 16px;
@@ -1057,18 +1101,107 @@
 }
 
 #map-content {
+    display: block;
+}
+#map-flex-row {
     display: flex;
     gap: 15px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    align-items: stretch;
 }
-#map-content.collapsed {
-    display: none;
+#map-flex-row > div:first-child {
+    width: 220px;
+    flex-shrink: 0;
+}
+#map-flex-row > div:last-child {
+    flex: 1;
+    min-width: 500px;
 }
 
 #map-results td:first-child + td { /* a segunda coluna */
     max-width: 300px;
     overflow-x: auto;
     white-space: nowrap;
+}
+
+/* ===== BOTÕES DE FILTRO - COMPARAR LISTAS ===== */
+.filter-btn {
+    padding: 6px 14px;
+    border: 2px solid #3b8c3b;
+    border-radius: 20px;
+    background-color: white;
+    color: #3b8c3b;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+.filter-btn:hover { background-color: #e5f0da; }
+.filter-btn-active { background-color: #3b8c3b !important; color: white !important; }
+
+/* ===== RESPONSIVO MOBILE ===== */
+@media (max-width: 768px) {
+    body { padding: 8px; }
+    .container { padding: 12px; border-radius: 6px; }
+    header { flex-direction: column; gap: 10px; padding-bottom: 12px; margin-bottom: 16px; }
+    header h1 { font-size: 18px; }
+    .description { font-size: 13px; }
+    .buttons { flex-direction: column; gap: 8px; }
+    .buttons button { width: 100%; font-size: 14px; padding: 10px 14px; }
+    .import-controls { flex-direction: column; gap: 8px; }
+    .import-controls button { width: 100%; font-size: 13px; }
+    .tree-type-selector { flex-direction: column; align-items: stretch; gap: 8px; }
+    .tree-type-btn { width: 100%; text-align: center; }
+    .genealogical-view-selector { flex-direction: column; margin-left: 0; gap: 6px; }
+    .genealogical-view-btn { width: 100%; text-align: center; }
+    .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { min-width: 600px; }
+    th, td { padding: 8px 10px; font-size: 13px; }
+    .tree-container { min-height: 300px; padding: 10px; }
+    .genealogical-tree { height: 400px; }
+    .conservation-controls { flex-direction: column; gap: 8px; }
+    .conservation-controls button { width: 100%; }
+    #map-flex-row {
+        flex-direction: column !important;
+        flex-wrap: wrap !important;
+    }
+    #map-flex-row > div:first-child {
+        width: 100% !important;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    #map-flex-row > div:last-child {
+        min-width: 100% !important;
+        width: 100% !important;
+    }
+    #map-container { height: 320px !important; }
+    .modal { padding: 8px; }
+    .modal-content {
+        width: 98% !important;
+        max-width: 98% !important;
+        margin: 4% auto !important;
+        padding: 16px !important;
+        border-radius: 6px;
+    }
+    .modal-title { font-size: 16px; }
+    #lists-container { flex-direction: column !important; gap: 14px; }
+    .list-item { min-width: 100% !important; }
+    .list-item .table-container { max-height: 180px; }
+    .filter-btn { font-size: 12px; padding: 5px 10px; }
+    .legend { flex-direction: column; gap: 8px; }
+    .zoom-btn { width: 32px; height: 32px; font-size: 16px; }
+    .sources-list { max-height: 55vh !important; }
+    #comparison-results .table-container { max-height: 280px; }
+    #comparison-table { min-width: 500px; }
+}
+
+@media (max-width: 400px) {
+    body { padding: 4px; }
+    .container { padding: 8px; }
+    header h1 { font-size: 15px; }
+    button { font-size: 13px; padding: 8px 10px; }
+    th, td { padding: 6px 8px; font-size: 12px; }
+    #map-container { height: 260px !important; }
 }
 
     </style>
@@ -1330,47 +1463,54 @@
         <h2>Mapa de cálculos e ocorrências</h2>
     </div>
     <div class="section-content" id="map-content">
-        <!-- Painel lateral com lista de aves -->
-        <div style="width: 250px; background: #f5f7e9; border-radius: 8px; padding: 10px; border: 1px solid #c5d0b5; max-height: 500px; overflow-y: auto;">
-            <h3 style="margin-top:0;">Espécies na tabela</h3>
-            <div id="species-list" style="display: flex; flex-direction: column; gap: 5px;">
-                <!-- Itens serão inseridos via JS -->
+        <!-- Linha flex: painel lateral + mapa -->
+        <div id="map-flex-row" style="display:flex; gap:15px; flex-wrap:nowrap; align-items:stretch;">
+            <!-- Painel lateral com lista de aves -->
+            <div style="width: 220px; background: #f5f7e9; border-radius: 8px; padding: 10px; border: 1px solid #c5d0b5; height: 500px; overflow-y: auto; box-sizing: border-box; flex-shrink: 0;">
+                <h3 style="margin-top:0; font-size:13px;">Espécies na tabela</h3>
+                <div id="species-list" style="display: flex; flex-direction: column; gap: 5px;">
+                    <!-- Itens serão inseridos via JS -->
+                </div>
+            </div>
+            <!-- Container do mapa e controles -->
+            <div style="flex: 1; min-width: 500px; position: relative;">
+                <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; align-items: center;">
+                    <button id="draw-polygon" class="sources-btn">🔷 Desenhar área</button>
+                    <button id="add-all-to-polygon" class="generate-btn" style="background:#4c8b4c;">➕ Adicionar todas</button>
+                    <button id="clear-drawings" class="delete-btn">🗑️ Limpar desenhos</button>
+                    <label for="shapefile-upload" class="import-btn" style="padding:10px 20px; cursor:pointer; background:#8e6b3c;">📁 Carregar Shapefile (ZIP)</label>
+                    <input type="file" id="shapefile-upload" accept=".zip" style="display:none;">
+                    <button id="calculate-species" class="generate-btn" style="background:#8e6b3c;">🔢 Calcular espécies nas áreas</button>
+                    <button id="edit-mode-btn" class="sources-btn">✏️ Edição de ponto</button>
+                    <button id="edit-area-btn" class="sources-btn">✏️ Editar área (OFF)</button>
+                    <button id="toggle-gbif" class="sources-btn" style="background:#1e7e6b;">🌍 GBIF (OFF)</button>
+                    <button id="toggle-ebird" class="sources-btn" style="background:#d9520e;">🐦 eBird (OFF)</button>
+                    <button id="trash-bin" class="delete-btn" style="padding:10px 20px; background:#e74c3c;">🗑️ Lixeira (OFF)</button>
+                    <button id="export-shapefile" class="download-btn" style="background:#b87c3a;">🗺️ Exportar shapefile</button>
+                </div>
+                <div id="map-container" style="height: 500px; width: 100%; border-radius: 8px; border: 1px solid #c5d0b5;"></div>
+                <!-- Legenda das cores será inserida aqui via JS -->
             </div>
         </div>
-        <!-- Container do mapa e controles -->
-        <div style="flex: 1; min-width: 500px;">
-            <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
-                <button id="draw-polygon" class="sources-btn">🔷 Desenhar área</button>
-                <button id="add-all-to-polygon" class="generate-btn" style="background:#4c8b4c;">➕ Adicionar todas</button>
-                <button id="clear-drawings" class="delete-btn">🗑️ Limpar desenhos</button>
-                <label for="shapefile-upload" class="import-btn" style="padding:10px 20px; cursor:pointer;">📁 Carregar Shapefile (ZIP)</label>
-                <input type="file" id="shapefile-upload" accept=".zip" style="display:none;">
-                <button id="calculate-species" class="generate-btn" style="background:#8e6b3c;">🔢 Calcular espécies nas áreas</button>
-                <button id="edit-mode-btn" class="sources-btn">✏️ Modo edição</button>
-                <button id="toggle-gbif" class="sources-btn" style="background:#1e7e6b;">🌍 GBIF (OFF)</button>
-            </div>
-            <div id="map-container" style="height: 500px; width: 100%; border-radius: 8px; border: 1px solid #c5d0b5;"></div>
-            <!-- Tabela de resultados -->
-        
-<div id="map-results" style="display:none; margin-top: 15px;">
-    <h3>Resultados por polígono</h3>
-    <table class="conservation-table" style="width:100%;">
-        <thead>
-    <tr>
-        <th>Área #</th>
-        <th style="min-width: 200px; max-width: 400px;">Espécies encontradas</th>
-        <th>Nº espécies</th>
-        <th>Nº pontos</th>
-        <th>Área (m²)</th>
-        <th>Pontos/m²</th>
-        <th>Espécies/m²</th>
-        <th>Famílias/m²</th>
-        <th>Ordens/m²</th>
-    </tr>
-</thead>
-        <tbody id="map-results-body"></tbody>
-    </table>
-</div>
+        <!-- Tabela de resultados (dentro do section-content para colapsar junto) -->
+        <div id="map-results" style="display:none; margin-top: 15px;">
+            <h3>Resultados por polígono</h3>
+            <table class="conservation-table" style="width:100%;">
+                <thead>
+                    <tr>
+                        <th>Área #</th>
+                        <th style="min-width: 200px; max-width: 400px;">Espécies encontradas</th>
+                        <th>Nº espécies</th>
+                        <th>Nº pontos</th>
+                        <th>Área (m²)</th>
+                        <th>Pontos/m²</th>
+                        <th>Espécies/m²</th>
+                        <th>Famílias/m²</th>
+                        <th>Ordens/m²</th>
+                    </tr>
+                </thead>
+                <tbody id="map-results-body"></tbody>
+            </table>
         </div>
     </div>
 </section>
@@ -1378,7 +1518,7 @@
         </main>
         <footer>
             Desenvolvido por Brenno Alef Benk (BENK, B.) em 2026, caso utilize, favor citar :)
-            Este é um projeto acadêmico de conclusão de curso de Biologia em desenvolvimento, sem fins lucrativos, qualquer menção ao Wikiaves tem total direito foi feita apenas para redirecionamento e não usa exclusivamente nenhum dado do mesmo.
+            Este é um projeto acadêmico de conclusão de curso de Biologia em desenvolvimento, sem fins lucrativos, qualquer menção ao outros sites/bancos de dados tem total direito e não usa exclusivamente nenhum dado do mesmo e foram utilizados apenas para pesquisa.
         </footer>
     </div>
 
@@ -1447,9 +1587,13 @@
         <!-- Área de Resultados da Comparação -->
         <div id="comparison-results" style="margin-top: 20px; border-top: 2px solid #3b8c3b; padding-top: 20px;">
             <h3>Resultado da Comparação</h3>
-            <div style="margin-bottom: 10px; text-align: left;">
+            <div style="margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
                 <button id="copy-comparison-table" class="export-btn">Copiar Tabela</button>
                 <button id="export-comparison-csv" class="export-btn">Exportar CSV</button>
+                <span style="margin-left: 8px; font-weight: 600; color: #2d5a2d; font-size: 14px;">Filtro "Em todas?":</span>
+                <button id="filter-all" class="filter-btn filter-btn-active" data-filter="all">Todas</button>
+                <button id="filter-present" class="filter-btn" data-filter="present">✅ Só presentes em todas</button>
+                <button id="filter-absent" class="filter-btn" data-filter="absent">❌ Só ausentes de alguma</button>
             </div>
             <div class="table-container" style="max-height: 400px; overflow-y: auto;">
                 <table id="comparison-table" style="width:100%;">
@@ -5633,12 +5777,42 @@ results.forEach(row => {
     const tdEmTodas = document.createElement('td');
     tdEmTodas.textContent = row.emTodas;
     tr.appendChild(tdEmTodas);
-    
+
+    // Marca o tr com atributo para o filtro
+    tr.dataset.emtodas = row.emTodas === '✅' ? 'yes' : 'no';
+
     comparisonBody.appendChild(tr);
 });
 
     // Gerar gráficos
     generateMultiListCharts(lists);
+
+    // Resetar filtro para "Todas" a cada nova comparação
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('filter-btn-active'));
+    document.getElementById('filter-all').classList.add('filter-btn-active');
+    applyComparisonFilter('all');
+});
+
+// ---- Lógica dos botões de filtro ----
+function applyComparisonFilter(filter) {
+    const rows = comparisonBody.querySelectorAll('tr');
+    rows.forEach(tr => {
+        if (filter === 'all') {
+            tr.style.display = '';
+        } else if (filter === 'present') {
+            tr.style.display = tr.dataset.emtodas === 'yes' ? '' : 'none';
+        } else if (filter === 'absent') {
+            tr.style.display = tr.dataset.emtodas === 'no' ? '' : 'none';
+        }
+    });
+}
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('filter-btn-active'));
+        this.classList.add('filter-btn-active');
+        applyComparisonFilter(this.dataset.filter);
+    });
 });
 
 function generateMultiListCharts(lists) {
@@ -6042,22 +6216,31 @@ document.getElementById('toggle-popular-names').addEventListener('click', functi
     scheduleTreeUpdate(); // recria a árvore com a nova configuração
 });
 
-// ==================== NOVA SEÇÃO: MAPA COM DRAG AND DROP ====================
+// ==================== SEÇÃO DO MAPA (CORRIGIDA E MELHORADA) ====================
 let map, drawnItems, drawControl;
 let markersLayer = L.layerGroup(); // camada para todos os marcadores
 let currentEditMarker = null; // marcador sendo editado
-let editMode = false;
+let editMode = false; // modo de edição de marcadores (arrastar)
+let deleteMode = false; // modo de exclusão de marcadores (lixeira)
+let polygonEditMode = false; // modo de edição de polígonos
 let speciesColors = {}; // mapa: espécie -> cor
 let gbifLayer = L.layerGroup();       // camada para os pontos do GBIF
 let gbifVisible = false;              // estado do interruptor
 let gbifMarkers = [];                 // armazena os marcadores (opcional)
 let gbifLoading = false;              // evita múltiplas buscas
-
+let ebirdLayer = L.layerGroup();             // camada para os pontos do eBird
+let ebirdVisible = false;                    // estado do interruptor
+let ebirdMarkers = [];                       // armazena os marcadores
+let ebirdLoading = false;                    // evita múltiplas buscas
+let hiddenSpecies = new Set();               // espécies ocultas no mapa
+let editAreaActive = false;       // estado do botão editar área
+let trashActive = false;          // estado da lixeira (ON = clicar no marker apaga)
+let editControl = null;           // controle de edição do Leaflet.draw
+let previousView = null;          // guarda centro/zoom antes da exportação
 
 // Função para gerar uma cor única a partir do nome da espécie
 function getColorForSpecies(species) {
     if (speciesColors[species]) return speciesColors[species];
-    // Gera uma cor HSL determinística
     let hash = 0;
     for (let i = 0; i < species.length; i++) {
         hash = species.charCodeAt(i) + ((hash << 5) - hash);
@@ -6079,27 +6262,116 @@ function updateSpeciesList() {
     
     speciesArray.forEach(sp => {
         const color = getColorForSpecies(sp);
+        const popular = speciesInfo[sp] ? speciesInfo[sp].nomePopular : '';
+        const displayName = popular ? `${sp} (${popular})` : sp;
+
         const item = document.createElement('div');
         item.className = 'species-item';
-        item.draggable = true;
         item.setAttribute('data-species', sp);
         item.setAttribute('data-color', color);
-        
+
+        // Lado esquerdo: bolinhas + nome (clicável para flash)
+        const left = document.createElement('div');
+        left.className = 'species-item-left';
+        left.title = `Piscar "${displayName}" no mapa`;
+
         const colorSpan = document.createElement('span');
         colorSpan.className = 'species-color';
         colorSpan.style.backgroundColor = color;
-        
+
         const nameSpan = document.createElement('span');
-        nameSpan.textContent = sp;
+        nameSpan.className = 'species-item-name';
+        nameSpan.textContent = displayName;
+
+        left.appendChild(colorSpan);
+        left.appendChild(nameSpan);
+
+        // Botão olho (direita)
+        const eyeBtn = document.createElement('button');
+        eyeBtn.className = 'species-eye-btn' + (hiddenSpecies.has(sp) ? ' hidden' : '');
+        eyeBtn.textContent = hiddenSpecies.has(sp) ? '🙈' : '👁️';
+        eyeBtn.title = hiddenSpecies.has(sp) ? 'Mostrar no mapa' : 'Ocultar no mapa';
+
+        eyeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleSpeciesVisibility(sp, eyeBtn);
+        });
+
+        left.addEventListener('click', () => flashSpeciesMarkers(sp));
+
+        item.appendChild(left);
+        item.appendChild(eyeBtn);
         
-        item.appendChild(colorSpan);
-        item.appendChild(nameSpan);
-        
-        // Eventos de drag
         item.addEventListener('dragstart', handleDragStart);
         item.addEventListener('dragend', handleDragEnd);
         
         listDiv.appendChild(item);
+    });
+}
+
+// Pisca todos os marcadores de uma espécie em amarelo, 2x em 1 segundo
+function flashSpeciesMarkers(species) {
+    const toFlash = [];
+
+    markersLayer.eachLayer(m => {
+        if (m.options.species === species) toFlash.push({ type: 'div', m, origColor: m.options.color });
+    });
+    [gbifLayer, ebirdLayer].forEach(layer => {
+        layer.eachLayer(m => {
+            if (m.options.species === species)
+                toFlash.push({ type: 'circle', m, origFill: m.options.fillColor, origColor: m.options.color });
+        });
+    });
+
+    function applyColor(yellow) {
+        toFlash.forEach(({ type, m, origColor, origFill }) => {
+            if (type === 'circle') {
+                m.setStyle({ fillColor: yellow ? '#FFE600' : origFill, color: yellow ? '#FFE600' : (origColor || '#fff') });
+            } else {
+                const el = m.getElement();
+                if (el) {
+                    const div = el.querySelector('div');
+                    if (div) div.style.backgroundColor = yellow ? '#FFE600' : origColor;
+                }
+            }
+        });
+    }
+
+    applyColor(true);
+    setTimeout(() => applyColor(false), 220);
+    setTimeout(() => applyColor(true),  440);
+    setTimeout(() => applyColor(false), 660);
+}
+
+// Mostra/oculta todos os marcadores de uma espécie
+function toggleSpeciesVisibility(species, eyeBtn) {
+    const nowHidden = hiddenSpecies.has(species);
+    if (nowHidden) {
+        hiddenSpecies.delete(species);
+        eyeBtn.textContent = '👁️';
+        eyeBtn.title = 'Ocultar no mapa';
+        eyeBtn.classList.remove('hidden');
+    } else {
+        hiddenSpecies.add(species);
+        eyeBtn.textContent = '🙈';
+        eyeBtn.title = 'Mostrar no mapa';
+        eyeBtn.classList.add('hidden');
+    }
+    const show = nowHidden; // nowHidden=true means we're showing it
+
+    markersLayer.eachLayer(m => {
+        if (m.options.species === species) m.setOpacity(show ? 1 : 0);
+    });
+    [gbifLayer, ebirdLayer].forEach(layer => {
+        layer.eachLayer(m => {
+            if (m.options.species === species) {
+                if (show) {
+                    m.setStyle({ opacity: 1, fillOpacity: 0.6 });
+                } else {
+                    m.setStyle({ opacity: 0, fillOpacity: 0 });
+                }
+            }
+        });
     });
 }
 
@@ -6120,9 +6392,7 @@ function handleDragStart(e) {
     e.dataTransfer.effectAllowed = 'copy';
 }
 
-function handleDragEnd(e) {
-    // Nada necessário
-}
+function handleDragEnd(e) {}
 
 // Inicializa o mapa
 function initMap() {
@@ -6150,6 +6420,12 @@ function initMap() {
     });
     map.addControl(drawControl);
     
+    // Controle de edição (inicialmente desabilitado)
+    editControl = new L.Control.Draw({
+        edit: { featureGroup: drawnItems },
+        draw: false
+    });
+    
     // Eventos de desenho
     map.on(L.Draw.Event.CREATED, function (event) {
         drawnItems.addLayer(event.layer);
@@ -6158,100 +6434,187 @@ function initMap() {
     // Evento de drop no mapa
     map.getContainer().addEventListener('dragover', (e) => e.preventDefault());
     map.getContainer().addEventListener('drop', handleDropOnMap);
+
+    // ---- Rosa dos Ventos (controle Leaflet permanente) ----
+    const CompassControl = L.Control.extend({
+        options: { position: 'bottomleft' },
+        onAdd: function() {
+            const div = L.DomUtil.create('div', 'leaflet-compass-rose');
+            div.innerHTML = `
+            <svg width="70" height="70" viewBox="0 0 70 70" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.35))">
+              <!-- círculo de fundo -->
+              <circle cx="35" cy="35" r="33" fill="rgba(255,255,255,0.92)" stroke="#2d5a2d" stroke-width="1.5"/>
+              <!-- seta Norte (vermelha) — ponta em y=10, base em y=28 -->
+              <polygon points="35,10 30,28 35,25 40,28" fill="#c0392b"/>
+              <!-- seta Sul -->
+              <polygon points="35,60 30,42 35,45 40,42" fill="#7f8c8d"/>
+              <!-- seta Leste -->
+              <polygon points="60,35 42,30 45,35 42,40" fill="#555"/>
+              <!-- seta Oeste -->
+              <polygon points="10,35 28,30 25,35 28,40" fill="#555"/>
+              <!-- círculo central -->
+              <circle cx="35" cy="35" r="4" fill="#2d5a2d"/>
+              <!-- letras fora das setas -->
+              <text x="35" y="9" text-anchor="middle" dominant-baseline="middle" font-size="10" font-weight="bold" fill="#c0392b" font-family="sans-serif">N</text>
+              <text x="35" y="63" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="#555" font-family="sans-serif">S</text>
+              <text x="62" y="36" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="#555" font-family="sans-serif">E</text>
+              <text x="8" y="36" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="#555" font-family="sans-serif">O</text>
+            </svg>`;
+            L.DomEvent.disableClickPropagation(div);
+            return div;
+        }
+    });
+    new CompassControl().addTo(map);
     
-    // Botões com verificação de existência
-const drawPolygonBtn = document.getElementById('draw-polygon');
-if (drawPolygonBtn) {
-    drawPolygonBtn.addEventListener('click', function() {
-        new L.Draw.Polygon(map).enable();
-    });
-} else {
-    console.error('Botão #draw-polygon não encontrado');
-}
+    // Botões
+    const drawPolygonBtn = document.getElementById('draw-polygon');
+    if (drawPolygonBtn) {
+        drawPolygonBtn.addEventListener('click', function() {
+            new L.Draw.Polygon(map).enable();
+        });
+    }
 
-const addAllBtn = document.getElementById('add-all-to-polygon');
-if (addAllBtn) {
-    addAllBtn.addEventListener('click', addAllSpeciesToPolygon);
-} else {
-    console.error('Botão #add-all-to-polygon não encontrado');
-}
+    const addAllBtn = document.getElementById('add-all-to-polygon');
+    if (addAllBtn) {
+        addAllBtn.addEventListener('click', addAllSpeciesToPolygon);
+    }
 
-const clearDrawingsBtn = document.getElementById('clear-drawings');
-if (clearDrawingsBtn) {
-    clearDrawingsBtn.addEventListener('click', function() {
-        drawnItems.clearLayers();
-        markersLayer.clearLayers();
-        document.getElementById('map-results').style.display = 'none';
-    });
-} else {
-    console.error('Botão #clear-drawings não encontrado');
-}
+    const clearDrawingsBtn = document.getElementById('clear-drawings');
+    if (clearDrawingsBtn) {
+        clearDrawingsBtn.addEventListener('click', function() {
+            drawnItems.clearLayers();
+            markersLayer.clearLayers();
+            document.getElementById('map-results').style.display = 'none';
+        });
+    }
 
-const shapefileUpload = document.getElementById('shapefile-upload');
-if (shapefileUpload) {
-    shapefileUpload.addEventListener('change', handleShapefileUpload);
-} else {
-    console.error('Input #shapefile-upload não encontrado');
-}
+    const shapefileUpload = document.getElementById('shapefile-upload');
+    if (shapefileUpload) {
+        shapefileUpload.addEventListener('change', handleShapefileUpload);
+    }
 
-const calculateBtn = document.getElementById('calculate-species');
-if (calculateBtn) {
-    calculateBtn.addEventListener('click', calculateSpeciesInPolygons);
-} else {
-    console.error('Botão #calculate-species não encontrado');
-}
+    const calculateBtn = document.getElementById('calculate-species');
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', calculateSpeciesInPolygons);
+    }
 
-const editModeBtn = document.getElementById('edit-mode-btn');
-if (editModeBtn) {
-    editModeBtn.addEventListener('click', function() {
-        editMode = !editMode;
-        this.style.background = editMode ? '#2d5a2d' : '';
-        this.textContent = editMode ? '✏️ Modo edição (ON)' : '✏️ Modo edição (OFF)';
-        // Se desligar o modo enquanto algum marcador estiver em edição, desabilita
-        if (!editMode && currentEditMarker) {
-            currentEditMarker.dragging.disable();
-            currentEditMarker = null;
-        }
-    });
-} else {
-    console.error('Botão #edit-mode-btn não encontrado');
-}
-const toggleGBIFBtn = document.getElementById('toggle-gbif');
-if (toggleGBIFBtn) {
-    toggleGBIFBtn.addEventListener('click', async function() {
-        if (!gbifVisible) {
-            // Se não há dados carregados, busca
-            if (gbifMarkers.length === 0) {
-                const species = getUniqueSpeciesFromTable();
-                if (species.length === 0) {
-                    alert('Não há espécies na tabela para buscar.');
-                    return;
-                }
-                this.textContent = '🌍 GBIF (carregando...Aproveite para pegar um café☕)';
-                await fetchGBIFOccurrences(species);
-                this.textContent = '🌍 GBIF (ON)';
+    const editModeBtn = document.getElementById('edit-mode-btn');
+    if (editModeBtn) {
+        editModeBtn.addEventListener('click', function() {
+            editMode = !editMode;
+            this.style.background = editMode ? '#2d5a2d' : '';
+            this.textContent = editMode ? '✏️ Edição de ponto (ON)' : '✏️ Edição de ponto (OFF)';
+            if (!editMode && currentEditMarker) {
+                currentEditMarker.dragging.disable();
+                currentEditMarker = null;
+            }
+        });
+    }
+
+    // Botão editar área (toggle)
+    const editAreaBtn = document.getElementById('edit-area-btn');
+    if (editAreaBtn) {
+        editAreaBtn.addEventListener('click', function() {
+            editAreaActive = !editAreaActive;
+            this.textContent = editAreaActive ? '✏️ Editar área (ON)' : '✏️ Editar área (OFF)';
+            this.style.background = editAreaActive ? '#2d5a2d' : '';
+            
+            if (editAreaActive) {
+                map.addControl(editControl);
+                // Habilita edição em todas as camadas desenhadas
+                drawnItems.eachLayer(function(layer) {
+                    if (layer.editing) layer.editing.enable();
+                });
             } else {
-                this.textContent = '🌍 GBIF (ON)';
+                map.removeControl(editControl);
+                drawnItems.eachLayer(function(layer) {
+                    if (layer.editing) layer.editing.disable();
+                });
             }
-            // Adiciona a camada ao mapa se necessário
-            if (!map.hasLayer(gbifLayer)) {
-                gbifLayer.addTo(map);
+        });
+    }
+
+    // Botão lixeira (toggle)
+    const trashBtn = document.getElementById('trash-bin');
+    if (trashBtn) {
+        trashBtn.addEventListener('click', function() {
+            trashActive = !trashActive;
+            this.textContent = trashActive ? '🗑️ Lixeira (ON)' : '🗑️ Lixeira (OFF)';
+            this.style.background = trashActive ? '#c0392b' : '#e74c3c';
+        });
+    }
+
+    const toggleGBIFBtn = document.getElementById('toggle-gbif');
+    if (toggleGBIFBtn) {
+        toggleGBIFBtn.addEventListener('click', async function() {
+            if (!gbifVisible) {
+                if (gbifMarkers.length === 0) {
+                    const species = getUniqueSpeciesFromTable();
+                    if (species.length === 0) {
+                        alert('Não há espécies na tabela para buscar.');
+                        return;
+                    }
+                    this.textContent = '🌍 GBIF (Carregando...aproveite para buscar um café)';
+                    await fetchGBIFOccurrences(species);
+                    this.textContent = '🌍 GBIF (ON)';
+                } else {
+                    this.textContent = '🌍 GBIF (ON)';
+                }
+                if (!map.hasLayer(gbifLayer)) {
+                    gbifLayer.addTo(map);
+                }
+                gbifVisible = true;
+                this.style.background = '#2d5a2d';
+            } else {
+                if (map.hasLayer(gbifLayer)) {
+                    map.removeLayer(gbifLayer);
+                }
+                gbifVisible = false;
+                this.textContent = '🌍 GBIF (OFF)';
+                this.style.background = '';
             }
-            gbifVisible = true;
-            this.style.background = '#2d5a2d'; // verde quando ativo
-        } else {
-            // Esconde a camada
-            if (map.hasLayer(gbifLayer)) {
-                map.removeLayer(gbifLayer);
+        });
+    }
+
+    const toggleEBirdBtn = document.getElementById('toggle-ebird');
+    if (toggleEBirdBtn) {
+        toggleEBirdBtn.addEventListener('click', async function() {
+            if (!ebirdVisible) {
+                // Só busca se ainda não carregou
+                if (ebirdMarkers.length === 0) {
+                    const species = getUniqueSpeciesFromTable();
+                    if (species.length === 0) {
+                        alert('Não há espécies na tabela para buscar.');
+                        return;
+                    }
+                    this.textContent = '🐦 eBird (Carregando...aproveite para buscar um café)';
+                    this.disabled = true;
+                    await fetchEBirdOccurrences(species);
+                    this.disabled = false;
+                    if (ebirdMarkers.length === 0) {
+                        alert('Nenhum registro eBird encontrado para as espécies da tabela.');
+                        this.textContent = '🐦 eBird (OFF)';
+                        return;
+                    }
+                }
+                if (!map.hasLayer(ebirdLayer)) ebirdLayer.addTo(map);
+                ebirdVisible = true;
+                this.textContent = `🐦 eBird (ON — ${ebirdMarkers.length} pts)`;
+                this.style.background = '#8b3a0e';
+            } else {
+                if (map.hasLayer(ebirdLayer)) map.removeLayer(ebirdLayer);
+                ebirdVisible = false;
+                this.textContent = `🐦 eBird (OFF — ${ebirdMarkers.length} pts cached)`;
+                this.style.background = '#d9520e';
             }
-            gbifVisible = false;
-            this.textContent = '🌍 GBIF (OFF)';
-            this.style.background = ''; // volta ao padrão
-        }
-    });
-} else {
-    console.error('Botão #toggle-gbif não encontrado');
-}
+        });
+    }
+
+    // Botão exportar shapefile
+    const exportShapefileBtn = document.getElementById('export-shapefile');
+    if (exportShapefileBtn) {
+        exportShapefileBtn.addEventListener('click', exportShapefile);
+    }
 }
 
 function handleDropOnMap(e) {
@@ -6267,7 +6630,6 @@ function handleDropOnMap(e) {
             return;
         }
         
-        // Ícone apenas com círculo colorido
         const customIcon = L.divIcon({
             className: 'custom-div-icon',
             html: `<div style="background-color: ${color || '#3388ff'}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
@@ -6281,25 +6643,31 @@ function handleDropOnMap(e) {
             species: species, 
             color: color 
         }).addTo(markersLayer);
-        marker.dragging.disable();  // desabilita inicialmente
+        marker.dragging.disable();
         
-        // Tooltip com nome científico e popular
         const popularName = speciesInfo[species] ? speciesInfo[species].nomePopular : '';
         const tooltipText = popularName ? `${species} (${popularName})` : species;
         marker.bindTooltip(tooltipText, { permanent: false, direction: 'top' });
         
+        // Clique no marcador
         marker.on('click', function(e) {
             L.DomEvent.stopPropagation(e);
-            if (!editMode) return; // só permite arrastar se o modo edição estiver ativo
+            if (trashActive) {
+                markersLayer.removeLayer(this);
+                return;
+            }
+            if (!editMode) return;
             if (currentEditMarker && currentEditMarker !== this) {
                 currentEditMarker.dragging.disable();
             }
             currentEditMarker = this;
             this.dragging.enable();
-            this.once('dragend', function() {
-                this.dragging.disable();
-                currentEditMarker = null;
-            });
+        });
+        
+        // Evento de fim de arrasto
+        marker.on('dragend', function(e) {
+            this.dragging.disable();
+            currentEditMarker = null;
         });
         
     } catch (err) {
@@ -6307,7 +6675,6 @@ function handleDropOnMap(e) {
     }
 }
 
-// Função para ler shapefile (igual à anterior)
 function handleShapefileUpload(event) {
     const files = event.target.files;
     if (files.length === 0) return;
@@ -6341,7 +6708,6 @@ function handleShapefileUpload(event) {
     reader.readAsArrayBuffer(file);
 }
 
-// Calcular espécies dentro de cada polígono
 function calculateSpeciesInPolygons() {
     const polygons = drawnItems.getLayers().filter(layer => layer instanceof L.Polygon);
     if (polygons.length === 0) {
@@ -6358,8 +6724,6 @@ function calculateSpeciesInPolygons() {
     const results = [];
     polygons.forEach((polygon, idx) => {
         const polyGeoJSON = polygon.toGeoJSON();
-        
-        // Calcular área
         let areaSqMeters = 0;
         try {
             areaSqMeters = turf.area(polyGeoJSON);
@@ -6379,8 +6743,6 @@ function calculateSpeciesInPolygons() {
                 const sciName = marker.options.species;
                 speciesInside.add(sciName);
                 pointCount++;
-                
-                // Pega informações da espécie
                 const info = speciesInfo[sciName];
                 if (info) {
                     if (info.familia) familiesInside.add(info.familia);
@@ -6394,7 +6756,6 @@ function calculateSpeciesInPolygons() {
             return `${sciName} (${common})`;
         }).join(', ');
         
-        // Calcula densidades
         const pontosPorM2 = pointCount / areaSqMeters;
         const especiesPorM2 = speciesInside.size / areaSqMeters;
         const familiasPorM2 = familiesInside.size / areaSqMeters;
@@ -6431,7 +6792,6 @@ function calculateSpeciesInPolygons() {
     document.getElementById('map-results').style.display = 'block';
 }
 
-// Função para adicionar todas as espécies da tabela dentro do primeiro polígono desenhado
 function addAllSpeciesToPolygon() {
     const polygons = drawnItems.getLayers().filter(layer => layer instanceof L.Polygon);
     if (polygons.length === 0) {
@@ -6439,19 +6799,20 @@ function addAllSpeciesToPolygon() {
         return;
     }
 
-    // Pega o primeiro polígono
     const polygon = polygons[0];
     const polyGeoJSON = polygon.toGeoJSON();
 
-    // Se for MultiPolygon, pegar o primeiro polígono
     let geom = polyGeoJSON.geometry;
     if (geom.type === 'MultiPolygon') {
-        // Cria um novo polígono a partir do primeiro anel do MultiPolygon
         geom = {
             type: 'Polygon',
             coordinates: geom.coordinates[0]
         };
     }
+
+    // Calcula o bounding box para gerar pontos
+    const bbox = turf.bbox(geom);
+    const [minX, minY, maxX, maxY] = bbox;
 
     const data = collectTableData();
     const speciesSet = new Set(data.map(item => item.generoEspecie).filter(Boolean));
@@ -6462,15 +6823,17 @@ function addAllSpeciesToPolygon() {
         return;
     }
 
+    let addedCount = 0;
     speciesArray.forEach(sciName => {
         try {
-            // Tenta gerar ponto aleatório até 10 tentativas
             let point;
-            for (let attempt = 0; attempt < 10; attempt++) {
-                const randomPoint = turf.randomPosition(geom); // retorna [lng, lat]
-                const pt = turf.point(randomPoint);
+            // Tenta até 500 vezes para garantir que encontre um ponto dentro
+            for (let attempt = 0; attempt < 500; attempt++) {
+                const lng = minX + Math.random() * (maxX - minX);
+                const lat = minY + Math.random() * (maxY - minY);
+                const pt = turf.point([lng, lat]);
                 if (turf.booleanPointInPolygon(pt, geom)) {
-                    point = randomPoint;
+                    point = [lng, lat];
                     break;
                 }
             }
@@ -6502,76 +6865,375 @@ function addAllSpeciesToPolygon() {
 
             marker.on('click', function(e) {
                 L.DomEvent.stopPropagation(e);
+                if (trashActive) {
+                    markersLayer.removeLayer(this);
+                    return;
+                }
                 if (!editMode) return;
                 if (currentEditMarker && currentEditMarker !== this) {
                     currentEditMarker.dragging.disable();
                 }
                 currentEditMarker = this;
                 this.dragging.enable();
-                this.once('dragend', function() {
-                    this.dragging.disable();
-                    currentEditMarker = null;
-                });
             });
+
+            marker.on('dragend', function(e) {
+                this.dragging.disable();
+                currentEditMarker = null;
+            });
+
+            addedCount++;
         } catch (e) {
             console.error('Erro ao gerar ponto para', sciName, e);
         }
     });
 
-    alert(`${speciesArray.length} espécies adicionadas ao polígono!`);
+    if (addedCount > 0 && !map.hasLayer(markersLayer)) {
+        markersLayer.addTo(map);
+    }
+    alert(`${addedCount} espécies adicionadas ao polígono!`);
 }
 
+async function gbifApiFetch(url, retries = 2) {
+    for (let i = 0; i <= retries; i++) {
+        try {
+            const r = await fetch(url, { signal: AbortSignal.timeout(15000) });
+            if (r.ok) return r.json();
+        } catch(e) {
+            if (i === retries) throw e;
+            await new Promise(res => setTimeout(res, 800 * (i + 1)));
+        }
+    }
+    return null;
+}
 
-// Busca ocorrências no GBIF para cada espécie e cria marcadores laranja
 async function fetchGBIFOccurrences(speciesList) {
     if (gbifLoading) return;
     gbifLoading = true;
-
     gbifLayer.clearLayers();
     gbifMarkers = [];
-
-    for (const species of speciesList) {
-        try {
-            const url = `https://api.gbif.org/v1/occurrence/search?scientificName=${encodeURIComponent(species)}&country=BR&hasCoordinate=true&limit=1000`;
-            const response = await fetch(url);
-            const data = await response.json();
-
-            if (data.results && data.results.length > 0) {
-                const color = getColorForSpecies(species); // obtém a cor da espécie
-                data.results.forEach(occ => {
-                    if (occ.decimalLatitude && occ.decimalLongitude) {
-                        const marker = L.circleMarker([occ.decimalLatitude, occ.decimalLongitude], {
-                            radius: 3,
-                            color: color,
-                            weight: 1,
-                            opacity: 1,
-                            fillColor: color,
-                            fillOpacity: 0.5   // 50% de opacidade
-                        }).bindTooltip(`${species} (GBIF)`, { permanent: false });
-
-                        gbifMarkers.push(marker);
-                        marker.addTo(gbifLayer);
-                    }
-                });
+    try {
+        for (const species of speciesList) {
+            try {
+                const url = `https://api.gbif.org/v1/occurrence/search?scientificName=${encodeURIComponent(species)}&country=BR&hasCoordinate=true&limit=2000`;
+                const data = await gbifApiFetch(url);
+                if (data && data.results && data.results.length > 0) {
+                    const color = getColorForSpecies(species);
+                    data.results.forEach(occ => {
+                        if (occ.decimalLatitude && occ.decimalLongitude) {
+                            const marker = L.circleMarker([occ.decimalLatitude, occ.decimalLongitude], {
+                                radius: 4, color: color, weight: 1, opacity: 1,
+                                fillColor: color, fillOpacity: 0.6, species: species
+                            }).bindTooltip(`${species} (GBIF)`, { permanent: false });
+                            gbifMarkers.push(marker);
+                            marker.addTo(gbifLayer);
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error(`Erro ao buscar ${species} no GBIF:`, e);
             }
-        } catch (e) {
-            console.error(`Erro ao buscar ${species}:`, e);
         }
+    } finally {
+        gbifLoading = false;
+        console.log(`GBIF: ${gbifMarkers.length} pontos carregados.`);
+    }
+}
+
+// eBird via GBIF dataset
+async function fetchEBirdOccurrences(speciesList) {
+    if (ebirdLoading) return;
+    ebirdLoading = true;
+    const EBIRD_DATASET = '4fa7b334-ce0d-4e88-aaae-2e0c138d049e';
+    try {
+        for (const species of speciesList) {
+            try {
+                const url = `https://api.gbif.org/v1/occurrence/search?scientificName=${encodeURIComponent(species)}&datasetKey=${EBIRD_DATASET}&hasCoordinate=true&country=BR&limit=2000`;
+                const data = await gbifApiFetch(url);
+                if (data && data.results && data.results.length > 0) {
+                    const color = getColorForSpecies(species);
+                    data.results.forEach(occ => {
+                        if (occ.decimalLatitude && occ.decimalLongitude) {
+                            const marker = L.circleMarker(
+                                [occ.decimalLatitude, occ.decimalLongitude],
+                                { radius: 5, color: '#fff', weight: 1.2,
+                                  fillColor: color, fillOpacity: 0.85, species: species }
+                            ).bindTooltip(`<b>${species}</b><br><small>eBird</small>`, { permanent: false });
+                            ebirdMarkers.push(marker);
+                            marker.addTo(ebirdLayer);
+                        }
+                    });
+                }
+            } catch(e) {
+                console.error(`Erro ao buscar ${species} no eBird/GBIF:`, e);
+            }
+        }
+    } finally {
+        ebirdLoading = false;
+        console.log(`eBird: ${ebirdMarkers.length} pontos carregados.`);
+    }
+}
+
+
+// ============================================================
+// Exportação de Shapefile implementada manualmente com JSZip
+// Suporta Point e Polygon (sem dependência de shp-write)
+// ============================================================
+function exportShapefile() {
+    const polygonFeatures = [];
+    drawnItems.eachLayer(layer => {
+        if (layer instanceof L.Polygon) polygonFeatures.push(layer.toGeoJSON());
+    });
+
+    const pointFeatures = [];
+    markersLayer.eachLayer(marker => {
+        const latlng = marker.getLatLng();
+        const species = marker.options.species || '';
+        const popular = (speciesInfo[species] ? speciesInfo[species].nomePopular : '') || '';
+        pointFeatures.push({
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [latlng.lng, latlng.lat] },
+            properties: { especie: species.substring(0, 10), popular: popular.substring(0, 10) }
+        });
+    });
+
+    if (polygonFeatures.length === 0 && pointFeatures.length === 0) {
+        alert('Não há polígonos ou pontos para exportar.');
+        return;
     }
 
-    gbifLoading = false;
-    console.log(`GBIF: ${gbifMarkers.length} pontos carregados.`);
+    const zip = new JSZip();
+
+    // ---- escreve pontos ----
+    if (pointFeatures.length > 0) {
+        const shpPt  = buildPointShp(pointFeatures);
+        const dbfPt  = buildDbf(pointFeatures.map(f => f.properties), ['especie','popular']);
+        const prj    = 'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]]';
+        zip.file('pontos.shp', shpPt);
+        zip.file('pontos.shx', buildShx(shpPt));
+        zip.file('pontos.dbf', dbfPt);
+        zip.file('pontos.prj', prj);
+    }
+
+    // ---- escreve polígonos ----
+    if (polygonFeatures.length > 0) {
+        const shpPoly = buildPolygonShp(polygonFeatures);
+        const dbfPoly = buildDbf(polygonFeatures.map((f,i) => ({ id: i+1 })), ['id']);
+        const prj     = 'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]]';
+        zip.file('poligonos.shp', shpPoly);
+        zip.file('poligonos.shx', buildShx(shpPoly));
+        zip.file('poligonos.dbf', dbfPoly);
+        zip.file('poligonos.prj', prj);
+    }
+
+    zip.generateAsync({ type: 'blob' }).then(function(blob) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'mapa_aves.zip';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+    }).catch(e => {
+        console.error('Erro ao gerar ZIP:', e);
+        alert('Erro ao gerar ZIP: ' + e.message);
+    });
 }
-// Integrar com a tabela: atualizar a lista sempre que a tabela mudar
-// Vamos modificar scheduleTreeUpdate para incluir a atualização da lista.
+
+/* ---- helpers para shapefile binário ---- */
+function writeInt32BE(dv, offset, val) { dv.setInt32(offset, val, false); }
+function writeInt32LE(dv, offset, val) { dv.setInt32(offset, val, true); }
+function writeFloat64LE(dv, offset, val) { dv.setFloat64(offset, val, true); }
+
+function buildPointShp(features) {
+    const SHP_HEADER = 100;
+    const RECORD_CONTENT = 20; // 4 type + 8 x + 8 y
+    const total = SHP_HEADER + features.length * (8 + RECORD_CONTENT);
+    const buf = new ArrayBuffer(total);
+    const dv = new DataView(buf);
+
+    // File header
+    writeInt32BE(dv, 0, 9994);
+    writeInt32BE(dv, 24, total / 2);   // file length in 16-bit words
+    writeInt32LE(dv, 28, 1000);        // version
+    writeInt32LE(dv, 32, 1);           // shape type: Point
+
+    let xMin=Infinity, yMin=Infinity, xMax=-Infinity, yMax=-Infinity;
+    features.forEach(f => {
+        const [x, y] = f.geometry.coordinates;
+        if (x < xMin) xMin = x; if (x > xMax) xMax = x;
+        if (y < yMin) yMin = y; if (y > yMax) yMax = y;
+    });
+    writeFloat64LE(dv, 36, xMin); writeFloat64LE(dv, 44, yMin);
+    writeFloat64LE(dv, 52, xMax); writeFloat64LE(dv, 60, yMax);
+
+    let offset = SHP_HEADER;
+    features.forEach((f, i) => {
+        const [x, y] = f.geometry.coordinates;
+        writeInt32BE(dv, offset, i + 1);             // record number
+        writeInt32BE(dv, offset + 4, RECORD_CONTENT / 2); // content length
+        writeInt32LE(dv, offset + 8, 1);             // shape type Point
+        writeFloat64LE(dv, offset + 12, x);
+        writeFloat64LE(dv, offset + 20, y);
+        offset += 8 + RECORD_CONTENT;
+    });
+    return buf;
+}
+
+function buildPolygonShp(features) {
+    // Calcula tamanho total primeiro
+    let totalContentBytes = 0;
+    const rings = features.map(f => {
+        const geom = f.geometry;
+        const coords = geom.type === 'MultiPolygon'
+            ? geom.coordinates.flat()
+            : geom.coordinates;
+        return coords;
+    });
+
+    rings.forEach(ringsForFeat => {
+        const numParts = ringsForFeat.length;
+        const numPoints = ringsForFeat.reduce((s, r) => s + r.length, 0);
+        totalContentBytes += 4 + 4*8 + 4 + 4 + numParts*4 + numPoints*16;
+    });
+
+    const SHP_HEADER = 100;
+    const total = SHP_HEADER + features.length * 8 + totalContentBytes;
+    const buf = new ArrayBuffer(total);
+    const dv = new DataView(buf);
+
+    writeInt32BE(dv, 0, 9994);
+    writeInt32BE(dv, 24, total / 2);
+    writeInt32LE(dv, 28, 1000);
+    writeInt32LE(dv, 32, 5); // Polygon
+
+    let xMin=Infinity, yMin=Infinity, xMax=-Infinity, yMax=-Infinity;
+    rings.forEach(ringsForFeat => ringsForFeat.forEach(ring => ring.forEach(([x,y]) => {
+        if (x<xMin)xMin=x; if (x>xMax)xMax=x;
+        if (y<yMin)yMin=y; if (y>yMax)yMax=y;
+    })));
+    writeFloat64LE(dv, 36, xMin); writeFloat64LE(dv, 44, yMin);
+    writeFloat64LE(dv, 52, xMax); writeFloat64LE(dv, 60, yMax);
+
+    let offset = SHP_HEADER;
+    features.forEach((f, i) => {
+        const ringsForFeat = rings[i];
+        const numParts = ringsForFeat.length;
+        const numPoints = ringsForFeat.reduce((s,r)=>s+r.length,0);
+        const contentLen = 4 + 4*8 + 4 + 4 + numParts*4 + numPoints*16;
+
+        writeInt32BE(dv, offset, i+1);
+        writeInt32BE(dv, offset+4, contentLen/2);
+        offset += 8;
+
+        writeInt32LE(dv, offset, 5); offset += 4; // shape type
+
+        let fxMin=Infinity,fyMin=Infinity,fxMax=-Infinity,fyMax=-Infinity;
+        ringsForFeat.forEach(ring=>ring.forEach(([x,y])=>{
+            if(x<fxMin)fxMin=x;if(x>fxMax)fxMax=x;
+            if(y<fyMin)fyMin=y;if(y>fyMax)fyMax=y;
+        }));
+        writeFloat64LE(dv, offset, fxMin); offset+=8;
+        writeFloat64LE(dv, offset, fyMin); offset+=8;
+        writeFloat64LE(dv, offset, fxMax); offset+=8;
+        writeFloat64LE(dv, offset, fyMax); offset+=8;
+
+        writeInt32LE(dv, offset, numParts); offset+=4;
+        writeInt32LE(dv, offset, numPoints); offset+=4;
+
+        let partStart = 0;
+        ringsForFeat.forEach(ring => {
+            writeInt32LE(dv, offset, partStart); offset+=4;
+            partStart += ring.length;
+        });
+        ringsForFeat.forEach(ring => ring.forEach(([x,y]) => {
+            writeFloat64LE(dv, offset, x); offset+=8;
+            writeFloat64LE(dv, offset, y); offset+=8;
+        }));
+    });
+    return buf;
+}
+
+function buildShx(shpBuf) {
+    const dv = new DataView(shpBuf);
+    const n = (dv.byteLength - 100) > 0 ? Math.floor((dv.byteLength - 100) / 1) : 0;
+    // Count records by scanning
+    const records = [];
+    let off = 100;
+    while (off < dv.byteLength) {
+        const len = dv.getInt32(off+4, false);
+        records.push({ offset: off/2, len });
+        off += 8 + len*2;
+    }
+    const shx = new ArrayBuffer(100 + records.length * 8);
+    const sdv = new DataView(shx);
+    writeInt32BE(sdv, 0, 9994);
+    writeInt32BE(sdv, 24, (100 + records.length*8)/2);
+    writeInt32LE(sdv, 28, 1000);
+    // copy shape type from shp header
+    sdv.setInt32(32, dv.getInt32(32, true), true);
+    for (let i=36;i<100;i++) sdv.setUint8(i, dv.getUint8(i));
+
+    records.forEach((r,i) => {
+        writeInt32BE(sdv, 100+i*8,   r.offset);
+        writeInt32BE(sdv, 100+i*8+4, r.len);
+    });
+    return shx;
+}
+
+function buildDbf(rows, fields) {
+    const truncField = s => (s+'          ').substring(0,10).replace(/ /g,'_');
+    const fieldNames = fields.map(truncField);
+    const fieldLen = 80;
+    const headerSize = 32 + fields.length*32 + 1;
+    const recordSize = 1 + fields.length*fieldLen;
+    const total = headerSize + rows.length*recordSize + 1;
+    const buf = new ArrayBuffer(total);
+    const dv = new DataView(buf);
+    const u8 = new Uint8Array(buf);
+
+    dv.setUint8(0, 3); // version
+    const now = new Date();
+    dv.setUint8(1, now.getFullYear()-1900);
+    dv.setUint8(2, now.getMonth()+1);
+    dv.setUint8(3, now.getDate());
+    dv.setInt32(4, rows.length, true);
+    dv.setInt16(8, headerSize, true);
+    dv.setInt16(10, recordSize, true);
+
+    fields.forEach((f,i) => {
+        const nameBytes = fieldNames[i].padEnd(11,'\0');
+        for (let c=0;c<11;c++) u8[32+i*32+c] = nameBytes.charCodeAt(c)&0xFF;
+        u8[32+i*32+11] = 67; // 'C' = character
+        dv.setUint8(32+i*32+16, fieldLen);
+        dv.setUint8(32+i*32+17, 0);
+    });
+    u8[32+fields.length*32] = 0x0D; // header terminator
+
+    const encoder = new TextEncoder();
+    rows.forEach((row, ri) => {
+        const recOffset = headerSize + ri*recordSize;
+        u8[recOffset] = 0x20; // valid record marker
+        fields.forEach((f,fi) => {
+            const val = String(row[f] !== undefined && row[f] !== null ? row[f] : '');
+            const padded = val.substring(0, fieldLen).padEnd(fieldLen, ' ');
+            const bytes = encoder.encode(padded);
+            for (let b=0;b<fieldLen;b++) u8[recOffset+1+fi*fieldLen+b] = b < bytes.length ? bytes[b] : 0x20;
+        });
+    });
+    u8[headerSize + rows.length*recordSize] = 0x1A; // EOF
+    return buf;
+}
+
+// Atualiza a lista de espécies quando a tabela muda
 const originalScheduleTreeUpdate = scheduleTreeUpdate;
 scheduleTreeUpdate = function() {
     originalScheduleTreeUpdate();
-    // Atualiza a lista de espécies após um pequeno delay para garantir que a tabela foi atualizada
     setTimeout(updateSpeciesList, 100);
 };
 
-// Inicializar o mapa quando a seção for aberta pela primeira vez
+// Inicializar o mapa quando a seção for aberta
 (function() {
     const mapHeader = document.getElementById('map-header');
     const mapContent = document.getElementById('map-content');
@@ -6581,185 +7243,184 @@ scheduleTreeUpdate = function() {
     if (mapHeader && mapContent && mapIndicator) {
         mapHeader.addEventListener('click', () => {
             mapContent.classList.toggle('collapsed');
-            mapIndicator.textContent = mapContent.classList.contains('collapsed') ? '+' : '-';
-            if (!mapInitialized && !mapContent.classList.contains('collapsed')) {
+            const isCollapsed = mapContent.classList.contains('collapsed');
+            mapIndicator.textContent = isCollapsed ? '+' : '-';
+            // Esconde/mostra resultados junto com o mapa
+            const mapResults = document.getElementById('map-results');
+            if (mapResults && isCollapsed) mapResults.style.display = 'none';
+            if (!mapInitialized && !isCollapsed) {
                 initMap();
                 mapInitialized = true;
                 updateSpeciesList();
             }
         });
     }
-    
-    // Se a seção não for colapsável, inicializa direto
-    // Mas como temos o collapse, faremos assim.
 })();
 
-// Também inicializa se a seção já estiver visível no carregamento
+// Inicializa se já estiver visível
 if (document.getElementById('map-content') && !document.getElementById('map-content').classList.contains('collapsed')) {
     initMap();
     updateSpeciesList();
 }
 
+// Redesenha gráficos quando a janela for redimensionada (incluindo zoom)
+window.addEventListener('resize', () => {
+    if (chartScPie) chartScPie.resize();
+    if (chartIcmbioPie) chartIcmbioPie.resize();
+    if (chartIucnPie) chartIucnPie.resize();
+    if (chartOrdemBar) chartOrdemBar.resize();
+    if (chartOrdemPie) chartOrdemPie.resize();
+    if (chartFamiliaBar) chartFamiliaBar.resize();
+    if (chartFamiliaPie) chartFamiliaPie.resize();
+    if (chartBar) chartBar.resize();
+    if (chartSimilarity) chartSimilarity.resize();
+    if (chartUnique) chartUnique.resize();
+});
+
     </script>
 
 <!-- Modal de Ajuda -->
 <div id="help-modal" class="modal">
-    <div class="modal-content" style="max-width: 800px;">
+    <div class="modal-content" style="max-width: 860px;">
         <span class="close-modal" id="close-help-modal">&times;</span>
-        <h2 class="modal-title">Guia de Uso – Ornitologia Avançada de Santa Catarina</h2>
-        <div class="sources-list" style="max-height: 70vh; overflow-y: auto; padding-right: 10px;">
+        <h2 class="modal-title">❓ Guia de Uso — Ornitologia Avançada de Santa Catarina</h2>
+        <div class="sources-list" style="max-height: 75vh; overflow-y: auto; padding-right: 14px; line-height: 1.6;">
 
-    <h3 style="color: #2d5a2d; margin-top: 20px;">1. Importação de Dados</h3>
-    
-    <h4 style="color: #3b6e3b; margin-bottom: 5px;">Modo Básico (padrão)</h4>
-    <ul style="margin-left: 20px; color: #2c3e2f;">
-        <li><strong>Para que serve:</strong> Você digita apenas o nome da espécie (científico ou popular) e o sistema completa automaticamente os campos taxonômicos.</li>
-        <li><strong>Como usar:</strong>
-            <ol style="margin-top: 5px; margin-left: 20px;">
-                <li>No campo de texto principal, digite o nome de uma ave. Enquanto digita, sugestões aparecem.</li>
-                <li>Use as setas ↑ ↓ para navegar e pressione <strong>Tab</strong> ou <strong>Enter</strong> para preencher.</li>
-                <li>Você também pode colar uma lista (um nome por linha) e clicar em <strong>Processar Dados Importados</strong> – cada linha será adicionada como uma nova linha na tabela.</li>
-                <li>Os campos <em>Filo, Classe, Ordem, Família, Subfamília</em> serão preenchidos automaticamente com base no banco de dados.</li>
-            </ol>
-        </li>
+<p style="background:#eef4e4; border-left:4px solid #2d5a2d; padding:10px 14px; border-radius:4px; margin-bottom:18px;">
+  Este sistema permite importar listas de aves, visualizar dados taxonômicos e de conservação, gerar árvores filogenéticas e mapear ocorrências georreferenciadas com dados do GBIF e eBird. Tudo roda no seu navegador — nenhum dado é enviado a servidores externos.
+</p>
+
+<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px;">1. 📥 Importação de Dados</h3>
+<p>A importação é o ponto de partida. Você insere nomes de aves e o sistema preenche automaticamente os campos taxonômicos.</p>
+<h4 style="color:#3b6e3b;">Modo Básico (padrão)</h4>
+<ul style="margin-left:20px;">
+  <li>Digite o nome científico ou popular de uma ave no campo de texto. Sugestões aparecem enquanto você digita.</li>
+  <li>Use <strong>↑ ↓</strong> para navegar nas sugestões e <strong>Tab</strong> ou <strong>Enter</strong> para confirmar.</li>
+  <li>Para importar várias de uma vez, cole uma lista (um nome por linha) e clique em <strong>Processar Dados Importados</strong>.</li>
+  <li>Filo, Classe, Ordem, Família e Subfamília são preenchidos automaticamente pelo banco de dados interno (&gt;800 espécies).</li>
+</ul>
+<h4 style="color:#3b6e3b;">Modo Avançado</h4>
+<ul style="margin-left:20px;">
+  <li>Para dados já tabulados. Cole no formato: <code>Filo↹Classe↹Ordem↹Família↹Subfamília↹Gênero/Espécie</code> (tabulação como separador).</li>
+  <li>Clique em <strong>Processar Dados Importados</strong>.</li>
+</ul>
+<h4 style="color:#3b6e3b;">Botões auxiliares</h4>
+<ul style="margin-left:20px;">
+  <li><strong>Carregar Exemplo:</strong> insere 5–10 espécies aleatórias para teste rápido.</li>
+  <li><strong>Fontes de Estudo:</strong> exibe as referências científicas usadas na filogenia.</li>
+  <li><strong>Comparar Tabelas:</strong> abre o comparador de listas (ver seção 7).</li>
+  <li><strong>Lista de Consulta:</strong> abre o banco com todas as espécies cadastradas (ver seção 8).</li>
+</ul>
+
+<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px; margin-top:22px;">2. 📋 Tabela de Dados</h3>
+<p>Após importar, os dados ficam numa tabela editável abaixo da área de importação (seção <em>Dados da Tabela</em>).</p>
+<ul style="margin-left:20px;">
+  <li>Clique em qualquer célula para editar. A árvore filogenética se atualiza automaticamente.</li>
+  <li><strong>Adicionar Linha Manualmente:</strong> insere linha em branco.</li>
+  <li><strong>Remover:</strong> botão ao lado de cada linha.</li>
+  <li><strong>Limpar Tabela:</strong> remove tudo.</li>
+  <li><strong>Copiar Tabela:</strong> copia o conteúdo para a área de transferência (formato TSV, compatível com Excel).</li>
+</ul>
+<p>💡 No modo básico, o autocomplete também funciona dentro do campo <em>Gênero/Espécie</em> da tabela.</p>
+
+<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px; margin-top:22px;">3. 🌳 Árvore Taxonômica</h3>
+<p>Gerada automaticamente a partir dos dados da tabela.</p>
+<ul style="margin-left:20px;">
+  <li><strong>Árvore Hierárquica:</strong> estrutura de pastas aninhadas por nível taxonômico.</li>
+  <li><strong>Árvore Filogenética (D3.js):</strong> diagrama interativo baseado na filogenia moderna das aves (Jarvis 2014, Prum 2015).
+    <ul style="margin-top:4px; margin-left:20px;">
+      <li>Zoom: botões + / − ou scroll do mouse.</li>
+      <li>Arrastar: clique e arraste no fundo da visualização.</li>
+      <li><em>Mostrar Completa</em> vs <em>Apenas Adicionados</em>.</li>
     </ul>
+  </li>
+  <li><strong>Baixar Imagem:</strong> exporta PNG de alta qualidade.</li>
+  <li><strong>Exportar Árvore:</strong> salva HTML interativo com zoom e busca.</li>
+</ul>
 
-    <h4 style="color: #3b6e3b; margin-bottom: 5px;">Modo Avançado</h4>
-    <ul style="margin-left: 20px;">
-        <li><strong>Para que serve:</strong> Para importar dados tabulares (copiados de Excel, planilhas ou arquivos de texto) que já contenham todas as colunas taxonômicas.</li>
-        <li><strong>Como usar:</strong>
-            <ol style="margin-top: 5px; margin-left: 20px;">
-                <li>Clique no botão <strong>Avançado</strong>.</li>
-                <li>Cole os dados no formato: <code>Filo\tClasse\tOrdem\tFamília\tSubfamília\tGênero/Espécie</code> (tabulação é o separador recomendado; vírgulas ou espaços também funcionam).</li>
-                <li>Clique em <strong>Processar Dados Importados</strong> para preencher a tabela.</li>
-            </ol>
-        </li>
+<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px; margin-top:22px;">4. 🛡️ Status de Conservação</h3>
+<p>Dados das listas de ameaça SC (Santa Catarina), ICMBio e IUCN.</p>
+<ul style="margin-left:20px;">
+  <li>Clique em <strong>Carregar Dados do PDF (SC) e WikiAves (IUCN)</strong> para preencher a tabela com as espécies presentes.</li>
+  <li>Ordene pela coluna desejada usando os botões <strong>A-Z</strong>, <strong>Conservação ▲</strong> e <strong>Conservação ▼</strong>.</li>
+  <li><strong>Mais informações:</strong> links WikiAves por espécie.</li>
+  <li><strong>Exportar Excel (CSV)</strong> e <strong>Copiar Tabela</strong> disponíveis.</li>
+  <li>Três gráficos de pizza mostram a distribuição percentual dos status para SC, ICMBio e IUCN.</li>
+</ul>
+
+<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px; margin-top:22px;">5. 📊 Distribuição Taxonômica</h3>
+<p>Gráficos automáticos de barras e pizza por Ordem e por Família, refletindo sempre os dados atuais da tabela.</p>
+
+<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px; margin-top:22px;">6. 🗺️ Mapa de Ocorrências</h3>
+<p>Ferramenta central para análise espacial. Permite posicionar espécies no mapa, desenhar áreas de estudo e buscar registros públicos georreferenciados.</p>
+
+<h4 style="color:#3b6e3b;">Painel "Espécies na tabela"</h4>
+<ul style="margin-left:20px;">
+  <li>Lista todas as espécies importadas. Cada item tem:
+    <ul style="margin-left:20px; margin-top:4px;">
+      <li><strong>Clique no nome</strong> → pisca os pontos da espécie em <span style="color:#c8a800; font-weight:bold;">amarelo</span> 2× no mapa (funciona para pontos manuais, GBIF e eBird).</li>
+      <li><strong>Botão 👁️</strong> (canto direito) → oculta ou exibe todos os pontos daquela espécie no mapa.</li>
     </ul>
+  </li>
+  <li>Arraste espécies do painel para o mapa para posicioná-las manualmente.</li>
+</ul>
 
-    <h4 style="color: #3b6e3b;">Botões auxiliares da importação</h4>
-    <ul style="margin-left: 20px;">
-        <li><strong>Carregar Exemplo Ornitológico:</strong> insere automaticamente de 5 a 10 espécies aleatórias para teste.</li>
-        <li><strong>Limpar Área de Importação:</strong> apaga o conteúdo da caixa de texto.</li>
-        <li><strong>Fontes de Estudo:</strong> abre um modal com as referências científicas usadas na filogenia.</li>
-        <li><strong>Comparar Tabelas:</strong> abre o modal de comparação (explicado na seção 7).</li>
-        <li><strong>Debug Visualizer:</strong> mostra um painel com logs de depuração (útil para desenvolvedores).</li>
-        <li><strong>Lista de Consulta:</strong> abre uma janela com todas as espécies do banco de dados (explicado na seção 8).</li>
-    </ul>
+<h4 style="color:#3b6e3b;">Desenhar áreas</h4>
+<ul style="margin-left:20px;">
+  <li><strong>🔷 Desenhar área:</strong> clique no mapa para criar vértices de um polígono. Dê duplo-clique para fechar.</li>
+  <li><strong>➕ Adicionar todas:</strong> posiciona automaticamente todas as espécies da tabela dentro do polígono desenhado (pontos aleatórios dentro do perímetro).</li>
+  <li><strong>✏️ Editar área:</strong> ativa handles de edição nos polígonos já desenhados.</li>
+  <li><strong>📁 Carregar Shapefile (ZIP):</strong> importa polígonos de um arquivo ZIP com shapefile.</li>
+  <li><strong>🔢 Calcular espécies nas áreas:</strong> gera uma tabela com a contagem de espécies, pontos, área e densidades para cada polígono desenhado.</li>
+  <li><strong>🗺️ Exportar Shapefile:</strong> baixa um ZIP com os pontos e polígonos do mapa em formato Shapefile (.shp/.dbf/.prj).</li>
+</ul>
 
-    <hr style="border: 1px solid #c5d0b5; margin: 20px 0;">
+<h4 style="color:#3b6e3b;">Pontos manuais</h4>
+<ul style="margin-left:20px;">
+  <li><strong>✏️ Edição de ponto:</strong> ativa o modo arrasta-e-solta nos marcadores.</li>
+  <li><strong>🗑️ Lixeira:</strong> quando ON, clicar em um ponto o remove do mapa.</li>
+</ul>
 
-    <h3 style="color: #2d5a2d;">2. Tabela de Dados</h3>
-    <p>Após a importação, as informações aparecem em uma tabela editável.</p>
-    <ul style="margin-left: 20px;">
-        <li><strong>Adicionar Linha Manualmente:</strong> insere uma nova linha em branco.</li>
-        <li><strong>Remover Linha:</strong> clique no botão "Remover" ao lado de cada linha.</li>
-        <li><strong>Editar células:</strong> você pode alterar qualquer campo diretamente na tabela. Qualquer modificação atualiza automaticamente a árvore após alguns segundos.</li>
-        <li><strong>Limpar Tabela:</strong> remove todas as linhas.</li>
-        <li><strong>Copiar Tabela:</strong> copia o conteúdo da tabela (incluindo cabeçalhos) para a área de transferência, com separadores por tabulação.</li>
-    </ul>
-    <p>💡 <strong>Dica:</strong> No modo básico, ao digitar no campo "Gênero/Espécie", o autocomplete também funciona dentro da tabela.</p>
+<h4 style="color:#3b6e3b;">Registros públicos de ocorrência</h4>
+<ul style="margin-left:20px;">
+  <li><strong>🌍 GBIF:</strong> busca ocorrências georreferenciadas no Brasil a partir do banco global GBIF (até 2000 registros por espécie). Os dados são carregados uma vez por sessão.</li>
+  <li><strong>🐦 eBird:</strong> busca especificamente registros da plataforma eBird (via GBIF), focada em observações de campo de birders. Até 2000 registros por espécie. Também carregado apenas uma vez por sessão — desligar e religar apenas esconde/exibe sem rebuscar.</li>
+</ul>
 
-    <hr style="border: 1px solid #c5d0b5; margin: 20px 0;">
+<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px; margin-top:22px;">7. 🔀 Comparador de Listas</h3>
+<p>Acesse pelo botão <strong>Comparar Tabelas</strong>. Permite comparar múltiplas listas de espécies side-by-side.</p>
+<ul style="margin-left:20px;">
+  <li>Adicione quantas listas quiser. Em cada uma: cole os nomes, defina a legenda e clique em <strong>Processar Lista</strong>.</li>
+  <li>Clique em <strong>Executar Comparação</strong> para gerar a tabela e os gráficos (espécies por lista, similaridade de Jaccard, espécies únicas).</li>
+  <li>Filtros: <strong>Todas</strong>, <strong>✅ Presentes em todas</strong>, <strong>❌ Ausentes de alguma</strong>.</li>
+  <li>Exportar CSV e Copiar Tabela disponíveis.</li>
+</ul>
 
-    <h3 style="color: #2d5a2d;">3. Visualização da Árvore Taxonômica</h3>
-    <p>A árvore é gerada automaticamente sempre que você adiciona ou modifica dados. Há dois tipos de visualização:</p>
-    <ul style="margin-left: 20px;">
-        <li><strong>Árvore Hierárquica:</strong> Exibe os dados em uma estrutura de pastas aninhadas, seguindo a ordem dos níveis taxonômicos selecionados. As cores representam cada nível (Filo, Classe, Ordem, etc.).</li>
-        <li><strong>Árvore Filogenética (D3.js):</strong> Apresenta um diagrama interativo com nós e conexões, baseado na filogenia moderna das aves.
-            <ul style="margin-top: 5px; margin-left: 20px;">
-                <li><strong>Zoom:</strong> use os botões <strong>+</strong> e <strong>−</strong> no canto superior direito ou o scroll do mouse.</li>
-                <li><strong>Arrastar:</strong> clique e segure no fundo da árvore para mover a visualização.</li>
-                <li><strong>Modos de exibição:</strong> <em>Mostrar Completa</em> (exibe toda a filogenia) ou <em>Apenas Adicionados</em> (mostra somente os táxons com dados).</li>
-            </ul>
-        </li>
-    </ul>
-    <h4 style="color: #3b6e3b;">Exportar a árvore</h4>
-    <ul style="margin-left: 20px;">
-        <li><strong>Baixar Imagem da Árvore:</strong> gera uma imagem PNG de alta qualidade.</li>
-        <li><strong>Exportar Árvore:</strong> salva um arquivo HTML contendo a árvore interativa, com funcionalidade de busca e zoom embutida.</li>
-    </ul>
+<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px; margin-top:22px;">8. 🔍 Consulta de Espécies</h3>
+<p>Botão <strong>Lista de Consulta</strong> — exibe o banco completo com mais de 800 espécies de aves do sul do Brasil.</p>
+<ul style="margin-left:20px;">
+  <li>Filtre pelo campo de busca.</li>
+  <li>Clique em qualquer linha para adicionar a espécie à tabela principal.</li>
+  <li>Links diretos para o WikiAves de cada espécie.</li>
+</ul>
 
-    <hr style="border: 1px solid #c5d0b5; margin: 20px 0;">
+<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px; margin-top:22px;">9. 💡 Dicas Gerais</h3>
+<ul style="margin-left:20px;">
+  <li>Todas as seções são <strong>colapsáveis</strong> — clique no cabeçalho verde (ícone <strong>−</strong>/<strong>+</strong>) para recolher/expandir.</li>
+  <li>As categorias IUCN usadas são: <strong>LC</strong> (pouco preocupante), <strong>NT</strong> (quase ameaçada), <strong>VU</strong> (vulnerável), <strong>EN</strong> (em perigo), <strong>CR</strong> (criticamente em perigo), <strong>DD</strong> (dados insuficientes), <strong>NE</strong> (não avaliada).</li>
+  <li>O sistema funciona 100% offline após o carregamento (exceto buscas GBIF/eBird que precisam de internet).</li>
+  <li>Use um navegador atualizado (Chrome ou Firefox recomendados) para melhor desempenho.</li>
+  <li>Nenhum dado é salvo no servidor — ao recarregar a página os dados são perdidos. Use <strong>Copiar Tabela</strong> para guardar seu trabalho.</li>
+</ul>
 
-    <h3 style="color: #2d5a2d;">4. Status de Conservação</h3>
-    <p>Esta seção apresenta os dados de ameaça das espécies segundo as listas de Santa Catarina (SC), ICMBio e IUCN.</p>
-    <ul style="margin-left: 20px;">
-        <li><strong>Carregar Dados:</strong> clique em <strong>Carregar Dados do PDF (SC) e WikiAves (IUCN)</strong> – a tabela será preenchida com as espécies que você adicionou na tabela principal.</li>
-        <li><strong>Ordenação:</strong> use os botões <strong>A-Z</strong>, <strong>Conservação ▲</strong> (do menos para o mais ameaçado) e <strong>Conservação ▼</strong> (inverso).</li>
-        <li><strong>Mostrar/Esconder Tabela:</strong> exibe ou oculta a tabela.</li>
-        <li><strong>Mais informações:</strong> abre uma janela com links para o WikiAves de cada espécie.</li>
-        <li><strong>Exportar Excel (CSV):</strong> baixa a tabela em formato CSV.</li>
-        <li><strong>Copiar Tabela:</strong> copia para a área de transferência.</li>
-    </ul>
-    <p><strong>Gráficos de pizza:</strong> Abaixo da tabela, três gráficos mostram a distribuição percentual dos status de conservação para SC, ICMBio e IUCN. Eles são atualizados automaticamente.</p>
+<p style="text-align:center; margin-top:28px; padding:12px; background:#eef4e4; border-radius:6px; color:#2d5a2d;">
+  <strong>Desenvolvido por Brenno Alef Benk — Projeto de TCC em Biologia (2026)</strong><br>
+  <span style="font-size:13px; color:#5a7a5a;">Dúvidas ou sugestões? Entre em contato com o autor.</span>
+</p>
 
-    <hr style="border: 1px solid #c5d0b5; margin: 20px 0;">
-
-    <h3 style="color: #2d5a2d;">5. Distribuição Taxonômica</h3>
-    <p>Gráficos que resumem a composição das suas espécies:</p>
-    <ul style="margin-left: 20px;">
-        <li><strong>Distribuição por Ordens:</strong> gráfico de barras e pizza.</li>
-        <li><strong>Distribuição por Famílias:</strong> gráfico de barras e pizza.</li>
-    </ul>
-    <p>Dinâmicos e refletem os dados atuais da tabela.</p>
-
-    <hr style="border: 1px solid #c5d0b5; margin: 20px 0;">
-
-    <h3 style="color: #2d5a2d;">6. Controles de Seções (Colapsáveis)</h3>
-    <p>Todas as seções principais (Importação, Tabela, Árvore, Conservação, Distribuição) podem ser recolhidas clicando no cabeçalho (ícone <strong>−</strong> ou <strong>+</strong>).</p>
-
-    <hr style="border: 1px solid #c5d0b5; margin: 20px 0;">
-
-    <h3 style="color: #2d5a2d;">7. Comparador de Listas</h3>
-    <p>Acesse pelo botão <strong>Comparar Tabelas</strong> na área de importação.</p>
-    <ul style="margin-left: 20px;">
-        <li>Você pode ter quantas listas quiser (mínimo 2). Use <strong>Adicionar Lista</strong> para incluir mais.</li>
-        <li>Em cada lista:
-            <ol style="margin-left: 20px;">
-                <li>Cole os nomes das espécies (um por linha).</li>
-                <li>Clique em <strong>Processar Lista</strong>.</li>
-                <li>Edite a <strong>legenda</strong> da lista.</li>
-                <li>Use <strong>Limpar</strong> para apagar.</li>
-                <li>O botão <strong>×</strong> remove a lista.</li>
-            </ol>
-        </li>
-        <li>Após processar todas, clique em <strong>Executar Comparação</strong>.</li>
-        <li><strong>Resultados:</strong> tabela comparativa e três gráficos (número de espécies, similaridade, espécies únicas).</li>
-        <li>Botões para <strong>Copiar Tabela</strong> e <strong>Exportar CSV</strong>.</li>
-    </ul>
-
-    <hr style="border: 1px solid #c5d0b5; margin: 20px 0;">
-
-    <h3 style="color: #2d5a2d;">8. Consulta de Espécies</h3>
-    <p>Botão <strong>Lista de Consulta</strong> abre uma janela com todas as aves do banco de dados (mais de 800 espécies).</p>
-    <ul style="margin-left: 20px;">
-        <li><strong>Busca:</strong> digite no campo para filtrar.</li>
-        <li><strong>Adicionar à tabela:</strong> clique em qualquer linha da consulta.</li>
-        <li><strong>Links WikiAves:</strong> cada espécie tem link direto.</li>
-    </ul>
-
-    <hr style="border: 1px solid #c5d0b5; margin: 20px 0;">
-
-    <h3 style="color: #2d5a2d;">9. Informações Adicionais</h3>
-    <ul style="margin-left: 20px;">
-        <li><strong>Rodapé:</strong> atribuição de autoria.</li>
-        <li><strong>Logotipo:</strong> no canto superior esquerdo.</li>
-        <li><strong>Debug Visualizer:</strong> painel técnico.</li>
-    </ul>
-
-    <hr style="border: 1px solid #c5d0b5; margin: 20px 0;">
-
-    <h3 style="color: #2d5a2d;">10. Dicas Gerais</h3>
-    <ul style="margin-left: 20px;">
-        <li>Árvore Filogenética baseada em estudos genômicos recentes (Jarvis 2014, Prum 2015).</li>
-        <li>Espécies não reconhecidas são incluídas, mas campos taxonômicos podem ficar vazios.</li>
-        <li>Categorias IUCN: LC, NT, VU, EN, CR, DD, NE.</li>
-        <li>Use navegador atualizado.</li>
-    </ul>
-
-    <p style="text-align: center; margin-top: 30px; color: #3b8c3b;"><strong>Aproveite a ferramenta para explorar a rica avifauna catarinense! se tiver mais dúvidas, contate Brenno Benk!</strong></p>
-</div>
+        </div>
     </div>
 </div>
+
 </body>
 </html>
