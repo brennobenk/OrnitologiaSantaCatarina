@@ -1100,9 +1100,7 @@
     max-width: 300px;
 }
 
-#map-content {
-    display: block;
-}
+/* display gerenciado pela classe .collapsed — não forçar display:block aqui */
 #map-flex-row {
     display: flex;
     gap: 15px;
@@ -1204,6 +1202,30 @@
     #map-container { height: 260px !important; }
 }
 
+/* Estilos para a curva do coletor */
+#curve-specific-list {
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+.curve-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 20px;
+    background: white;
+    border: 1px solid #c5d0b5;
+}
+.curve-legend-item:hover { background: #e5f0da; }
+.curve-legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+}
+.curve-legend-hidden { opacity: 0.5; text-decoration: line-through; }
+
     </style>
 </head>
 <body>
@@ -1228,7 +1250,6 @@
         <span class="collapse-indicator" id="import-indicator">-</span>
         <h2>Importação de Dados Taxonômicos</h2>
     </div>
-    <div class="section-content" id="import-content">
     <div class="section-content" id="import-content">
         <div class="data-import">
                     <div class="import-controls">
@@ -1515,6 +1536,99 @@
     </div>
 </section>
 
+<!-- ========== SEÇÃO CURVA DO COLETOR (RIQUEZA) ========== -->
+<section class="app-section" id="curve-section">
+    <div class="section-header" id="curve-header">
+        <span class="collapse-indicator" id="curve-indicator">-</span>
+        <h2>Curva do Coletor (Riqueza)</h2>
+    </div>
+    <div class="section-content" id="curve-content">
+        <!-- Seletores de modo -->
+        <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+            <button id="curve-mode-avg" class="tree-type-btn active">Curva por Média</button>
+            <button id="curve-mode-specific" class="tree-type-btn">Curva de dias específicos</button>
+        </div>
+
+        <!-- ========== PAINEL MODO MÉDIA ========== -->
+        <div id="curve-avg-panel">
+            <div style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; align-items: center;">
+                <label>Data inicial: <input type="month" id="curve-start-month" value="2025-01"></label>
+                <label>Data final: <input type="month" id="curve-end-month" value="2025-12"></label>
+            </div>
+            <div style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
+                <button id="curve-avg-interval" class="genealogical-view-btn active">Média dentro do intervalo de meses</button>
+                <button id="curve-avg-specific" class="genealogical-view-btn">Média com dias específicos</button>
+            </div>
+
+            <!-- Submodo: dias específicos -->
+            <div id="curve-specific-dates" style="display: none; margin-bottom: 15px;">
+                <h4>Datas de coleta (com dia)</h4>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <textarea id="curve-dates-bulk" placeholder="Cole as datas (uma por linha ou separadas por vírgula)..." rows="4" style="flex:1; min-width:200px;"></textarea>
+                    <button id="curve-load-dates" class="generate-btn" style="align-self:flex-end;">Carregar datas</button>
+                </div>
+                <div id="curve-date-list" style="display: flex; flex-direction: column; gap: 8px; max-width: 400px;">
+                    <!-- Modelo de linha (inicial com uma data) -->
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="date" class="curve-date-input" value="2025-01-15">
+                        <button class="remove-date-btn delete-btn" style="padding: 4px 10px;">Remover</button>
+                    </div>
+                </div>
+                <button id="curve-add-date" class="generate-btn" style="margin-top: 8px;">➕ Adicionar data</button>
+            </div>
+            <button id="curve-generate-avg" class="generate-btn">Gerar Curva Média</button>
+        </div>
+
+        <!-- ========== PAINEL MODO DIAS ESPECÍFICOS ========== -->
+        <div id="curve-specific-panel" style="display: none;">
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <!-- Coluna esquerda: opções de entrada -->
+                <div style="flex:1; min-width:300px;">
+                    <h4>Incremento de espécies por evento</h4>
+                    <div style="margin-bottom:15px;">
+                        <label><input type="radio" name="spec-input-mode" value="paste" checked> Colar datas/incrementos</label><br>
+                        <label><input type="radio" name="spec-input-mode" value="numbers"> Apenas números de campo</label>
+                    </div>
+                    <!-- Área para colagem (modo colar) -->
+                    <div id="spec-paste-area">
+                        <textarea id="spec-bulk-data" placeholder="Formato: data, novas espécies (uma por linha)&#10;Ex:&#10;2025-01-15,3&#10;2025-01-22,2&#10;2025-02-01,1" rows="6" style="width:100%;"></textarea>
+                        <button id="spec-load-bulk" class="generate-btn" style="margin-top:5px;">Carregar dados</button>
+                    </div>
+                    <!-- Área para números de campo (modo apenas números) -->
+                    <div id="spec-numbers-area" style="display:none;">
+                        <p>Digite quantos campos de coleta deseja:</p>
+                        <input type="number" id="spec-num-fields" min="1" value="4" style="width:80px;">
+                        <button id="spec-generate-fields" class="generate-btn">Gerar campos</button>
+                    </div>
+                </div>
+                <!-- Coluna direita: tabela de entradas (será preenchida dinamicamente) -->
+                <div style="flex:2; min-width:400px;">
+                    <h4>Dados de cada campo</h4>
+                    <div id="curve-specific-list" style="max-height:300px; overflow-y:auto; border:1px solid #c5d0b5; padding:10px; border-radius:5px;">
+                        <!-- Linhas serão inseridas via JS -->
+                    </div>
+                </div>
+            </div>
+            <button id="curve-generate-spec" class="generate-btn" style="margin-top:15px;">Gerar Curva Específica</button>
+        </div>
+
+        <!-- Gráfico -->
+        <div style="margin-top: 30px;">
+            <canvas id="collectorChart" style="width:100%; max-height: 500px; height: 500px;"></canvas>
+        </div>
+
+        <!-- Estatísticas -->
+        <div id="curve-stats" style="margin-top: 20px; padding: 15px; background-color: #f5f7e9; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 30px;">
+            <div><strong>Eventos (dias/campos):</strong> <span id="stat-days">0</span></div>
+            <div><strong>Média por evento:</strong> <span id="stat-avg">0.00</span></div>
+            <div><strong>Total acumulado:</strong> <span id="stat-total">0</span></div>
+            <div><strong>Estação (aprox.):</strong> <span id="stat-season">-</span></div>
+        </div>
+
+        <!-- Legenda interativa -->
+        <div id="curve-legend" style="display: flex; gap: 20px; margin-top: 15px; font-size: 14px;"></div>
+    </div>
+</section>
         </main>
         <footer>
             Desenvolvido por Brenno Alef Benk (BENK, B.) em 2026, caso utilize, favor citar :)
@@ -5467,75 +5581,65 @@ function exportHTML() {
     }
 }
 
-        // Abas colapsáveis
-        function initCollapsibleSections() {
-            const treeHeader = document.getElementById('tree-header');
-            const treeContent = document.getElementById('tree-content');
-            const treeIndicator = document.getElementById('tree-indicator');
-            treeHeader.addEventListener('click', () => {
-                if (treeContent.style.display === 'none') {
-                    treeContent.style.display = 'block';
-                    treeIndicator.textContent = '-';
-                } else {
-                    treeContent.style.display = 'none';
-                    treeIndicator.textContent = '+';
+        // ==================== FUNÇÃO ÚNICA PARA COLAPSAR SEÇÕES ====================
+        function setupCollapsibleSections() {
+            const sections = [
+                { header: 'import-header',       content: 'import-content',       indicator: 'import-indicator' },
+                { header: 'table-header',         content: 'table-content',         indicator: 'table-indicator' },
+                { header: 'tree-header',          content: 'tree-content',          indicator: 'tree-indicator' },
+                { header: 'conservation-header',  content: 'conservation-content',  indicator: 'conservation-indicator' },
+                { header: 'distribution-header',  content: 'distribution-content',  indicator: 'distribution-indicator' },
+                { header: 'map-header',           content: 'map-content',           indicator: 'map-indicator' },
+                { header: 'curve-header',         content: 'curve-content',         indicator: 'curve-indicator' }
+            ];
+
+            let mapInitialized = false;
+
+            sections.forEach(section => {
+                const header    = document.getElementById(section.header);
+                const content   = document.getElementById(section.content);
+                const indicator = document.getElementById(section.indicator);
+
+                if (!header || !content || !indicator) {
+                    console.warn(`Elementos não encontrados para a seção: ${section.header}`);
+                    return;
                 }
+
+                // Estado inicial: tudo visível
+                content.classList.remove('collapsed');
+                indicator.textContent = '−';
+
+                header.addEventListener('click', function () {
+                    content.classList.toggle('collapsed');
+                    const isCollapsed = content.classList.contains('collapsed');
+                    indicator.textContent = isCollapsed ? '+' : '−';
+
+                    // Lógica especial para o mapa
+                    if (section.header === 'map-header' && !isCollapsed) {
+                        if (!mapInitialized) {
+                            initMap();
+                            mapInitialized = true;
+                            updateSpeciesList();
+                        } else if (typeof map !== 'undefined' && map) {
+                            setTimeout(() => map.invalidateSize(), 100);
+                        }
+                    }
+
+                    // Esconde resultados do mapa ao colapsar
+                    if (section.header === 'map-header' && isCollapsed) {
+                        const mapResults = document.getElementById('map-results');
+                        if (mapResults) mapResults.style.display = 'none';
+                    }
+                });
             });
-            const consHeader = document.getElementById('conservation-header');
-            const consContent = document.getElementById('conservation-content');
-            const consIndicator = document.getElementById('conservation-indicator');
-            consHeader.addEventListener('click', () => {
-                if (consContent.style.display === 'none') {
-                    consContent.style.display = 'block';
-                    consIndicator.textContent = '-';
-                } else {
-                    consContent.style.display = 'none';
-                    consIndicator.textContent = '+';
-                }
-            });
-        // Colapsar seção de importação
-const importHeader = document.getElementById('import-header');
-const importContent = document.getElementById('import-content');
-const importIndicator = document.getElementById('import-indicator');
-if (importHeader && importContent && importIndicator) {
-    importHeader.addEventListener('click', () => {
-        if (importContent.style.display === 'none') {
-            importContent.style.display = 'block';
-            importIndicator.textContent = '-';
-        } else {
-            importContent.style.display = 'none';
-            importIndicator.textContent = '+';
         }
-    });
-}
-
-// Colapsar tabela de dados
-const tableHeader = document.getElementById('table-header');
-const tableContent = document.getElementById('table-content');
-const tableIndicator = document.getElementById('table-indicator');
-if (tableHeader && tableContent && tableIndicator) {
-    tableHeader.addEventListener('click', () => {
-        tableContent.classList.toggle('collapsed');
-        tableIndicator.textContent = tableContent.classList.contains('collapsed') ? '+' : '-';
-    });
-}
-
-const distHeader = document.getElementById('distribution-header');
-const distContent = document.getElementById('distribution-content');
-const distIndicator = document.getElementById('distribution-indicator');
-if (distHeader && distContent && distIndicator) {
-    distHeader.addEventListener('click', () => {
-        distContent.classList.toggle('collapsed');
-        distIndicator.textContent = distContent.classList.contains('collapsed') ? '+' : '-';
-    });
-}
-
-}
+        // Alias para não quebrar chamadas antigas que ainda referenciem initCollapsibleSections
+        function initCollapsibleSections() { setupCollapsibleSections(); }
 
         // Inicialização
         updateImportStats();
         initTreeTypeSelector();
-        initCollapsibleSections();
+        setupCollapsibleSections();
         setMode('basic');
         loadExampleData();
         logDebug('Aplicação inicializada com todas as funções e banco de dados completo');
@@ -7233,55 +7337,9 @@ scheduleTreeUpdate = function() {
     setTimeout(updateSpeciesList, 100);
 };
 
-// Inicializar o mapa quando a seção for aberta (corrigido)
-(function() {
-    const mapHeader = document.getElementById('map-header');
-    const mapContent = document.getElementById('map-content');
-    const mapIndicator = document.getElementById('map-indicator');
-    let mapInitialized = false;
-    
-    if (mapHeader && mapContent && mapIndicator) {
-        mapHeader.addEventListener('click', () => {
-            // Alterna a visibilidade do conteúdo
-            if (mapContent.style.display === 'none') {
-                mapContent.style.display = 'block';
-                mapIndicator.textContent = '-';
-                
-                // Se o mapa já foi inicializado, apenas atualiza o tamanho
-                if (mapInitialized) {
-                    if (map) {
-                        setTimeout(() => map.invalidateSize(), 100);
-                    }
-                } else {
-                    // Primeira vez: inicializa o mapa
-                    initMap();
-                    mapInitialized = true;
-                    updateSpeciesList();
-                }
-                
-                // (Opcional) Se quiser que os resultados reapareçam ao expandir, descomente abaixo
-                // const mapResults = document.getElementById('map-results');
-                // if (mapResults) mapResults.style.display = 'block';
-            } else {
-                mapContent.style.display = 'none';
-                mapIndicator.textContent = '+';
-                
-                // Esconde também os resultados para não ficarem visíveis sem o mapa
-                const mapResults = document.getElementById('map-results');
-                if (mapResults) {
-                    mapResults.style.display = 'none';
-                }
-            }
-        });
-    }
-})();
-
-// Inicializa se já estiver visível (considerando style.display)
+// Inicialização do mapa agora é gerenciada por setupCollapsibleSections()
+// Mantém referência a mapContent para o listener de resize abaixo
 const mapContent = document.getElementById('map-content');
-if (mapContent && mapContent.style.display !== 'none') {
-    initMap();
-    updateSpeciesList();
-}
 
 // Redesenha gráficos quando a janela for redimensionada (incluindo zoom)
 window.addEventListener('resize', () => {
@@ -7299,6 +7357,470 @@ window.addEventListener('resize', () => {
     if (chartUnique) chartUnique.resize();
    
 });
+
+// ==================== CURVA DO COLETOR (RIQUEZA) ====================
+let collectorChart;
+let currentCurveMode = 'avg';          // 'avg' ou 'specific'
+let currentAvgSubMode = 'interval';    // 'interval' ou 'specificDates'
+
+// Elementos
+const curveModeAvg = document.getElementById('curve-mode-avg');
+const curveModeSpec = document.getElementById('curve-mode-specific');
+const avgPanel = document.getElementById('curve-avg-panel');
+const specPanel = document.getElementById('curve-specific-panel');
+const avgIntervalBtn = document.getElementById('curve-avg-interval');
+const avgSpecificBtn = document.getElementById('curve-avg-specific');
+const specificDatesDiv = document.getElementById('curve-specific-dates');
+const dateListDiv = document.getElementById('curve-date-list');
+const addDateBtn = document.getElementById('curve-add-date');
+const loadDatesBtn = document.getElementById('curve-load-dates');
+const bulkDatesTextarea = document.getElementById('curve-dates-bulk');
+const generateAvgBtn = document.getElementById('curve-generate-avg');
+const startMonthInput = document.getElementById('curve-start-month');
+const endMonthInput = document.getElementById('curve-end-month');
+
+// Modo específico
+const specBulkTextarea = document.getElementById('spec-bulk-data');
+const specLoadBulkBtn = document.getElementById('spec-load-bulk');
+const specNumbersArea = document.getElementById('spec-numbers-area');
+const specPasteArea = document.getElementById('spec-paste-area');
+const specNumFields = document.getElementById('spec-num-fields');
+const specGenerateFieldsBtn = document.getElementById('spec-generate-fields');
+const curveSpecificList = document.getElementById('curve-specific-list');
+const generateSpecBtn = document.getElementById('curve-generate-spec');
+const radioPaste = document.querySelector('input[value="paste"]');
+const radioNumbers = document.querySelector('input[value="numbers"]');
+
+// Estatísticas
+const statDays = document.getElementById('stat-days');
+const statAvg = document.getElementById('stat-avg');
+const statTotal = document.getElementById('stat-total');
+const statSeason = document.getElementById('stat-season');
+const legendDiv = document.getElementById('curve-legend');
+
+// Alternar modos principais
+curveModeAvg.addEventListener('click', () => {
+    curveModeAvg.classList.add('active');
+    curveModeSpec.classList.remove('active');
+    avgPanel.style.display = 'block';
+    specPanel.style.display = 'none';
+    currentCurveMode = 'avg';
+});
+curveModeSpec.addEventListener('click', () => {
+    curveModeSpec.classList.add('active');
+    curveModeAvg.classList.remove('active');
+    specPanel.style.display = 'block';
+    avgPanel.style.display = 'none';
+    currentCurveMode = 'specific';
+});
+
+// Alternar submodos dentro do modo Média
+avgIntervalBtn.addEventListener('click', () => {
+    avgIntervalBtn.classList.add('active');
+    avgSpecificBtn.classList.remove('active');
+    specificDatesDiv.style.display = 'none';
+    currentAvgSubMode = 'interval';
+});
+avgSpecificBtn.addEventListener('click', () => {
+    avgSpecificBtn.classList.add('active');
+    avgIntervalBtn.classList.remove('active');
+    specificDatesDiv.style.display = 'block';
+    currentAvgSubMode = 'specificDates';
+});
+
+// Adicionar data na lista de datas específicas (modo média)
+addDateBtn.addEventListener('click', () => {
+    const newDiv = document.createElement('div');
+    newDiv.style.display = 'flex';
+    newDiv.style.gap = '10px';
+    newDiv.style.alignItems = 'center';
+    newDiv.innerHTML = `
+        <input type="date" class="curve-date-input" value="2025-01-15">
+        <button class="remove-date-btn delete-btn" style="padding:4px 10px;">Remover</button>
+    `;
+    dateListDiv.appendChild(newDiv);
+    newDiv.querySelector('.remove-date-btn').addEventListener('click', () => newDiv.remove());
+});
+
+// Carregar datas em massa (colar)
+loadDatesBtn.addEventListener('click', () => {
+    const text = bulkDatesTextarea.value.trim();
+    if (!text) return;
+    // Divide por linhas ou vírgulas
+    let items = text.split(/\n|,/).map(s => s.trim()).filter(s => s);
+    // Limpa lista atual
+    dateListDiv.innerHTML = '';
+    items.forEach(dateStr => {
+        // Tenta validar data (formato YYYY-MM-DD)
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            const newDiv = document.createElement('div');
+            newDiv.style.display = 'flex';
+            newDiv.style.gap = '10px';
+            newDiv.style.alignItems = 'center';
+            newDiv.innerHTML = `
+                <input type="date" class="curve-date-input" value="${dateStr}">
+                <button class="remove-date-btn delete-btn" style="padding:4px 10px;">Remover</button>
+            `;
+            dateListDiv.appendChild(newDiv);
+            newDiv.querySelector('.remove-date-btn').addEventListener('click', () => newDiv.remove());
+        } else {
+            alert(`Data inválida: ${dateStr}. Use formato AAAA-MM-DD.`);
+        }
+    });
+});
+
+// Alternar entre modos de entrada no painel específico
+radioPaste.addEventListener('change', () => {
+    specPasteArea.style.display = 'block';
+    specNumbersArea.style.display = 'none';
+});
+radioNumbers.addEventListener('change', () => {
+    specPasteArea.style.display = 'none';
+    specNumbersArea.style.display = 'block';
+});
+
+// Gerar campos a partir do número de campos (modo específico)
+specGenerateFieldsBtn.addEventListener('click', () => {
+    const num = parseInt(specNumFields.value, 10);
+    if (isNaN(num) || num < 1) return;
+    curveSpecificList.innerHTML = '';
+    for (let i = 1; i <= num; i++) {
+        const div = document.createElement('div');
+        div.style.display = 'flex';
+        div.style.gap = '10px';
+        div.style.alignItems = 'center';
+        div.innerHTML = `
+            <span style="min-width:80px;">${i}º campo</span>
+            <input type="number" class="spec-increment" min="0" step="1" value="1" placeholder="Novas spp." style="width:120px;">
+            <button class="remove-spec-btn delete-btn" style="padding:4px 10px;">Remover</button>
+        `;
+        curveSpecificList.appendChild(div);
+        div.querySelector('.remove-spec-btn').addEventListener('click', () => div.remove());
+    }
+});
+
+// Carregar dados em massa no modo específico (formato: data, incremento)
+specLoadBulkBtn.addEventListener('click', () => {
+    const text = specBulkTextarea.value.trim();
+    if (!text) return;
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+    curveSpecificList.innerHTML = '';
+    lines.forEach(line => {
+        // Formato esperado: data, incremento (podem ser separados por vírgula ou espaço)
+        let parts = line.split(',').map(p => p.trim());
+        if (parts.length === 2) {
+            const date = parts[0];
+            const inc = parseInt(parts[1], 10);
+            if (/^\d{4}-\d{2}-\d{2}$/.test(date) && !isNaN(inc)) {
+                const div = document.createElement('div');
+                div.style.display = 'flex';
+                div.style.gap = '10px';
+                div.style.alignItems = 'center';
+                div.innerHTML = `
+                    <input type="date" class="spec-date" value="${date}">
+                    <input type="number" class="spec-increment" min="0" step="1" value="${inc}" placeholder="Novas spp." style="width:120px;">
+                    <button class="remove-spec-btn delete-btn" style="padding:4px 10px;">Remover</button>
+                `;
+                curveSpecificList.appendChild(div);
+                div.querySelector('.remove-spec-btn').addEventListener('click', () => div.remove());
+            } else {
+                alert(`Linha inválida: ${line}`);
+            }
+        } else {
+            alert(`Formato inválido: use "data, incremento" (ex: 2025-01-15, 3)`);
+        }
+    });
+});
+
+// Adicionar linha em branco no modo específico (botão + não implementado, mas pode ser adicionado se desejar)
+
+// Função para obter número total de espécies da tabela principal
+function getTotalSpeciesFromTable() {
+    const data = collectTableData();
+    const speciesSet = new Set(data.map(item => item.generoEspecie).filter(Boolean));
+    return speciesSet.size;
+}
+
+// Gerar curva modo Média
+generateAvgBtn.addEventListener('click', () => {
+    const totalSpecies = getTotalSpeciesFromTable();
+    if (totalSpecies === 0) {
+        alert('Não há espécies na tabela. Importe dados primeiro.');
+        return;
+    }
+
+    let points = []; // array de objetos { label (string), value (acumulado) }
+    let labels = [];
+
+    if (currentAvgSubMode === 'interval') {
+        // Usar intervalo de meses
+        const start = startMonthInput.value; // formato YYYY-MM
+        const end = endMonthInput.value;
+        if (!start || !end) {
+            alert('Selecione as datas inicial e final.');
+            return;
+        }
+        const [startYear, startMonth] = start.split('-').map(Number);
+        const [endYear, endMonth] = end.split('-').map(Number);
+        const totalMonths = (endYear - startYear) * 12 + (endMonth - startMonth) + 1;
+        if (totalMonths <= 0) {
+            alert('Data final deve ser posterior à inicial.');
+            return;
+        }
+
+        // Distribuir espécies uniformemente entre os meses
+        const increments = [];
+        let remaining = totalSpecies;
+        for (let i = 0; i < totalMonths; i++) {
+            const inc = Math.round(remaining / (totalMonths - i));
+            increments.push(inc);
+            remaining -= inc;
+        }
+        // Ajustar o último para garantir soma exata
+        increments[increments.length-1] += remaining;
+
+        // Gerar labels (mês/ano)
+        let cumulative = 0;
+        for (let i = 0; i < totalMonths; i++) {
+            const month = startMonth + i;
+            const year = startYear + Math.floor((month-1)/12);
+            const m = ((month-1) % 12) + 1;
+            const label = `${m.toString().padStart(2,'0')}/${year}`;
+            cumulative += increments[i];
+            points.push({ label, value: cumulative });
+        }
+    } else {
+        // Usar datas específicas
+        const dateInputs = document.querySelectorAll('.curve-date-input');
+        const dates = Array.from(dateInputs).map(inp => inp.value).filter(v => v);
+        if (dates.length === 0) {
+            alert('Adicione pelo menos uma data.');
+            return;
+        }
+        dates.sort((a,b) => new Date(a) - new Date(b));
+
+        // Distribuir espécies uniformemente entre as datas
+        const increments = [];
+        let remaining = totalSpecies;
+        for (let i = 0; i < dates.length; i++) {
+            const inc = Math.round(remaining / (dates.length - i));
+            increments.push(inc);
+            remaining -= inc;
+        }
+        increments[increments.length-1] += remaining;
+
+        let cumulative = 0;
+        for (let i = 0; i < dates.length; i++) {
+            cumulative += increments[i];
+            const [y,m,d] = dates[i].split('-');
+            points.push({ label: `${d}/${m}/${y}`, value: cumulative });
+        }
+    }
+
+    // Gerar gráfico
+    renderCurveChart(points, totalSpecies);
+    updateCurveStats(points, totalSpecies);
+});
+
+// Gerar curva modo Específico
+generateSpecBtn.addEventListener('click', () => {
+    const rows = curveSpecificList.querySelectorAll('div'); // cada div é uma linha
+    if (rows.length === 0) {
+        alert('Adicione dados de incremento.');
+        return;
+    }
+
+    const data = [];
+    let totalInput = 0;
+    rows.forEach(row => {
+        const incInput = row.querySelector('.spec-increment');
+        if (incInput) {
+            const inc = parseInt(incInput.value, 10) || 0;
+            totalInput += inc;
+            // Se houver campo de data, captura; senão, usa número sequencial
+            const dateInput = row.querySelector('.spec-date');
+            let label;
+            if (dateInput) {
+                const d = dateInput.value;
+                if (d) {
+                    const [y,m,day] = d.split('-');
+                    label = `${day}/${m}/${y}`;
+                } else {
+                    label = `Campo ${data.length+1}`;
+                }
+            } else {
+                // modo apenas números: o span já contém "1º campo", etc.
+                const span = row.querySelector('span');
+                label = span ? span.textContent : `Campo ${data.length+1}`;
+            }
+            data.push({ label, inc });
+        }
+    });
+
+    if (data.length === 0) {
+        alert('Preencha os incrementos.');
+        return;
+    }
+
+    // Acumulado
+    let cumulative = 0;
+    const points = data.map(item => {
+        cumulative += item.inc;
+        return { label: item.label, value: cumulative };
+    });
+
+    renderCurveChart(points, cumulative);
+    updateCurveStats(points, cumulative);
+});
+
+// Função para renderizar o gráfico com os pontos e a linha de tendência
+function renderCurveChart(points, total) {
+    const labels = points.map(p => p.label);
+    const values = points.map(p => p.value);
+
+    // Calcular linha de tendência (regressão linear simples)
+    const n = points.length;
+    const x = points.map((_, i) => i);
+    const y = values;
+    const sumX = x.reduce((a,b)=>a+b,0);
+    const sumY = y.reduce((a,b)=>a+b,0);
+    const sumXY = x.reduce((a,b,i)=>a+b*y[i],0);
+    const sumX2 = x.reduce((a,b)=>a+b*b,0);
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+    const trendY = x.map(xi => intercept + slope * xi);
+
+    const ctx = document.getElementById('collectorChart').getContext('2d');
+    if (collectorChart) collectorChart.destroy();
+
+    collectorChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Curva de acumulação',
+                    data: values,
+                    borderColor: '#2ecc71',
+                    backgroundColor: '#2ecc71',
+                    tension: 0.2,
+                    fill: false,
+                    pointRadius: 6,
+                    pointHoverRadius: 10,
+                    datalabels: {
+                        align: 'top',
+                        offset: 6,
+                        color: '#2c3e2f',
+                        font: { weight: 'bold', size: 12 },
+                        formatter: (value) => value // mostra o valor acumulado
+                    }
+                },
+                {
+                    label: 'Linha de tendência',
+                    data: trendY,
+                    borderColor: '#e67e22',
+                    borderDash: [5,5],
+                    backgroundColor: 'transparent',
+                    tension: 0,
+                    fill: false,
+                    pointRadius: 0,
+                    datalabels: { display: false }
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (context) => {
+                            const datasetLabel = context.dataset.label || '';
+                            const value = context.raw;
+                            return `${datasetLabel}: ${value} espécies`;
+                        }
+                    }
+                },
+                datalabels: {
+                    display: true // habilitado para o primeiro dataset
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Espécies acumuladas' }
+                },
+                x: {
+                    title: { display: true, text: 'Evento de coleta' }
+                }
+            }
+        }
+    });
+
+    updateCurveLegend();
+}
+
+// Atualizar estatísticas abaixo do gráfico
+function updateCurveStats(points, total) {
+    const n = points.length;
+    statDays.textContent = n;
+    statAvg.textContent = (total / n).toFixed(2);
+    statTotal.textContent = total;
+
+    // Determinar estação aproximada (primeiro e último mês)
+    if (n > 0) {
+        const firstLabel = points[0].label;
+        const lastLabel = points[n-1].label;
+        // Tenta extrair mês de labels como dd/mm/aaaa ou mm/aaaa
+        const firstMatch = firstLabel.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); // dd/mm/aaaa
+        const lastMatch = lastLabel.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+        let firstMonth, lastMonth;
+        if (firstMatch) {
+            firstMonth = parseInt(firstMatch[2], 10) - 1; // 0-11
+        } else {
+            // talvez mm/aaaa
+            const m = firstLabel.match(/^(\d{1,2})\//);
+            firstMonth = m ? parseInt(m[1],10)-1 : 0;
+        }
+        if (lastMatch) {
+            lastMonth = parseInt(lastMatch[2],10)-1;
+        } else {
+            const m = lastLabel.match(/^(\d{1,2})\//);
+            lastMonth = m ? parseInt(m[1],10)-1 : 0;
+        }
+        const seasons = ['Verão', 'Outono', 'Inverno', 'Primavera'];
+        const seasonFirst = seasons[Math.floor((firstMonth %12)/3)];
+        const seasonLast = seasons[Math.floor((lastMonth %12)/3)];
+        statSeason.textContent = `${seasonFirst} – ${seasonLast}`;
+    } else {
+        statSeason.textContent = '-';
+    }
+}
+
+// Atualizar legenda interativa
+function updateCurveLegend() {
+    if (!collectorChart) return;
+    const datasets = collectorChart.data.datasets;
+    legendDiv.innerHTML = '';
+    datasets.forEach((ds, i) => {
+        const item = document.createElement('div');
+        item.className = 'curve-legend-item' + (ds.hidden ? ' curve-legend-hidden' : '');
+        item.innerHTML = `
+            <span class="curve-legend-color" style="background: ${ds.borderColor};"></span>
+            <span>${ds.label}</span>
+        `;
+        item.addEventListener('click', () => {
+            const meta = collectorChart.getDatasetMeta(i);
+            meta.hidden = !meta.hidden;
+            collectorChart.update();
+            item.classList.toggle('curve-legend-hidden');
+        });
+        legendDiv.appendChild(item);
+    });
+}
+
+// Seção da curva do coletor agora é gerenciada por setupCollapsibleSections()
 
     </script>
 
