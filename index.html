@@ -7233,7 +7233,7 @@ scheduleTreeUpdate = function() {
     setTimeout(updateSpeciesList, 100);
 };
 
-// Inicializar o mapa quando a seção for aberta
+// Inicializar o mapa quando a seção for aberta (corrigido)
 (function() {
     const mapHeader = document.getElementById('map-header');
     const mapContent = document.getElementById('map-content');
@@ -7242,29 +7242,51 @@ scheduleTreeUpdate = function() {
     
     if (mapHeader && mapContent && mapIndicator) {
         mapHeader.addEventListener('click', () => {
-            mapContent.classList.toggle('collapsed');
-            const isCollapsed = mapContent.classList.contains('collapsed');
-            mapIndicator.textContent = isCollapsed ? '+' : '-';
-            // Esconde/mostra resultados junto com o mapa
-            const mapResults = document.getElementById('map-results');
-            if (mapResults && isCollapsed) mapResults.style.display = 'none';
-            if (!mapInitialized && !isCollapsed) {
-                initMap();
-                mapInitialized = true;
-                updateSpeciesList();
+            // Alterna a visibilidade do conteúdo
+            if (mapContent.style.display === 'none') {
+                mapContent.style.display = 'block';
+                mapIndicator.textContent = '-';
+                
+                // Se o mapa já foi inicializado, apenas atualiza o tamanho
+                if (mapInitialized) {
+                    if (map) {
+                        setTimeout(() => map.invalidateSize(), 100);
+                    }
+                } else {
+                    // Primeira vez: inicializa o mapa
+                    initMap();
+                    mapInitialized = true;
+                    updateSpeciesList();
+                }
+                
+                // (Opcional) Se quiser que os resultados reapareçam ao expandir, descomente abaixo
+                // const mapResults = document.getElementById('map-results');
+                // if (mapResults) mapResults.style.display = 'block';
+            } else {
+                mapContent.style.display = 'none';
+                mapIndicator.textContent = '+';
+                
+                // Esconde também os resultados para não ficarem visíveis sem o mapa
+                const mapResults = document.getElementById('map-results');
+                if (mapResults) {
+                    mapResults.style.display = 'none';
+                }
             }
         });
     }
 })();
 
-// Inicializa se já estiver visível
-if (document.getElementById('map-content') && !document.getElementById('map-content').classList.contains('collapsed')) {
+// Inicializa se já estiver visível (considerando style.display)
+const mapContent = document.getElementById('map-content');
+if (mapContent && mapContent.style.display !== 'none') {
     initMap();
     updateSpeciesList();
 }
 
 // Redesenha gráficos quando a janela for redimensionada (incluindo zoom)
 window.addEventListener('resize', () => {
+     if (map && !mapContent.classList.contains('collapsed')) {
+        map.invalidateSize(); }
     if (chartScPie) chartScPie.resize();
     if (chartIcmbioPie) chartIcmbioPie.resize();
     if (chartIucnPie) chartIucnPie.resize();
@@ -7275,6 +7297,7 @@ window.addEventListener('resize', () => {
     if (chartBar) chartBar.resize();
     if (chartSimilarity) chartSimilarity.resize();
     if (chartUnique) chartUnique.resize();
+   
 });
 
     </script>
