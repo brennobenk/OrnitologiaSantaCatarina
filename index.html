@@ -1929,6 +1929,16 @@
             </label>
         </div>
 
+        <!-- Botões de visualização -->
+        <div style="display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap;">
+            <button id="guild-view-imported" onclick="setGuildView('imported')" style="background:var(--green-base); color:white; border:2px solid var(--green-base); border-radius:var(--radius-sm); padding:9px 18px; font-size:14px; font-family:inherit; font-weight:600; cursor:pointer; transition:all var(--transition);">
+                📥 Visualizar Apenas Importadas
+            </button>
+            <button id="guild-view-all" onclick="setGuildView('all')" style="background:white; color:var(--green-base); border:2px solid var(--green-base); border-radius:var(--radius-sm); padding:9px 18px; font-size:14px; font-family:inherit; font-weight:600; cursor:pointer; transition:all var(--transition);">
+                📋 Visualizar Lista Completa
+            </button>
+        </div>
+
         <!-- Gráficos de pizza -->
         <div id="guild-charts-row" style="display:flex; gap:20px; flex-wrap:wrap; justify-content:center; margin-bottom:28px;"></div>
 
@@ -9071,12 +9081,15 @@ function updateCurveLegend() {
         const fHabitat  = document.getElementById('guild-filter-habitat')?.value || '';
         const onlyImp   = document.getElementById('guild-only-imported')?.checked;
 
-        // Get imported species
+        // Get imported species (lê o input dentro de td.species-col)
         const importedSet = new Set();
         document.querySelectorAll('#table-body tr').forEach(tr => {
-            const cells = tr.querySelectorAll('td');
             const spCell = tr.querySelector('td.species-col');
-            if (spCell) importedSet.add(spCell.textContent.trim());
+            if (spCell) {
+                const inp = spCell.querySelector('input');
+                const val = inp ? inp.value.trim() : spCell.textContent.trim();
+                if (val) importedSet.add(val);
+            }
         });
 
         // Build rows from GUILDA_DB
@@ -9244,6 +9257,23 @@ function updateCurveLegend() {
         makeChart('guild-pie-guilda',  'Distribuição por Guilda',  guildCount,   GUILD_COLORS);
         makeChart('guild-pie-habitat', 'Distribuição por Habitat', habitatCount, HABITAT_COLORS);
     }
+
+    function setGuildView(mode) {
+        const chk = document.getElementById('guild-only-imported');
+        const btnImported = document.getElementById('guild-view-imported');
+        const btnAll      = document.getElementById('guild-view-all');
+        if (mode === 'imported') {
+            if (chk) chk.checked = true;
+            if (btnImported) { btnImported.style.background = 'var(--green-base)'; btnImported.style.color = 'white'; }
+            if (btnAll)      { btnAll.style.background = 'white'; btnAll.style.color = 'var(--green-base)'; }
+        } else {
+            if (chk) chk.checked = false;
+            if (btnAll)      { btnAll.style.background = 'var(--green-base)'; btnAll.style.color = 'white'; }
+            if (btnImported) { btnImported.style.background = 'white'; btnImported.style.color = 'var(--green-base)'; }
+        }
+        buildGuildTable();
+    }
+    window.setGuildView = setGuildView;
 
     function initGuildTab() {
         // Populate filter selects
