@@ -1836,13 +1836,21 @@
     return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[-\s]+/g, ' ');
 }
 
-// Função auxiliar para encontrar espécie por nome normalizado
+// Função auxiliar para encontrar espécie por nome normalizado (delega ao motor principal)
 function findBirdByNormalizedName(input) {
-    const normalizedInput = normalizeForSearch(input);
-    return BIRD_DATABASE.find(b => 
-        normalizeForSearch(b.scientificName) === normalizedInput || 
-        normalizeForSearch(b.commonName) === normalizedInput
-    );
+    const norm = input.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[-\s]+/g, ' ').trim();
+    const exact = BIRD_DATABASE.find(b => {
+        const ns = b.scientificName.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[-\s]+/g,' ').trim();
+        const nc = b.commonName.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[-\s]+/g,' ').trim();
+        return ns === norm || nc === norm;
+    });
+    if (exact) return exact;
+    // Fallback: substring no nome popular ou científico
+    return BIRD_DATABASE.find(b => {
+        const ns = b.scientificName.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[-\s]+/g,' ').trim();
+        const nc = b.commonName.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[-\s]+/g,' ').trim();
+        return nc.includes(norm) || ns.includes(norm);
+    }) || null;
 }
         
         // Dados de conservação já existentes (vamos reutilizar)
@@ -3592,7 +3600,8 @@ function generateColorMap(categories) {
         let selectedSuggestionIndex = -1;
 
         function normalizeForSearch(str) {
-            return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[-\s]+/g, ' ');
+            if (!str) return '';
+            return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[-\s]+/g, ' ').trim();
         }
 
         function buildSearchIndex() {
@@ -3603,19 +3612,109 @@ function generateColorMap(categories) {
                     normalized: normalizeForSearch(b.scientificName + ' ' + b.commonName),
                     scientific: b.scientificName,
                     common: b.commonName,
+                    nc: normalizeForSearch(b.commonName),
+                    ns: normalizeForSearch(b.scientificName),
                     data: b
                 });
             });
             return index;
         }
         const searchIndex = buildSearchIndex();
-function findBirdByNormalizedName(input) {
-    const normalizedInput = normalizeForSearch(input);
-    return BIRD_DATABASE.find(b => 
-        normalizeForSearch(b.scientificName) === normalizedInput || 
-        normalizeForSearch(b.commonName) === normalizedInput
-    );
-}
+
+        // ── Levenshtein ──────────────────────────────────────────────────────────
+        function levenshtein(a, b) {
+            const m = a.length, n = b.length;
+            const dp = Array.from({length: m+1}, (_, i) => [i, ...Array(n).fill(0)]);
+            for (let j = 0; j <= n; j++) dp[0][j] = j;
+            for (let i = 1; i <= m; i++)
+                for (let j = 1; j <= n; j++)
+                    dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1]
+                        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+            return dp[m][n];
+        }
+        function maxErrors(len) {
+            if (len <= 4) return 0;
+            if (len <= 7) return 1;
+            if (len <= 11) return 2;
+            return 3;
+        }
+        function fuzzyWordMatch(a, b) {
+            if (a === b) return true;
+            return levenshtein(a, b) <= maxErrors(Math.max(a.length, b.length));
+        }
+        function allWordsFuzzy(normInput, normTarget) {
+            const iw = normInput.split(' ').filter(Boolean);
+            const tw = normTarget.split(' ').filter(Boolean);
+            return iw.every(i => tw.some(t => fuzzyWordMatch(i, t) || t.startsWith(i) || i.startsWith(t)));
+        }
+
+        // ── Scoring de relevância (menor = melhor) ───────────────────────────────
+        // 0: match exato (qualquer nome)
+        // 1: nome popular começa com o termo
+        // 2: nome científico começa com o termo
+        // 3: palavra do nome popular começa com o termo
+        // 4: termo aparece em qualquer posição do nome popular
+        // 5: termo aparece em qualquer posição do nome científico
+        // 6: fuzzy por palavras
+        // 7+: Levenshtein
+        function scoreCandidate(item, norm) {
+            const { nc, ns } = item;
+            if (nc === norm || ns === norm) return { score: 0, pos: 0 };
+            if (nc.startsWith(norm))  return { score: 1, pos: 0 };
+            if (ns.startsWith(norm))  return { score: 2, pos: 0 };
+            // Palavra do nome popular que começa com o termo
+            const popWord = nc.split(' ').findIndex(w => w.startsWith(norm));
+            if (popWord !== -1) return { score: 3, pos: popWord };
+            // Substring em nome popular
+            const idxC = nc.indexOf(norm);
+            if (idxC !== -1) return { score: 4, pos: idxC };
+            // Substring em nome científico
+            const idxS = ns.indexOf(norm);
+            if (idxS !== -1) return { score: 5, pos: idxS };
+            // Fuzzy por palavras (aceita pequenos erros)
+            if (allWordsFuzzy(norm, nc) || allWordsFuzzy(norm, ns)) return { score: 6, pos: 0 };
+            // Levenshtein completo (último recurso)
+            const dist = Math.min(levenshtein(norm, nc), levenshtein(norm, ns));
+            const thr = maxErrors(Math.max(norm.length, Math.min(nc.length, ns.length)));
+            if (dist <= thr) return { score: 7 + dist, pos: 0 };
+            return null;
+        }
+
+        // ── Candidatos ranqueados para autocomplete ──────────────────────────────
+        function fuzzySearchCandidates(norm, limit = 10) {
+            if (!norm || norm.length < 2) return [];
+            const results = [];
+            searchIndex.forEach(item => {
+                const r = scoreCandidate(item, norm);
+                if (r) results.push({ item, score: r.score, pos: r.pos });
+            });
+            results.sort((a, b) => a.score !== b.score ? a.score - b.score : a.pos - b.pos);
+            const seen = new Set();
+            return results.filter(r => {
+                if (seen.has(r.item.scientific)) return false;
+                seen.add(r.item.scientific);
+                return true;
+            }).slice(0, limit).map(r => r.item);
+        }
+
+        // ── findBirdFuzzy: motor usado no processamento de importação ────────────
+        function findBirdFuzzy(input) {
+            const norm = normalizeForSearch(input);
+            if (!norm) return null;
+            let best = null;
+            let bestScore = Infinity;
+            searchIndex.forEach(item => {
+                const r = scoreCandidate(item, norm);
+                if (r && r.score < bestScore) { bestScore = r.score; best = item; }
+            });
+            if (!best) return null;
+            return { bird: best.data, isFuzzy: bestScore > 0 };
+        }
+
+        function findBirdByNormalizedName(input) {
+            const result = findBirdFuzzy(input);
+            return result ? result.bird : null;
+        }
         function handleAutocomplete(e) {
             if (currentMode !== 'basic') return;
             const input = e.target;
@@ -3624,9 +3723,7 @@ function findBirdByNormalizedName(input) {
             if (val.length < 2) return;
 
             const normVal = normalizeForSearch(val);
-            const matches = searchIndex.filter(item => 
-                item.normalized.includes(normVal)
-            ).slice(0, 10);
+            const matches = fuzzySearchCandidates(normVal, 10);
 
             if (matches.length === 0) return;
 
@@ -3886,9 +3983,7 @@ function showTextareaAutocomplete() {
     }
 
     const normalizedWord = normalizeForSearch(currentWord);
-    const matches = searchIndex.filter(item => 
-        item.normalized.includes(normalizedWord)
-    ).slice(0, 10);
+    const matches = fuzzySearchCandidates(normalizedWord, 10);
 
     if (matches.length === 0) {
         textareaAutocompleteDiv.style.display = 'none';
@@ -3961,7 +4056,12 @@ document.addEventListener('click', (e) => {
     const text = importDataTextarea.value.trim();
     if (!text) { alert("Cole dados primeiro."); return; }
     const lines = text.split('\n').filter(l => l.trim() !== '');
-    
+
+    // Contadores para o painel de feedback
+    const exactFound   = [];  // { name, commonName }
+    const fuzzyFixed   = [];  // { typed, name, commonName }
+    const notFound     = [];  // string
+
     lines.forEach(line => {
         // Tenta separar por tabulação (formato avançado)
         let columns = line.split('\t').map(s => s.trim());
@@ -3973,10 +4073,10 @@ document.addEventListener('click', (e) => {
         
         // Se ainda não tiver 6 colunas, considera como uma única coluna (modo básico)
         if (columns.length !== 6) {
-            // Modo básico: a linha inteira é o nome da espécie
             const especie = line.trim();
-            const match = findBirdByNormalizedName(especie);
-            if (match) {
+            const result = findBirdFuzzy(especie);
+            if (result) {
+                const match = result.bird;
                 addTableRow({
                     filo: match.filo,
                     classe: match.classe,
@@ -3985,12 +4085,17 @@ document.addEventListener('click', (e) => {
                     subfamilia: match.subfamilia || '',
                     generoEspecie: match.scientificName
                 });
+                if (result.isFuzzy) {
+                    fuzzyFixed.push({ typed: especie, name: match.scientificName, commonName: match.commonName });
+                } else {
+                    exactFound.push({ name: match.scientificName, commonName: match.commonName });
+                }
             } else {
                 addTableRow({ generoEspecie: especie });
+                notFound.push(especie);
             }
         } else {
             // Modo avançado: tem 6 colunas
-            // Se houver mais de 6 (ex: por espaços no nome), junta o excedente na última
             if (columns.length > 6) {
                 const extra = columns.slice(5).join(" ");
                 columns = columns.slice(0,5).concat(extra);
@@ -4003,11 +4108,75 @@ document.addEventListener('click', (e) => {
                 subfamilia: columns[4],
                 generoEspecie: columns[5]
             });
+            exactFound.push({ name: columns[5], commonName: '' });
         }
     });
     
     importDataTextarea.value = "";
     updateImportTextareaStats();
+    showImportFeedback(exactFound, fuzzyFixed, notFound);
+}
+
+function showImportFeedback(exactFound, fuzzyFixed, notFound) {
+    const div = document.getElementById('import-feedback');
+    if (!div) return;
+    div.innerHTML = '';
+    div.style.display = 'block';
+
+    const total = exactFound.length + fuzzyFixed.length + notFound.length;
+
+    // Bloco verde: encontrados exatamente
+    if (exactFound.length > 0) {
+        const block = document.createElement('div');
+        block.className = 'import-feedback-block import-feedback-ok';
+        let html = `<strong>✅ ${exactFound.length} espécie${exactFound.length > 1 ? 's' : ''} identificada${exactFound.length > 1 ? 's' : ''} com sucesso</strong> de ${total} linha${total > 1 ? 's' : ''}.<br>`;
+        html += `<div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:4px;">`;
+        exactFound.forEach(f => {
+            html += `<span style="background:rgba(255,255,255,0.55); border-radius:10px; padding:2px 8px; font-size:13px;">
+                <em>${escapeHtml(f.name)}</em>${f.commonName ? ` <small style="color:#3a6e3a;">(${escapeHtml(f.commonName)})</small>` : ''}
+            </span>`;
+        });
+        html += `</div>`;
+        block.innerHTML = html;
+        div.appendChild(block);
+    }
+
+    // Bloco amarelo: corrigidos automaticamente
+    if (fuzzyFixed.length > 0) {
+        const block = document.createElement('div');
+        block.className = 'import-feedback-block import-feedback-fuzzy';
+        let html = `<strong>✏️ ${fuzzyFixed.length} nome${fuzzyFixed.length > 1 ? 's' : ''} corrigido${fuzzyFixed.length > 1 ? 's' : ''} automaticamente:</strong><br>`;
+        fuzzyFixed.forEach(f => {
+            html += `<div class="fuzzy-item">
+                <span class="typed">${escapeHtml(f.typed)}</span>
+                <span class="arrow">→</span>
+                <span class="corrected">${escapeHtml(f.name)}</span>
+                <small style="color:#a07840;">(${escapeHtml(f.commonName)})</small>
+            </div>`;
+        });
+        block.innerHTML = html;
+        div.appendChild(block);
+    }
+
+    // Bloco vermelho: não encontrados
+    if (notFound.length > 0) {
+        const block = document.createElement('div');
+        block.className = 'import-feedback-block import-feedback-notfound';
+        let html = `<strong>❌ ${notFound.length} nome${notFound.length > 1 ? 's' : ''} não encontrado${notFound.length > 1 ? 's' : ''} no banco de dados:</strong><br>`;
+        notFound.forEach(n => { html += `<code>${escapeHtml(n)}</code> `; });
+        html += `<br><small style="opacity:0.8; margin-top:4px; display:block;">Verifique a grafia ou use o autocomplete para encontrar o nome correto.</small>`;
+        block.innerHTML = html;
+        div.appendChild(block);
+    }
+
+    // Auto-ocultar após 12s se não houver erros
+    if (notFound.length === 0 && fuzzyFixed.length === 0) {
+        setTimeout(() => { div.style.display = 'none'; }, 8000);
+    }
+}
+
+function escapeHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -5593,8 +5762,8 @@ function exportHTML() {
                 { header: 'curve-header',         content: 'curve-content',         indicator: 'curve-indicator' }
             ];
 
-            let mapInitialized = false;
-
+            // mapInitialized é definido externamente (após initMap no carregamento)
+            // para que o clique não tente inicializar de novo
             sections.forEach(section => {
                 const header    = document.getElementById(section.header);
                 const content   = document.getElementById(section.content);
@@ -6373,6 +6542,7 @@ function updateSpeciesList() {
         item.className = 'species-item';
         item.setAttribute('data-species', sp);
         item.setAttribute('data-color', color);
+        item.setAttribute('draggable', 'true');
 
         // Lado esquerdo: bolinhas + nome (clicável para flash)
         const left = document.createElement('div');
@@ -7337,9 +7507,17 @@ scheduleTreeUpdate = function() {
     setTimeout(updateSpeciesList, 100);
 };
 
-// Inicialização do mapa agora é gerenciada por setupCollapsibleSections()
 // Mantém referência a mapContent para o listener de resize abaixo
 const mapContent = document.getElementById('map-content');
+let mapInitialized = false;
+
+// Como a seção do mapa começa expandida, inicializa o mapa imediatamente
+// (setupCollapsibleSections só chama initMap ao clicar para expandir)
+if (mapContent && !mapContent.classList.contains('collapsed')) {
+    initMap();
+    mapInitialized = true;
+    updateSpeciesList();
+}
 
 // Redesenha gráficos quando a janela for redimensionada (incluindo zoom)
 window.addEventListener('resize', () => {
