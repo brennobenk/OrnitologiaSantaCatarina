@@ -890,7 +890,82 @@
             display: none;
         }
 
-        /* ===== NAVEGAÇÃO POR ABAS ===== */
+        /* ===== ABA COMPARAR ===== */
+        #compare-section { padding: 0; }
+        #compare-section .section-header { margin-bottom: 20px; }
+        #lists-container {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .list-item {
+            flex: 1;
+            min-width: 280px;
+            background: #f5f7e9;
+            border: 1px solid #c5d0b5;
+            border-radius: 8px;
+            padding: 16px;
+            position: relative;
+        }
+        .list-item h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0 0 12px 0;
+            padding: 0;
+            border: none;
+            font-size: 15px;
+        }
+        .list-item .list-number {
+            background: #3b8c3b;
+            color: white;
+            border-radius: 50%;
+            width: 26px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .list-item .list-legend { flex: 1; }
+        .list-item .compare-import { margin-bottom: 10px; }
+        .list-item .list-actions { display: flex; gap: 8px; margin-bottom: 10px; }
+        .list-item .remove-list-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+        .compare-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            padding: 14px 16px;
+            background: #f5f7e9;
+            border-radius: 8px;
+            border: 1px solid #c5d0b5;
+        }
+        #comparison-results h3 {
+            color: #2d5a2d;
+            margin-bottom: 12px;
+        }
         .tab-nav {
             display: flex;
             flex-wrap: wrap;
@@ -1300,10 +1375,10 @@
     </style>
 </head>
 <body>
-    <div style="position: absolute; top: 20px; right: 30px; font-size: 14px; color: #6a7159; font-weight: bold;">
-    © Brenno Benk
-</div>
-<button id="help-button-fixed" title="Ajuda">?</button>
+    <div style="position: fixed; top: 14px; right: 22px; z-index: 3000; display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+        <div style="font-size: 13px; color: #6a7159; font-weight: bold; background: rgba(254,252,245,0.92); padding: 3px 8px; border-radius: 4px;">© Brenno Benk</div>
+        <button id="help-button-fixed" title="Ajuda" style="width:36px;height:36px;font-size:18px;">?</button>
+    </div>
     <div class="container">
         <header>
     <div class="logo" id="logo-placeholder" style="background-image: url('https://img.lightshot.app/1hoA8uRfRcuwwCsfjjPjYw.png');">
@@ -1311,7 +1386,7 @@
 </div>
     <div>
         <h1>Ornitologia Avançada estado de Santa Catarina</h1>
-        <p class="description">Plataforma de análise ornitológica para Santa Catarina importe listas de aves, visualize árvores filogenéticas baseadas em genômica moderna, consulte status de conservação (SC, ICMBio, IUCN), mapeie ocorrências com dados GBIF e eBird, compare listas por similaridade de Jaccard e gere curvas de riqueza — tudo no navegador, sem enviar dados a servidores externos.</p>
+        <p class="description">Plataforma de análise ornitológica para Santa Catarina: importe listas de aves, visualize árvores filogenéticas baseadas em genômica moderna, consulte status de conservação (SC, ICMBio, IUCN), mapeie ocorrências com dados GBIF e eBird, compare listas por similaridade de Jaccard e gere curvas de riqueza — tudo no navegador, sem enviar dados a servidores externos.</p>
     </div>
 
 </header>
@@ -1338,10 +1413,8 @@
                         <button id="import-example" class="import-btn">Carregar Exemplo Ornitológico</button>
                         <button id="clear-import" class="delete-btn">Limpar Área de Importação</button>
                         <button id="show-sources" class="sources-btn">Fontes de Estudo</button>
-                        <button id="compare-tables-btn" class="sources-btn">Comparar Tabelas</button>
                         <button id="debug-visualizer" class="debug-btn">Debug Visualizer</button>
                         <button id="query-species-btn" class="query-btn">Lista de Consulta</button>
-                        <button id="help-button" class="help-btn" title="Ajuda">?</button>
                     </div>
                     
                     <textarea id="import-data" placeholder="Adicione aqui nomes populares ou científicos de aves, banco de dados restringido a Santa Catarina no momento."></textarea>
@@ -1455,8 +1528,6 @@
                 </div>
                 <div class="section-content" id="conservation-content">
                     <div class="conservation-controls">
-                        <button id="load-conservation-data" class="generate-btn">Carregar Dados do PDF (SC) e WikiAves (IUCN)</button>
-                        <button id="toggle-conservation-table" class="sources-btn">Mostrar/Esconder Tabela</button>
                         <button id="sort-alpha" class="sort-btn">A-Z</button>
                         <button id="sort-conserv-asc" class="sort-btn">Conservação ▲ (LC→CR)</button>
                         <button id="sort-conserv-desc" class="sort-btn">Conservação ▼ (CR→LC)</button>
@@ -1464,7 +1535,7 @@
                         <button id="export-csv" class="export-btn">Exportar Excel (CSV)</button>
                         <button id="copy-conservation-table" class="export-btn">Copiar Tabela</button>
                     </div>
-                    <div id="conservation-table-container" style="display: none;">
+                    <div id="conservation-table-container">
                         <table class="conservation-table">
                             <thead>
                                 <tr>
@@ -1721,106 +1792,100 @@
 
 <!-- Modal de Comparação de Tabelas -->
 <section class="app-section tab-section" id="compare-section">
-    <div class="section-header" style="cursor:default; margin-bottom:15px;">
+    <div class="section-header" style="cursor:default; margin-bottom:20px;">
         <h2 style="margin:0; padding:0; border:none;">🔀 Comparar Listas de Espécies</h2>
     </div>
 
-        <!-- Container para as listas -->
-        <div id="lists-container" style="display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap;">
-            <!-- Lista 1 -->
-            <div class="list-item" data-list-index="0" style="flex: 1; min-width: 300px; position: relative;">
-                <button class="remove-list-btn" style="position: absolute; top: 5px; right: 5px; background: #e74c3c; color: white; border: none; width: 30px; height: 20px; border-radius: 4px; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Remover lista">×</button>
-                <h3 style="display: flex; align-items: center; gap: 10px; margin-top: 0;">
-                    <span class="list-number">1</span>
-                    <input type="text" class="list-legend" placeholder="Legenda da lista" value="Lista 1" style="flex: 1; padding: 5px;">
-                </h3>
-                <textarea class="compare-import" placeholder="Cole os nomes das espécies aqui (um por linha)..." style="width:100%; min-height:150px;"></textarea>
-                <div class="autocomplete-suggestions" style="display:none;"></div>
-                <div style="margin: 10px 0;">
-                    <button class="process-list-btn generate-btn">Processar Lista</button>
-                    <button class="clear-list-btn delete-btn">Limpar</button>
-                </div>
-                <div class="table-container" style="max-height: 300px; overflow-y: auto;">
-                    <table class="list-table">
-                        <thead><tr><th>Espécies na Lista 1</th></tr></thead>
-                        <tbody class="list-body"></tbody>
-                    </table>
-                </div>
+    <!-- Container para as listas -->
+    <div id="lists-container">
+        <!-- Lista 1 -->
+        <div class="list-item" data-list-index="0">
+            <button class="remove-list-btn" title="Remover lista">×</button>
+            <h3>
+                <span class="list-number">1</span>
+                <input type="text" class="list-legend" placeholder="Legenda da lista" value="Lista 1">
+            </h3>
+            <textarea class="compare-import" placeholder="Cole os nomes das espécies aqui (um por linha)..." style="width:100%; min-height:130px;"></textarea>
+            <div class="autocomplete-suggestions" style="display:none;"></div>
+            <div class="list-actions">
+                <button class="process-list-btn generate-btn">Processar Lista</button>
+                <button class="clear-list-btn delete-btn">Limpar</button>
             </div>
-
-            <!-- Lista 2 -->
-            <div class="list-item" data-list-index="1" style="flex: 1; min-width: 300px; position: relative;">
-                <button class="remove-list-btn" style="position: absolute; top: 5px; right: 5px; background: #e74c3c; color: white; border: none; width: 30px; height: 20px; border-radius: 4px; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Remover lista">×</button>
-                <h3 style="display: flex; align-items: center; gap: 10px; margin-top: 0;">
-                    <span class="list-number">2</span>
-                    <input type="text" class="list-legend" placeholder="Legenda da lista" value="Lista 2" style="flex: 1; padding: 5px;">
-                </h3>
-                <textarea class="compare-import" placeholder="Cole os nomes das espécies aqui (um por linha)..." style="width:100%; min-height:150px;"></textarea>
-                <div class="autocomplete-suggestions" style="display:none;"></div>
-                <div style="margin: 10px 0;">
-                    <button class="process-list-btn generate-btn">Processar Lista</button>
-                    <button class="clear-list-btn delete-btn">Limpar</button>
-                </div>
-                <div class="table-container" style="max-height: 300px; overflow-y: auto;">
-                    <table class="list-table">
-                        <thead><tr><th>Espécies na Lista 2</th></tr></thead>
-                        <tbody class="list-body"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Botões de controle de listas -->
-        <div style="text-align: left; margin-bottom: 20px;">
-            <button id="add-list-btn" class="generate-btn">Adicionar Lista</button>
-        </div>
-
-        <!-- Botão para executar a comparação -->
-        <div style="text-align: left; margin-bottom: 20px;">
-            <button id="run-comparison" class="generate-btn" style="padding: 12px 30px; font-size: 16px;">Executar Comparação</button>
-        </div>
-
-        <!-- Área de Resultados da Comparação -->
-        <div id="comparison-results" style="margin-top: 20px; border-top: 2px solid #3b8c3b; padding-top: 20px;">
-            <h3>Resultado da Comparação</h3>
-            <div style="margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
-                <button id="copy-comparison-table" class="export-btn">Copiar Tabela</button>
-                <button id="export-comparison-csv" class="export-btn">Exportar CSV</button>
-                <span style="margin-left: 8px; font-weight: 600; color: #2d5a2d; font-size: 14px;">Filtro "Em todas?":</span>
-                <button id="filter-all" class="filter-btn filter-btn-active" data-filter="all">Todas</button>
-                <button id="filter-present" class="filter-btn" data-filter="present">✅ Só presentes em todas</button>
-                <button id="filter-absent" class="filter-btn" data-filter="absent">❌ Só ausentes de alguma</button>
-            </div>
-            <div class="table-container" style="max-height: 400px; overflow-y: auto;">
-                <table id="comparison-table" style="width:100%;">
-                    <thead id="comparison-header">
-                        <tr>
-                            <th>Espécie</th>
-                            <th>Nome Popular</th>
-                            <!-- As colunas das listas serão inseridas aqui dinamicamente -->
-                        </tr>
-                    </thead>
-                    <tbody id="comparison-body"></tbody>
+            <div class="table-container" style="max-height: 260px; overflow-y: auto;">
+                <table class="list-table">
+                    <thead><tr><th>Espécies na Lista 1</th></tr></thead>
+                    <tbody class="list-body"></tbody>
                 </table>
             </div>
-            <!-- Gráficos -->
-<div style="display: flex; gap: 20px; margin-top: 30px; flex-wrap: wrap;">
-    <div style="flex: 1; min-width: 250px;">
-        <h4>Número de Espécies por Lista</h4>
-        <canvas id="countChart" style="max-height: 300px; width:100%;"></canvas>
-    </div>
-    <div style="flex: 1; min-width: 250px;">
-        <h4>Similaridade (em todas as listas)</h4>
-        <canvas id="similarityChart" style="max-height: 300px; width:100%;"></canvas>
-        <p id="similarity-text" style="text-align: center; font-size: 16px; margin-top: 5px;"></p>
-    </div>
-    <div style="flex: 1; min-width: 250px;">
-        <h4>Espécies Únicas por Lista</h4>
-        <canvas id="uniqueChart" style="max-height: 300px; width:100%;"></canvas>
-        <p id="unique-text" style="text-align: center; font-size: 16px; margin-top: 5px;"></p>
-    </div>
-</div>
         </div>
+
+        <!-- Lista 2 -->
+        <div class="list-item" data-list-index="1">
+            <button class="remove-list-btn" title="Remover lista">×</button>
+            <h3>
+                <span class="list-number">2</span>
+                <input type="text" class="list-legend" placeholder="Legenda da lista" value="Lista 2">
+            </h3>
+            <textarea class="compare-import" placeholder="Cole os nomes das espécies aqui (um por linha)..." style="width:100%; min-height:130px;"></textarea>
+            <div class="autocomplete-suggestions" style="display:none;"></div>
+            <div class="list-actions">
+                <button class="process-list-btn generate-btn">Processar Lista</button>
+                <button class="clear-list-btn delete-btn">Limpar</button>
+            </div>
+            <div class="table-container" style="max-height: 260px; overflow-y: auto;">
+                <table class="list-table">
+                    <thead><tr><th>Espécies na Lista 2</th></tr></thead>
+                    <tbody class="list-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barra de controle -->
+    <div class="compare-toolbar">
+        <button id="add-list-btn" class="generate-btn">➕ Adicionar Lista</button>
+        <button id="run-comparison" class="generate-btn" style="padding: 10px 28px; font-size: 15px; font-weight:700;">▶ Executar Comparação</button>
+    </div>
+
+    <!-- Área de Resultados da Comparação -->
+    <div id="comparison-results" style="margin-top: 10px; border-top: 2px solid #3b8c3b; padding-top: 20px;">
+        <h3>Resultado da Comparação</h3>
+        <div style="margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+            <button id="copy-comparison-table" class="export-btn">Copiar Tabela</button>
+            <button id="export-comparison-csv" class="export-btn">Exportar CSV</button>
+            <span style="margin-left: 8px; font-weight: 600; color: #2d5a2d; font-size: 14px;">Filtro:</span>
+            <button id="filter-all" class="filter-btn filter-btn-active" data-filter="all">Todas</button>
+            <button id="filter-present" class="filter-btn" data-filter="present">✅ Presentes em todas</button>
+            <button id="filter-absent" class="filter-btn" data-filter="absent">❌ Ausentes de alguma</button>
+        </div>
+        <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+            <table id="comparison-table" style="width:100%;">
+                <thead id="comparison-header">
+                    <tr>
+                        <th>Espécie</th>
+                        <th>Nome Popular</th>
+                    </tr>
+                </thead>
+                <tbody id="comparison-body"></tbody>
+            </table>
+        </div>
+        <div style="display: flex; gap: 20px; margin-top: 30px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 220px;">
+                <h4>Espécies por Lista</h4>
+                <canvas id="countChart" style="max-height: 280px; width:100%;"></canvas>
+            </div>
+            <div style="flex: 1; min-width: 220px;">
+                <h4>Similaridade de Jaccard</h4>
+                <canvas id="similarityChart" style="max-height: 280px; width:100%;"></canvas>
+                <p id="similarity-text" style="text-align: center; font-size: 15px; margin-top: 5px;"></p>
+            </div>
+            <div style="flex: 1; min-width: 220px;">
+                <h4>Espécies Únicas por Lista</h4>
+                <canvas id="uniqueChart" style="max-height: 280px; width:100%;"></canvas>
+                <p id="unique-text" style="text-align: center; font-size: 15px; margin-top: 5px;"></p>
+            </div>
+        </div>
+    </div>
 </section>
 
 <div id="compare-modal" class="modal">
@@ -4201,6 +4266,20 @@ document.addEventListener('click', (e) => {
     importDataTextarea.value = "";
     updateImportTextareaStats();
     showImportFeedback(exactFound, fuzzyFixed, notFound);
+
+    // Sincroniza automaticamente a Lista 1 da aba Comparar com as espécies importadas
+    const allSpecies = [...exactFound.map(f => f.name), ...fuzzyFixed.map(f => f.name)];
+    if (allSpecies.length > 0) {
+        const firstList = document.querySelector('#compare-section .list-item[data-list-index="0"]');
+        if (firstList) {
+            const textarea = firstList.querySelector('.compare-import');
+            const tbody = firstList.querySelector('.list-body');
+            if (textarea && tbody) {
+                textarea.value = allSpecies.join('\n');
+                if (typeof processList === 'function') processList(textarea, tbody);
+            }
+        }
+    }
 }
 
 function showImportFeedback(exactFound, fuzzyFixed, notFound) {
@@ -5241,14 +5320,8 @@ function fallbackCopy(text) {
             }
         });
 
-        // Botões da tabela de conservação
-        loadConservationBtn.addEventListener('click', () => {
-            renderConservationTableFromInput('alpha');
-            conservationContainer.style.display = 'block';
-        });
-        toggleTableBtn.addEventListener('click', () => {
-            conservationContainer.style.display = conservationContainer.style.display === 'none' ? 'block' : 'none';
-        });
+        // Tabela de conservação renderiza automaticamente quando a aba é aberta (botões removidos)
+        // loadConservationBtn e toggleTableBtn foram removidos da UI
         document.getElementById('sort-alpha').addEventListener('click', () => {
     currentConservationSort = 'alpha';
     renderConservationTableFromInput('alpha');
@@ -5893,8 +5966,13 @@ function exportHTML() {
                         }, 50);
                     }
 
-                    // Redesenha gráficos de conservação ao entrar na aba
+                    // Renderiza tabela de conservação automaticamente ao entrar na aba
                     if (targetId === 'conservation-section') {
+                        const container = document.getElementById('conservation-table-container');
+                        if (container) container.style.display = 'block';
+                        if (typeof renderConservationTableFromInput === 'function') {
+                            renderConservationTableFromInput(typeof currentConservationSort !== 'undefined' ? currentConservationSort : 'alpha');
+                        }
                         setTimeout(() => {
                             if (chartScPie) chartScPie.resize();
                             if (chartIcmbioPie) chartIcmbioPie.resize();
@@ -6367,7 +6445,8 @@ function generateMultiListCharts(lists) {
 }
 
 // Abrir modal e preencher lista 1 com dados da tabela principal
-document.getElementById('compare-tables-btn').addEventListener('click', () => {
+const compareTablesBtn = document.getElementById('compare-tables-btn');
+if (compareTablesBtn) compareTablesBtn.addEventListener('click', () => {
     // Navega para a aba Comparar
     const tabs = document.querySelectorAll('#main-tab-nav .tab-btn');
     const sections = document.querySelectorAll('.tab-section');
@@ -8048,34 +8127,40 @@ function updateCurveStats(points, total) {
     statAvg.textContent = (total / n).toFixed(2);
     statTotal.textContent = total;
 
-    // Determinar estação aproximada (primeiro e último mês)
-    if (n > 0) {
-        const firstLabel = points[0].label;
-        const lastLabel = points[n-1].label;
-        // Tenta extrair mês de labels como dd/mm/aaaa ou mm/aaaa
-        const firstMatch = firstLabel.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); // dd/mm/aaaa
-        const lastMatch = lastLabel.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-        let firstMonth, lastMonth;
-        if (firstMatch) {
-            firstMonth = parseInt(firstMatch[2], 10) - 1; // 0-11
-        } else {
-            // talvez mm/aaaa
-            const m = firstLabel.match(/^(\d{1,2})\//);
-            firstMonth = m ? parseInt(m[1],10)-1 : 0;
-        }
-        if (lastMatch) {
-            lastMonth = parseInt(lastMatch[2],10)-1;
-        } else {
-            const m = lastLabel.match(/^(\d{1,2})\//);
-            lastMonth = m ? parseInt(m[1],10)-1 : 0;
-        }
-        const seasons = ['Verão', 'Outono', 'Inverno', 'Primavera'];
-        const seasonFirst = seasons[Math.floor((firstMonth %12)/3)];
-        const seasonLast = seasons[Math.floor((lastMonth %12)/3)];
-        statSeason.textContent = `${seasonFirst} – ${seasonLast}`;
-    } else {
-        statSeason.textContent = '-';
+    // Extrair mês (0-11) de um label, ou null se sem data
+    function extractMonth(label) {
+        // dd/mm/yyyy
+        const full = label.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if (full) return parseInt(full[2], 10) - 1;
+        // mm/yyyy
+        const mmy = label.match(/^(\d{1,2})\/(\d{4})$/);
+        if (mmy) return parseInt(mmy[1], 10) - 1;
+        return null; // campo sem data
     }
+
+    // Hemisfério Sul: Dez/Jan/Fev=Verão, Mar-Mai=Outono, Jun-Ago=Inverno, Set-Nov=Primavera
+    function monthToSeason(m) {
+        if (m === 11 || m === 0 || m === 1) return '☀️ Verão';
+        if (m <= 4) return '🍂 Outono';
+        if (m <= 7) return '❄️ Inverno';
+        return '🌸 Primavera';
+    }
+
+    if (n === 0) { statSeason.textContent = '-'; return; }
+
+    // Extrair meses de todos os pontos
+    const months = points.map(p => extractMonth(p.label));
+    const hasAnyDate = months.some(m => m !== null);
+
+    if (!hasAnyDate) {
+        // Curva apenas com números de campo — sem datas, sem estação
+        statSeason.textContent = '-';
+        return;
+    }
+
+    // Montar lista de estações em ordem de aparecimento (com repetições)
+    const seasonsList = months.map(m => m !== null ? monthToSeason(m) : null).filter(s => s !== null);
+    statSeason.textContent = seasonsList.join(' → ');
 }
 
 // Atualizar legenda interativa
@@ -8112,130 +8197,64 @@ function updateCurveLegend() {
         <div class="sources-list" style="max-height: 75vh; overflow-y: auto; padding-right: 14px; line-height: 1.6;">
 
 <p style="background:#eef4e4; border-left:4px solid #2d5a2d; padding:10px 14px; border-radius:4px; margin-bottom:18px;">
-  Este sistema permite importar listas de aves, visualizar dados taxonômicos e de conservação, gerar árvores filogenéticas e mapear ocorrências georreferenciadas com dados do GBIF e eBird. Tudo roda no seu navegador — nenhum dado é enviado a servidores externos.
+  Plataforma de análise ornitológica para Santa Catarina. Navegue pelas abas no topo para acessar cada funcionalidade. Tudo roda no seu navegador — nenhum dado é enviado a servidores externos.
 </p>
 
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px;">1. 📥 Importação de Dados</h3>
-<p>A importação é o ponto de partida. Você insere nomes de aves e o sistema preenche automaticamente os campos taxonômicos.</p>
-<h4 style="color:#3b6e3b;">Modo Básico (padrão)</h4>
+<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px;">1. 📥 Importação</h3>
+<p>Ponto de entrada do sistema. Digite ou cole nomes de aves (científico ou popular) — o sistema preenche automaticamente a taxonomia completa (Filo → Subfamília) via banco interno com +800 espécies de SC.</p>
 <ul style="margin-left:20px;">
-  <li>Digite o nome científico ou popular de uma ave no campo de texto. Sugestões aparecem enquanto você digita.</li>
-  <li>Use <strong>↑ ↓</strong> para navegar nas sugestões e <strong>Tab</strong> ou <strong>Enter</strong> para confirmar.</li>
-  <li>Para importar várias de uma vez, cole uma lista (um nome por linha) e clique em <strong>Processar Dados Importados</strong>.</li>
-  <li>Filo, Classe, Ordem, Família e Subfamília são preenchidos automaticamente pelo banco de dados interno (&gt;800 espécies).</li>
-</ul>
-<h4 style="color:#3b6e3b;">Modo Avançado</h4>
-<ul style="margin-left:20px;">
-  <li>Para dados já tabulados. Cole no formato: <code>Filo↹Classe↹Ordem↹Família↹Subfamília↹Gênero/Espécie</code> (tabulação como separador).</li>
-  <li>Clique em <strong>Processar Dados Importados</strong>.</li>
-</ul>
-<h4 style="color:#3b6e3b;">Botões auxiliares</h4>
-<ul style="margin-left:20px;">
-  <li><strong>Carregar Exemplo:</strong> insere 5–10 espécies aleatórias para teste rápido.</li>
-  <li><strong>Fontes de Estudo:</strong> exibe as referências científicas usadas na filogenia.</li>
-  <li><strong>Comparar Tabelas:</strong> abre o comparador de listas (ver seção 7).</li>
-  <li><strong>Lista de Consulta:</strong> abre o banco com todas as espécies cadastradas (ver seção 8).</li>
+  <li>Autocomplete ativo enquanto digita. Use <strong>↑ ↓</strong> para navegar e <strong>Tab/Enter</strong> para confirmar.</li>
+  <li><strong>Modo Básico:</strong> um nome por linha. <strong>Modo Avançado:</strong> formato <code>Filo↹Classe↹Ordem↹Família↹Subfamília↹Espécie</code>.</li>
+  <li>Ao processar, as espécies reconhecidas são automaticamente adicionadas à <strong>Lista 1</strong> da aba 🔀 Comparar.</li>
+  <li><strong>Carregar Exemplo</strong> insere 5–10 espécies aleatórias para teste.</li>
 </ul>
 
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px; margin-top:22px;">2. 📋 Tabela de Dados</h3>
-<p>Após importar, os dados ficam numa tabela editável abaixo da área de importação (seção <em>Dados da Tabela</em>).</p>
+<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px; margin-top:22px;">2. 🌳 Árvore</h3>
+<p>Visualização filogenética gerada automaticamente a partir da tabela de importação.</p>
 <ul style="margin-left:20px;">
-  <li>Clique em qualquer célula para editar. A árvore filogenética se atualiza automaticamente.</li>
-  <li><strong>Adicionar Linha Manualmente:</strong> insere linha em branco.</li>
-  <li><strong>Remover:</strong> botão ao lado de cada linha.</li>
-  <li><strong>Limpar Tabela:</strong> remove tudo.</li>
-  <li><strong>Copiar Tabela:</strong> copia o conteúdo para a área de transferência (formato TSV, compatível com Excel).</li>
-</ul>
-<p>💡 No modo básico, o autocomplete também funciona dentro do campo <em>Gênero/Espécie</em> da tabela.</p>
-
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px; margin-top:22px;">3. 🌳 Árvore Taxonômica</h3>
-<p>Gerada automaticamente a partir dos dados da tabela.</p>
-<ul style="margin-left:20px;">
-  <li><strong>Árvore Hierárquica:</strong> estrutura de pastas aninhadas por nível taxonômico.</li>
-  <li><strong>Árvore Filogenética (D3.js):</strong> diagrama interativo baseado na filogenia moderna das aves (Jarvis 2014, Prum 2015).
-    <ul style="margin-top:4px; margin-left:20px;">
-      <li>Zoom: botões + / − ou scroll do mouse.</li>
-      <li>Arrastar: clique e arraste no fundo da visualização.</li>
-      <li><em>Mostrar Completa</em> vs <em>Apenas Adicionados</em>.</li>
-    </ul>
-  </li>
-  <li><strong>Baixar Imagem:</strong> exporta PNG de alta qualidade.</li>
-  <li><strong>Exportar Árvore:</strong> salva HTML interativo com zoom e busca.</li>
+  <li><strong>Árvore Hierárquica:</strong> estrutura de pastas por nível taxonômico.</li>
+  <li><strong>Árvore Filogenética (D3.js):</strong> diagrama interativo baseado em Jarvis 2014 e Prum 2015. Zoom com scroll ou botões +/−, arraste para navegar.</li>
+  <li>Exporta como PNG ou HTML interativo.</li>
 </ul>
 
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px; margin-top:22px;">4. 🛡️ Status de Conservação</h3>
-<p>Dados das listas de ameaça SC (Santa Catarina), ICMBio e IUCN.</p>
+<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px; margin-top:22px;">3. 🛡️ Conservação</h3>
+<p>Tabela de status de ameaça carregada automaticamente ao entrar na aba, cruzando as espécies importadas com as listas SC (FATMA/IGNIS), ICMBio e IUCN.</p>
 <ul style="margin-left:20px;">
-  <li>Clique em <strong>Carregar Dados do PDF (SC) e WikiAves (IUCN)</strong> para preencher a tabela com as espécies presentes.</li>
-  <li>Ordene pela coluna desejada usando os botões <strong>A-Z</strong>, <strong>Conservação ▲</strong> e <strong>Conservação ▼</strong>.</li>
-  <li><strong>Mais informações:</strong> links WikiAves por espécie.</li>
-  <li><strong>Exportar Excel (CSV)</strong> e <strong>Copiar Tabela</strong> disponíveis.</li>
-  <li>Três gráficos de pizza mostram a distribuição percentual dos status para SC, ICMBio e IUCN.</li>
+  <li>Ordene por <strong>A-Z</strong>, <strong>Conservação ▲</strong> (LC→CR) ou <strong>Conservação ▼</strong> (CR→LC).</li>
+  <li><strong>Mais informações:</strong> links para o WikiAves de cada espécie.</li>
+  <li>Três gráficos de pizza mostram a distribuição percentual dos status (SC, ICMBio, IUCN).</li>
+  <li>Exportar como CSV ou copiar para área de transferência.</li>
 </ul>
 
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px; margin-top:22px;">5. 📊 Distribuição Taxonômica</h3>
-<p>Gráficos automáticos de barras e pizza por Ordem e por Família, refletindo sempre os dados atuais da tabela.</p>
+<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px; margin-top:22px;">4. 📊 Distribuição</h3>
+<p>Gráficos de barras e pizza por Ordem e por Família, atualizados automaticamente com os dados da tabela.</p>
 
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px; margin-top:22px;">6. 🗺️ Mapa de Ocorrências</h3>
-<p>Ferramenta central para análise espacial. Permite posicionar espécies no mapa, desenhar áreas de estudo e buscar registros públicos georreferenciados.</p>
-
-<h4 style="color:#3b6e3b;">Painel "Espécies na tabela"</h4>
+<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px; margin-top:22px;">5. 🗺️ Mapa</h3>
+<p>Análise espacial de ocorrências. O mapa é inicializado ao entrar na aba pela primeira vez.</p>
 <ul style="margin-left:20px;">
-  <li>Lista todas as espécies importadas. Cada item tem:
-    <ul style="margin-left:20px; margin-top:4px;">
-      <li><strong>Clique no nome</strong> → pisca os pontos da espécie em <span style="color:#c8a800; font-weight:bold;">amarelo</span> 2× no mapa (funciona para pontos manuais, GBIF e eBird).</li>
-      <li><strong>Botão 👁️</strong> (canto direito) → oculta ou exibe todos os pontos daquela espécie no mapa.</li>
-    </ul>
-  </li>
-  <li>Arraste espécies do painel para o mapa para posicioná-las manualmente.</li>
+  <li><strong>Arrastar espécies:</strong> arraste itens do painel lateral para o mapa para posicioná-los manualmente.</li>
+  <li><strong>Clique no nome</strong> da espécie → pisca os marcadores em amarelo 2×.</li>
+  <li><strong>👁️</strong> oculta/exibe todos os pontos da espécie.</li>
+  <li>Desenhe polígonos de área de estudo, carregue Shapefiles, calcule densidades e exporte SHP.</li>
+  <li><strong>GBIF</strong> e <strong>eBird</strong>: busca até 2000 ocorrências georreferenciadas por espécie (requer internet).</li>
 </ul>
 
-<h4 style="color:#3b6e3b;">Desenhar áreas</h4>
+<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px; margin-top:22px;">6. 📈 Curva</h3>
+<p>Curva do Coletor (riqueza acumulada). Analise o esforço amostral por intervalo de datas ou campanhas específicas.</p>
+
+<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px; margin-top:22px;">7. 🔀 Comparar</h3>
+<p>A Lista 1 é preenchida automaticamente com as espécies importadas na aba 📥. Adicione outras listas manualmente para comparação.</p>
 <ul style="margin-left:20px;">
-  <li><strong>🔷 Desenhar área:</strong> clique no mapa para criar vértices de um polígono. Dê duplo-clique para fechar.</li>
-  <li><strong>➕ Adicionar todas:</strong> posiciona automaticamente todas as espécies da tabela dentro do polígono desenhado (pontos aleatórios dentro do perímetro).</li>
-  <li><strong>✏️ Editar área:</strong> ativa handles de edição nos polígonos já desenhados.</li>
-  <li><strong>📁 Carregar Shapefile (ZIP):</strong> importa polígonos de um arquivo ZIP com shapefile.</li>
-  <li><strong>🔢 Calcular espécies nas áreas:</strong> gera uma tabela com a contagem de espécies, pontos, área e densidades para cada polígono desenhado.</li>
-  <li><strong>🗺️ Exportar Shapefile:</strong> baixa um ZIP com os pontos e polígonos do mapa em formato Shapefile (.shp/.dbf/.prj).</li>
+  <li>Cole os nomes em cada lista e clique em <strong>Processar Lista</strong>, depois em <strong>▶ Executar Comparação</strong>.</li>
+  <li>Resultado: tabela com presença/ausência, índice de Jaccard, espécies únicas e gráficos.</li>
+  <li>Filtros: <strong>Todas</strong>, <strong>Presentes em todas</strong>, <strong>Ausentes de alguma</strong>.</li>
 </ul>
 
-<h4 style="color:#3b6e3b;">Pontos manuais</h4>
+<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px; margin-top:22px;">💡 Dicas</h3>
 <ul style="margin-left:20px;">
-  <li><strong>✏️ Edição de ponto:</strong> ativa o modo arrasta-e-solta nos marcadores.</li>
-  <li><strong>🗑️ Lixeira:</strong> quando ON, clicar em um ponto o remove do mapa.</li>
-</ul>
-
-<h4 style="color:#3b6e3b;">Registros públicos de ocorrência</h4>
-<ul style="margin-left:20px;">
-  <li><strong>🌍 GBIF:</strong> busca ocorrências georreferenciadas no Brasil a partir do banco global GBIF (até 2000 registros por espécie). Os dados são carregados uma vez por sessão.</li>
-  <li><strong>🐦 eBird:</strong> busca especificamente registros da plataforma eBird (via GBIF), focada em observações de campo de birders. Até 2000 registros por espécie. Também carregado apenas uma vez por sessão — desligar e religar apenas esconde/exibe sem rebuscar.</li>
-</ul>
-
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px; margin-top:22px;">7. 🔀 Comparador de Listas</h3>
-<p>Acesse pelo botão <strong>Comparar Tabelas</strong>. Permite comparar múltiplas listas de espécies side-by-side.</p>
-<ul style="margin-left:20px;">
-  <li>Adicione quantas listas quiser. Em cada uma: cole os nomes, defina a legenda e clique em <strong>Processar Lista</strong>.</li>
-  <li>Clique em <strong>Executar Comparação</strong> para gerar a tabela e os gráficos (espécies por lista, similaridade de Jaccard, espécies únicas).</li>
-  <li>Filtros: <strong>Todas</strong>, <strong>✅ Presentes em todas</strong>, <strong>❌ Ausentes de alguma</strong>.</li>
-  <li>Exportar CSV e Copiar Tabela disponíveis.</li>
-</ul>
-
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px; margin-top:22px;">8. 🔍 Consulta de Espécies</h3>
-<p>Botão <strong>Lista de Consulta</strong> — exibe o banco completo com mais de 800 espécies de aves do sul do Brasil.</p>
-<ul style="margin-left:20px;">
-  <li>Filtre pelo campo de busca.</li>
-  <li>Clique em qualquer linha para adicionar a espécie à tabela principal.</li>
-  <li>Links diretos para o WikiAves de cada espécie.</li>
-</ul>
-
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:4px; margin-top:22px;">9. 💡 Dicas Gerais</h3>
-<ul style="margin-left:20px;">
-  <li>Todas as seções são <strong>colapsáveis</strong> — clique no cabeçalho verde (ícone <strong>−</strong>/<strong>+</strong>) para recolher/expandir.</li>
-  <li>As categorias IUCN usadas são: <strong>LC</strong> (pouco preocupante), <strong>NT</strong> (quase ameaçada), <strong>VU</strong> (vulnerável), <strong>EN</strong> (em perigo), <strong>CR</strong> (criticamente em perigo), <strong>DD</strong> (dados insuficientes), <strong>NE</strong> (não avaliada).</li>
-  <li>O sistema funciona 100% offline após o carregamento (exceto buscas GBIF/eBird que precisam de internet).</li>
-  <li>Use um navegador atualizado (Chrome ou Firefox recomendados) para melhor desempenho.</li>
-  <li>Nenhum dado é salvo no servidor — ao recarregar a página os dados são perdidos. Use <strong>Copiar Tabela</strong> para guardar seu trabalho.</li>
+  <li>As categorias IUCN: <strong>LC</strong> pouco preocupante · <strong>NT</strong> quase ameaçada · <strong>VU</strong> vulnerável · <strong>EN</strong> em perigo · <strong>CR</strong> criticamente em perigo · <strong>DD</strong> dados insuficientes · <strong>NE</strong> não avaliada.</li>
+  <li>Use Chrome ou Firefox atualizados para melhor desempenho.</li>
+  <li>Nenhum dado é salvo ao recarregar. Use <strong>Copiar Tabela</strong> para preservar seu trabalho.</li>
 </ul>
 
 <p style="text-align:center; margin-top:28px; padding:12px; background:#eef4e4; border-radius:6px; color:#2d5a2d;">
