@@ -1521,6 +1521,7 @@
             <button class="tab-btn" data-tab="curve-section">📈 Curva</button>
             <button class="tab-btn" data-tab="compare-section">🔀 Comparar</button>
             <button class="tab-btn" data-tab="guild-section">🍽️ Guilda</button>
+            <button class="tab-btn" data-tab="descriptor-section">🏷️ Descritores</button>
         </nav>
         <section class="app-section main-section tab-section tab-active" id="import-section">
     <div class="section-header" id="import-header">
@@ -1966,6 +1967,69 @@
         </div>
     </div>
 </section>
+
+<!-- ==================== ABA DESCRITORES ==================== -->
+<section class="app-section tab-section" id="descriptor-section">
+    <div class="section-header" style="cursor:default; margin-bottom:20px;">
+        <span class="collapse-indicator" style="display:none;"></span>
+        <h2>🏷️ Descritores das Espécies</h2>
+    </div>
+    <div class="section-content">
+
+        <!-- Estatísticas -->
+        <div id="desc-stats-row" style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:22px;"></div>
+
+        <!-- Filtros -->
+        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px; align-items:center;">
+            <input type="text" id="desc-search" placeholder="🔍 Buscar espécie, descritor ou ano..." style="max-width:340px; flex:1;">
+            <select id="desc-filter-century" style="padding:9px 12px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:inherit; font-size:14px; background:#fafdf9; cursor:pointer;">
+                <option value="">Todos os séculos</option>
+                <option value="18">Século XVIII (1700–1799)</option>
+                <option value="19">Século XIX (1800–1899)</option>
+                <option value="20">Século XX (1900–1999)</option>
+                <option value="21">Século XXI (2000–)</option>
+            </select>
+            <select id="desc-filter-author" style="padding:9px 12px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:inherit; font-size:14px; background:#fafdf9; cursor:pointer;">
+                <option value="">Todos os descritores</option>
+            </select>
+        </div>
+
+        <!-- Botões de visualização -->
+        <div style="display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap;">
+            <button id="desc-view-imported" onclick="setDescView('imported')" style="background:var(--green-base); color:white; border:2px solid var(--green-base); border-radius:var(--radius-sm); padding:9px 18px; font-size:14px; font-family:inherit; font-weight:600; cursor:pointer; transition:all var(--transition);">
+                📥 Apenas Importadas
+            </button>
+            <button id="desc-view-all" onclick="setDescView('all')" style="background:white; color:var(--green-base); border:2px solid var(--green-base); border-radius:var(--radius-sm); padding:9px 18px; font-size:14px; font-family:inherit; font-weight:600; cursor:pointer; transition:all var(--transition);">
+                📋 Todas as Espécies
+            </button>
+        </div>
+
+        <!-- Tabela -->
+        <div class="table-container" id="desc-table-container">
+            <table id="desc-table">
+                <thead>
+                    <tr>
+                        <th style="cursor:pointer;" data-sort-desc="especie">Espécie <span class="sort-arrow-desc">↕</span></th>
+                        <th>Nome Popular</th>
+                        <th style="cursor:pointer;" data-sort-desc="descritor">Descritor <span class="sort-arrow-desc">↕</span></th>
+                        <th style="cursor:pointer;" data-sort-desc="ano">Ano <span class="sort-arrow-desc">↕</span></th>
+                        <th style="cursor:pointer;" data-sort-desc="ordem">Ordem <span class="sort-arrow-desc">↕</span></th>
+                        <th style="cursor:pointer;" data-sort-desc="familia">Família <span class="sort-arrow-desc">↕</span></th>
+                        <th>Na tabela</th>
+                    </tr>
+                </thead>
+                <tbody id="desc-table-body"></tbody>
+            </table>
+        </div>
+
+        <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <button id="desc-export-csv" class="export-btn">⬇️ Exportar CSV</button>
+            <button id="desc-copy" class="export-btn">📋 Copiar Tabela</button>
+            <span id="desc-count" style="align-self:center; font-size:13px; color:var(--text-muted);"></span>
+        </div>
+    </div>
+</section>
+<!-- ==================== FIM DESCRITORES ==================== -->
 
         </main>
         <footer>
@@ -9345,6 +9409,904 @@ function updateCurveLegend() {
         });
     });
     // ==================== FIM GUILDA ALIMENTAR ====================
+
+    // ==================== DESCRITORES ====================
+    const DESCRIPTOR_DB = {
+        "Rhea americana": { descritor: "Linnaeus", ano: 1758 },
+        "Tinamus solitarius": { descritor: "Vieillot", ano: 1819 },
+        "Crypturellus obsoletus": { descritor: "Temminck", ano: 1815 },
+        "Crypturellus noctivagus": { descritor: "Wied", ano: 1820 },
+        "Crypturellus parvirostris": { descritor: "Wagler", ano: 1827 },
+        "Crypturellus tataupa": { descritor: "Temminck", ano: 1815 },
+        "Rhynchotus rufescens": { descritor: "Temminck", ano: 1815 },
+        "Nothura maculosa": { descritor: "Temminck", ano: 1815 },
+        "Anhima cornuta": { descritor: "Linnaeus", ano: 1766 },
+        "Chauna torquata": { descritor: "Oken", ano: 1816 },
+        "Dendrocygna bicolor": { descritor: "Vieillot", ano: 1816 },
+        "Dendrocygna viduata": { descritor: "Linnaeus", ano: 1766 },
+        "Dendrocygna autumnalis": { descritor: "Linnaeus", ano: 1758 },
+        "Coscoroba coscoroba": { descritor: "Molina", ano: 1782 },
+        "Cairina moschata": { descritor: "Linnaeus", ano: 1758 },
+        "Sarkidiornis sylvicola": { descritor: "Ihering & Ihering", ano: 1907 },
+        "Callonetta leucophrys": { descritor: "Vieillot", ano: 1816 },
+        "Amazonetta brasiliensis": { descritor: "Gmelin", ano: 1789 },
+        "Spatula versicolor": { descritor: "Vieillot", ano: 1816 },
+        "Spatula platalea": { descritor: "Vieillot", ano: 1816 },
+        "Spatula discors": { descritor: "Linnaeus", ano: 1766 },
+        "Spatula cyanoptera": { descritor: "Vieillot", ano: 1816 },
+        "Mareca sibilatrix": { descritor: "Poeppig", ano: 1829 },
+        "Anas bahamensis": { descritor: "Linnaeus", ano: 1758 },
+        "Anas acuta": { descritor: "Linnaeus", ano: 1758 },
+        "Anas georgica": { descritor: "Gmelin", ano: 1789 },
+        "Anas flavirostris": { descritor: "Vieillot", ano: 1816 },
+        "Netta erythrophthalma": { descritor: "Wied", ano: 1832 },
+        "Netta peposaca": { descritor: "Vieillot", ano: 1816 },
+        "Heteronetta atricapilla": { descritor: "Merrem", ano: 1841 },
+        "Nomonyx dominicus": { descritor: "Linnaeus", ano: 1766 },
+        "Oxyura vittata": { descritor: "Philippi", ano: 1860 },
+        "Penelope superciliaris": { descritor: "Temminck", ano: 1815 },
+        "Penelope obscura": { descritor: "Temminck", ano: 1815 },
+        "Aburria jacutinga": { descritor: "Spix", ano: 1825 },
+        "Ortalis squamata": { descritor: "Lesson", ano: 1829 },
+        "Odontophorus capueira": { descritor: "Spix", ano: 1825 },
+        "Phoenicoparrus andinus": { descritor: "Philippi", ano: 1854 },
+        "Rollandia rolland": { descritor: "Quoy & Gaimard", ano: 1824 },
+        "Tachybaptus dominicus": { descritor: "Linnaeus", ano: 1766 },
+        "Podilymbus podiceps": { descritor: "Linnaeus", ano: 1758 },
+        "Podicephorus major": { descritor: "Boddaert", ano: 1783 },
+        "Columba livia": { descritor: "Gmelin", ano: 1789 },
+        "Patagioenas picazuro": { descritor: "Temminck", ano: 1813 },
+        "Patagioenas cayennensis": { descritor: "Bonnaterre", ano: 1792 },
+        "Patagioenas plumbea": { descritor: "Vieillot", ano: 1818 },
+        "Geotrygon montana": { descritor: "Linnaeus", ano: 1758 },
+        "Leptotila verreauxi": { descritor: "Bonaparte", ano: 1855 },
+        "Leptotila rufaxilla": { descritor: "Richard & Bernard", ano: 1792 },
+        "Zenaida auriculata": { descritor: "Des Murs", ano: 1847 },
+        "Claravis pretiosa": { descritor: "Ferrari-Perez", ano: 1886 },
+        "Columbina talpacoti": { descritor: "Temminck", ano: 1811 },
+        "Columbina squammata": { descritor: "Lesson", ano: 1831 },
+        "Columbina picui": { descritor: "Temminck", ano: 1813 },
+        "Guira guira": { descritor: "Gmelin", ano: 1788 },
+        "Crotophaga major": { descritor: "Gmelin", ano: 1788 },
+        "Crotophaga ani": { descritor: "Linnaeus", ano: 1758 },
+        "Tapera naevia": { descritor: "Linnaeus", ano: 1766 },
+        "Dromococcyx phasianellus": { descritor: "Spix", ano: 1824 },
+        "Dromococcyx pavoninus": { descritor: "Pelzeln", ano: 1870 },
+        "Micrococcyx cinereus": { descritor: "Vieillot", ano: 1817 },
+        "Piaya cayana": { descritor: "Linnaeus", ano: 1766 },
+        "Coccyzus melacoryphus": { descritor: "Vieillot", ano: 1817 },
+        "Coccyzus americanus": { descritor: "Linnaeus", ano: 1758 },
+        "Coccyzus euleri": { descritor: "Cabanis", ano: 1873 },
+        "Coccyzus erythropthalmus": { descritor: "Wilson", ano: 1811 },
+        "Nyctibius griseus": { descritor: "Gmelin", ano: 1789 },
+        "Antrostomus rufus": { descritor: "Boddaert", ano: 1783 },
+        "Antrostomus sericocaudatus": { descritor: "Cassin", ano: 1849 },
+        "Lurocalis semitorquatus": { descritor: "Gmelin", ano: 1789 },
+        "Nyctidromus albicollis": { descritor: "Gmelin", ano: 1789 },
+        "Hydropsalis parvula": { descritor: "Gould", ano: 1837 },
+        "Hydropsalis anomala": { descritor: "Gould", ano: 1837 },
+        "Hydropsalis longirostris": { descritor: "Bonaparte", ano: 1825 },
+        "Hydropsalis torquata": { descritor: "Gmelin", ano: 1789 },
+        "Hydropsalis forcipata": { descritor: "Nitzsch", ano: 1840 },
+        "Podager nacunda": { descritor: "Vieillot", ano: 1817 },
+        "Chordeiles minor": { descritor: "Forster", ano: 1771 },
+        "Cypseloides fumigatus": { descritor: "Streubel", ano: 1848 },
+        "Cypseloides senex": { descritor: "Temminck", ano: 1826 },
+        "Streptoprocne zonaris": { descritor: "Shaw", ano: 1796 },
+        "Streptoprocne biscutata": { descritor: "Sclater", ano: 1866 },
+        "Chaetura cinereiventris": { descritor: "Sclater", ano: 1865 },
+        "Chaetura meridionalis": { descritor: "Hellmayr", ano: 1907 },
+        "Panyptila cayennensis": { descritor: "Gmelin", ano: 1789 },
+        "Florisuga fusca": { descritor: "Vieillot", ano: 1817 },
+        "Ramphodon naevius": { descritor: "Dumont", ano: 1818 },
+        "Phaethornis squalidus": { descritor: "Temminck", ano: 1822 },
+        "Phaethornis pretrei": { descritor: "Lesson & Delattre", ano: 1839 },
+        "Phaethornis eurynome": { descritor: "Lesson", ano: 1832 },
+        "Colibri serrirostris": { descritor: "Vieillot", ano: 1816 },
+        "Anthracothorax nigricollis": { descritor: "Vieillot", ano: 1817 },
+        "Lophornis magnificus": { descritor: "Vieillot", ano: 1817 },
+        "Lophornis chalybeus": { descritor: "Vieillot", ano: 1822 },
+        "Heliodoxa rubricauda": { descritor: "Boddaert", ano: 1783 },
+        "Heliomaster furcifer": { descritor: "Shaw", ano: 1812 },
+        "Calliphlox amethystina": { descritor: "Boddaert", ano: 1783 },
+        "Chlorostilbon lucidus": { descritor: "Shaw", ano: 1812 },
+        "Stephanoxis loddigesii": { descritor: "Gould", ano: 1831 },
+        "Thalurania glaucopis": { descritor: "Gmelin", ano: 1788 },
+        "Eupetomena macroura": { descritor: "Gmelin", ano: 1788 },
+        "Aphantochroa cirrochloris": { descritor: "Vieillot", ano: 1818 },
+        "Chrysuronia versicolor": { descritor: "Vieillot", ano: 1818 },
+        "Leucochloris albicollis": { descritor: "Vieillot", ano: 1818 },
+        "Chionomesa fimbriata": { descritor: "Gmelin", ano: 1788 },
+        "Chionomesa lactea": { descritor: "Lesson", ano: 1832 },
+        "Hylocharis chrysura": { descritor: "Shaw", ano: 1812 },
+        "Aramus guarauna": { descritor: "Linnaeus", ano: 1766 },
+        "Rallus longirostris": { descritor: "Boddaert", ano: 1783 },
+        "Porphyrio martinica": { descritor: "Linnaeus", ano: 1766 },
+        "Porphyrio flavirostris": { descritor: "Gmelin", ano: 1789 },
+        "Laterallus flaviventer": { descritor: "Boddaert", ano: 1783 },
+        "Laterallus melanophaius": { descritor: "Vieillot", ano: 1819 },
+        "Laterallus exilis": { descritor: "Temminck", ano: 1831 },
+        "Laterallus spilopterus": { descritor: "Durnford", ano: 1877 },
+        "Laterallus leucopyrrhus": { descritor: "Vieillot", ano: 1819 },
+        "Mustelirallus albicollis": { descritor: "Vieillot", ano: 1819 },
+        "Neocrex erythrops": { descritor: "Sclater", ano: 1867 },
+        "Pardirallus maculatus": { descritor: "Boddaert", ano: 1783 },
+        "Pardirallus nigricans": { descritor: "Vieillot", ano: 1819 },
+        "Pardirallus sanguinolentus": { descritor: "Swainson", ano: 1838 },
+        "Amaurolimnas concolor": { descritor: "Gosse", ano: 1847 },
+        "Aramides ypecaha": { descritor: "Vieillot", ano: 1819 },
+        "Aramides cajaneus": { descritor: "Statius Muller", ano: 1776 },
+        "Aramides saracura": { descritor: "Spix", ano: 1825 },
+        "Porphyriops melanops": { descritor: "Vieillot", ano: 1819 },
+        "Gallinula galeata": { descritor: "Lichtenstein", ano: 1818 },
+        "Fulica rufifrons": { descritor: "Philippi & Landbeck", ano: 1861 },
+        "Fulica armillata": { descritor: "Vieillot", ano: 1817 },
+        "Fulica leucoptera": { descritor: "Vieillot", ano: 1817 },
+        "Heliornis fulica": { descritor: "Boddaert", ano: 1783 },
+        "Pluvialis dominica": { descritor: "Statius Muller", ano: 1776 },
+        "Pluvialis squatarola": { descritor: "Linnaeus", ano: 1758 },
+        "Oreopholus ruficollis": { descritor: "Wagler", ano: 1829 },
+        "Vanellus chilensis": { descritor: "Molina", ano: 1782 },
+        "Charadrius modestus": { descritor: "Lichtenstein", ano: 1823 },
+        "Charadrius semipalmatus": { descritor: "Bonaparte", ano: 1825 },
+        "Charadrius collaris": { descritor: "Vieillot", ano: 1818 },
+        "Charadrius falklandicus": { descritor: "Latham", ano: 1790 },
+        "Haematopus palliatus": { descritor: "Temminck", ano: 1820 },
+        "Himantopus melanurus": { descritor: "Vieillot", ano: 1817 },
+        "Chionis albus": { descritor: "Gmelin", ano: 1789 },
+        "Bartramia longicauda": { descritor: "Bechstein", ano: 1812 },
+        "Numenius hudsonicus": { descritor: "Latham", ano: 1790 },
+        "Limosa haemastica": { descritor: "Linnaeus", ano: 1758 },
+        "Arenaria interpres": { descritor: "Linnaeus", ano: 1758 },
+        "Calidris canutus": { descritor: "Linnaeus", ano: 1766 },
+        "Calidris himantopus": { descritor: "Bonaparte", ano: 1826 },
+        "Calidris alba": { descritor: "Pallas", ano: 1764 },
+        "Calidris bairdii": { descritor: "Coues", ano: 1861 },
+        "Calidris minutilla": { descritor: "Vieillot", ano: 1819 },
+        "Calidris fuscicollis": { descritor: "Vieillot", ano: 1819 },
+        "Calidris subruficollis": { descritor: "Vieillot", ano: 1819 },
+        "Calidris melanotos": { descritor: "Vieillot", ano: 1819 },
+        "Calidris pusilla": { descritor: "Linnaeus", ano: 1766 },
+        "Limnodromus griseus": { descritor: "Gmelin", ano: 1789 },
+        "Gallinago undulata": { descritor: "Boddaert", ano: 1783 },
+        "Gallinago paraguaiae": { descritor: "Vieillot", ano: 1816 },
+        "Phalaropus tricolor": { descritor: "Vieillot", ano: 1819 },
+        "Phalaropus fulicarius": { descritor: "Linnaeus", ano: 1758 },
+        "Actitis macularius": { descritor: "Linnaeus", ano: 1766 },
+        "Tringa solitaria": { descritor: "Wilson", ano: 1813 },
+        "Tringa melanoleuca": { descritor: "Gmelin", ano: 1789 },
+        "Tringa inornata": { descritor: "Vieillot", ano: 1816 },
+        "Tringa semipalmata": { descritor: "Gmelin", ano: 1789 },
+        "Tringa flavipes": { descritor: "Gmelin", ano: 1789 },
+        "Thinocorus rumicivorus": { descritor: "Eschscholtz", ano: 1829 },
+        "Jacana jacana": { descritor: "Linnaeus", ano: 1766 },
+        "Nycticryphes semicollaris": { descritor: "Vieillot", ano: 1816 },
+        "Stercorarius chilensis": { descritor: "Bonaparte", ano: 1857 },
+        "Stercorarius maccormicki": { descritor: "Saunders", ano: 1893 },
+        "Stercorarius antarcticus": { descritor: "Lesson", ano: 1831 },
+        "Stercorarius pomarinus": { descritor: "Temminck", ano: 1815 },
+        "Stercorarius parasiticus": { descritor: "Linnaeus", ano: 1758 },
+        "Stercorarius longicaudus": { descritor: "Vieillot", ano: 1819 },
+        "Chroicocephalus maculipennis": { descritor: "Lichtenstein", ano: 1823 },
+        "Chroicocephalus cirrocephalus": { descritor: "Vieillot", ano: 1818 },
+        "Leucophaeus modestus": { descritor: "Tschudi", ano: 1843 },
+        "Leucophaeus atricilla": { descritor: "Linnaeus", ano: 1758 },
+        "Leucophaeus pipixcan": { descritor: "Wagler", ano: 1831 },
+        "Larus atlanticus": { descritor: "Olrog", ano: 1958 },
+        "Larus dominicanus": { descritor: "Lichtenstein", ano: 1823 },
+        "Anous stolidus": { descritor: "Linnaeus", ano: 1758 },
+        "Rynchops niger": { descritor: "Linnaeus", ano: 1758 },
+        "Sternula antillarum": { descritor: "Lesson", ano: 1847 },
+        "Sternula superciliaris": { descritor: "Vieillot", ano: 1819 },
+        "Phaetusa simplex": { descritor: "Gmelin", ano: 1789 },
+        "Sterna hirundo": { descritor: "Linnaeus", ano: 1758 },
+        "Sterna hirundinacea": { descritor: "Lesson", ano: 1831 },
+        "Sterna trudeaui": { descritor: "Audubon", ano: 1838 },
+        "Thalasseus acuflavidus": { descritor: "Cabot", ano: 1847 },
+        "Thalasseus maximus": { descritor: "Boddaert", ano: 1783 },
+        "Spheniscus magellanicus": { descritor: "Forster", ano: 1781 },
+        "Diomedea exulans": { descritor: "Linnaeus", ano: 1758 },
+        "Diomedea dabbenena": { descritor: "Mathews", ano: 1929 },
+        "Thalassarche chlororhynchos": { descritor: "Gmelin", ano: 1789 },
+        "Thalassarche melanophris": { descritor: "Temminck", ano: 1828 },
+        "Thalassarche chrysostoma": { descritor: "Forster", ano: 1785 },
+        "Oceanites oceanicus": { descritor: "Kuhl", ano: 1820 },
+        "Macronectes giganteus": { descritor: "Gmelin", ano: 1789 },
+        "Macronectes halli": { descritor: "Mathews", ano: 1912 },
+        "Fulmarus glacialoides": { descritor: "Smith", ano: 1840 },
+        "Daption capense": { descritor: "Linnaeus", ano: 1758 },
+        "Pterodroma mollis": { descritor: "Gould", ano: 1844 },
+        "Pterodroma incerta": { descritor: "Schlegel", ano: 1863 },
+        "Procellaria aequinoctialis": { descritor: "Linnaeus", ano: 1758 },
+        "Procellaria conspicillata": { descritor: "Gould", ano: 1844 },
+        "Calonectris borealis": { descritor: "Cory", ano: 1881 },
+        "Ardenna grisea": { descritor: "Gmelin", ano: 1789 },
+        "Ardenna gravis": { descritor: "O'Reilly", ano: 1818 },
+        "Puffinus puffinus": { descritor: "Brünnich", ano: 1764 },
+        "Ciconia maguari": { descritor: "Gmelin", ano: 1789 },
+        "Jabiru mycteria": { descritor: "Lichtenstein", ano: 1819 },
+        "Mycteria americana": { descritor: "Linnaeus", ano: 1758 },
+        "Fregata magnificens": { descritor: "Mathews", ano: 1914 },
+        "Morus serrator": { descritor: "Gray", ano: 1843 },
+        "Sula leucogaster": { descritor: "Boddaert", ano: 1783 },
+        "Anhinga anhinga": { descritor: "Linnaeus", ano: 1766 },
+        "Nannopterum brasilianum": { descritor: "Gmelin", ano: 1789 },
+        "Tigrisoma lineatum": { descritor: "Boddaert", ano: 1783 },
+        "Tigrisoma fasciatum": { descritor: "Such", ano: 1825 },
+        "Cochlearius cochlearius": { descritor: "Linnaeus", ano: 1766 },
+        "Botaurus pinnatus": { descritor: "Wagler", ano: 1829 },
+        "Ixobrychus exilis": { descritor: "Gmelin", ano: 1789 },
+        "Ixobrychus involucris": { descritor: "Vieillot", ano: 1823 },
+        "Nycticorax nycticorax": { descritor: "Linnaeus", ano: 1758 },
+        "Nyctanassa violacea": { descritor: "Linnaeus", ano: 1758 },
+        "Butorides striata": { descritor: "Linnaeus", ano: 1758 },
+        "Bubulcus ibis": { descritor: "Linnaeus", ano: 1758 },
+        "Ardea cocoi": { descritor: "Linnaeus", ano: 1766 },
+        "Ardea alba": { descritor: "Linnaeus", ano: 1758 },
+        "Syrigma sibilatrix": { descritor: "Temminck", ano: 1824 },
+        "Pilherodius pileatus": { descritor: "Boddaert", ano: 1783 },
+        "Egretta thula": { descritor: "Molina", ano: 1782 },
+        "Egretta caerulea": { descritor: "Linnaeus", ano: 1758 },
+        "Eudocimus ruber": { descritor: "Linnaeus", ano: 1758 },
+        "Plegadis chihi": { descritor: "Vieillot", ano: 1817 },
+        "Mesembrinibis cayennensis": { descritor: "Gmelin", ano: 1789 },
+        "Phimosus infuscatus": { descritor: "Lichtenstein", ano: 1823 },
+        "Theristicus caerulescens": { descritor: "Vieillot", ano: 1817 },
+        "Theristicus caudatus": { descritor: "Boddaert", ano: 1783 },
+        "Platalea ajaja": { descritor: "Linnaeus", ano: 1758 },
+        "Sarcoramphus papa": { descritor: "Linnaeus", ano: 1758 },
+        "Coragyps atratus": { descritor: "Bechstein", ano: 1793 },
+        "Cathartes aura": { descritor: "Linnaeus", ano: 1758 },
+        "Cathartes burrovianus": { descritor: "Cassin", ano: 1845 },
+        "Pandion haliaetus": { descritor: "Linnaeus", ano: 1758 },
+        "Elanus leucurus": { descritor: "Vieillot", ano: 1818 },
+        "Chondrohierax uncinatus": { descritor: "Temminck", ano: 1822 },
+        "Leptodon cayanensis": { descritor: "Latham", ano: 1790 },
+        "Elanoides forficatus": { descritor: "Linnaeus", ano: 1758 },
+        "Spizaetus tyrannus": { descritor: "Wied", ano: 1820 },
+        "Spizaetus melanoleucus": { descritor: "Vieillot", ano: 1816 },
+        "Spizaetus ornatus": { descritor: "Daudin", ano: 1800 },
+        "Rostrhamus sociabilis": { descritor: "Vieillot", ano: 1817 },
+        "Harpagus diodon": { descritor: "Temminck", ano: 1823 },
+        "Ictinia plumbea": { descritor: "Gmelin", ano: 1788 },
+        "Circus cinereus": { descritor: "Vieillot", ano: 1816 },
+        "Circus buffoni": { descritor: "Gmelin", ano: 1788 },
+        "Hieraspiza superciliosa": { descritor: "Vieillot", ano: 1817 },
+        "Accipiter poliogaster": { descritor: "Temminck", ano: 1824 },
+        "Accipiter striatus": { descritor: "Vieillot", ano: 1808 },
+        "Accipiter bicolor": { descritor: "Vieillot", ano: 1817 },
+        "Geranospiza caerulescens": { descritor: "Vieillot", ano: 1817 },
+        "Heterospizias meridionalis": { descritor: "Latham", ano: 1790 },
+        "Amadonastur lacernulatus": { descritor: "Temminck", ano: 1827 },
+        "Urubitinga urubitinga": { descritor: "Gmelin", ano: 1788 },
+        "Urubitinga coronata": { descritor: "Vieillot", ano: 1817 },
+        "Rupornis magnirostris": { descritor: "Gmelin", ano: 1788 },
+        "Parabuteo unicinctus": { descritor: "Temminck", ano: 1824 },
+        "Parabuteo leucorrhous": { descritor: "Quoy & Gaimard", ano: 1824 },
+        "Geranoaetus albicaudatus": { descritor: "Vieillot", ano: 1816 },
+        "Geranoaetus melanoleucus": { descritor: "Vieillot", ano: 1819 },
+        "Pseudastur polionotus": { descritor: "Kaup", ano: 1847 },
+        "Buteo platypterus": { descritor: "Vieillot", ano: 1823 },
+        "Buteo brachyurus": { descritor: "Vieillot", ano: 1816 },
+        "Buteo swainsoni": { descritor: "Bonaparte", ano: 1838 },
+        "Buteo albonotatus": { descritor: "Kaup", ano: 1847 },
+        "Tyto furcata": { descritor: "Temminck", ano: 1827 },
+        "Megascops choliba": { descritor: "Vieillot", ano: 1817 },
+        "Megascops sanctaecatarinae": { descritor: "Salvin", ano: 1897 },
+        "Megascops atricapilla": { descritor: "Temminck", ano: 1822 },
+        "Pulsatrix koeniswaldiana": { descritor: "Bertoni & Bertoni", ano: 1901 },
+        "Bubo virginianus": { descritor: "Gmelin", ano: 1788 },
+        "Strix hylophila": { descritor: "Temminck", ano: 1825 },
+        "Strix virgata": { descritor: "Cassin", ano: 1849 },
+        "Strix huhula": { descritor: "Daudin", ano: 1800 },
+        "Glaucidium minutissimum": { descritor: "Wied", ano: 1830 },
+        "Glaucidium brasilianum": { descritor: "Gmelin", ano: 1788 },
+        "Athene cunicularia": { descritor: "Molina", ano: 1782 },
+        "Aegolius harrisii": { descritor: "Cassin", ano: 1849 },
+        "Asio clamator": { descritor: "Vieillot", ano: 1808 },
+        "Asio stygius": { descritor: "Wagler", ano: 1832 },
+        "Asio flammeus": { descritor: "Pontoppidan", ano: 1763 },
+        "Trogon viridis": { descritor: "Linnaeus", ano: 1766 },
+        "Trogon surrucura": { descritor: "Vieillot", ano: 1817 },
+        "Trogon chrysochloros": { descritor: "Pelzeln", ano: 1856 },
+        "Baryphthengus ruficapillus": { descritor: "Vieillot", ano: 1818 },
+        "Megaceryle torquata": { descritor: "Linnaeus", ano: 1766 },
+        "Chloroceryle amazona": { descritor: "Latham", ano: 1790 },
+        "Chloroceryle aenea": { descritor: "Pallas", ano: 1764 },
+        "Chloroceryle americana": { descritor: "Gmelin", ano: 1788 },
+        "Chloroceryle inda": { descritor: "Linnaeus", ano: 1766 },
+        "Nonnula rubecula": { descritor: "Spix", ano: 1824 },
+        "Malacoptila striata": { descritor: "Spix", ano: 1824 },
+        "Notharchus swainsoni": { descritor: "Gray", ano: 1846 },
+        "Nystalus chacuru": { descritor: "Vieillot", ano: 1816 },
+        "Ramphastos toco": { descritor: "Statius Muller", ano: 1776 },
+        "Ramphastos vitellinus": { descritor: "Lichtenstein", ano: 1823 },
+        "Ramphastos dicolorus": { descritor: "Linnaeus", ano: 1766 },
+        "Selenidera maculirostris": { descritor: "Lichtenstein", ano: 1823 },
+        "Pteroglossus bailloni": { descritor: "Vieillot", ano: 1819 },
+        "Pteroglossus castanotis": { descritor: "Gould", ano: 1834 },
+        "Picumnus temminckii": { descritor: "Lafresnaye", ano: 1845 },
+        "Picumnus nebulosus": { descritor: "Sundevall", ano: 1866 },
+        "Melanerpes candidus": { descritor: "Otto", ano: 1796 },
+        "Melanerpes flavifrons": { descritor: "Vieillot", ano: 1818 },
+        "Veniliornis spilogaster": { descritor: "Wagler", ano: 1827 },
+        "Campephilus robustus": { descritor: "Lichtenstein", ano: 1818 },
+        "Dryocopus lineatus": { descritor: "Linnaeus", ano: 1766 },
+        "Celeus galeatus": { descritor: "Lichtenstein", ano: 1818 },
+        "Celeus flavescens": { descritor: "Gmelin", ano: 1788 },
+        "Piculus flavigula": { descritor: "Gmelin", ano: 1788 },
+        "Piculus aurulentus": { descritor: "Temminck", ano: 1821 },
+        "Colaptes melanochloros": { descritor: "Gmelin", ano: 1788 },
+        "Colaptes campestris": { descritor: "Vieillot", ano: 1818 },
+        "Cariama cristata": { descritor: "Linnaeus", ano: 1766 },
+        "Herpetotheres cachinnans": { descritor: "Linnaeus", ano: 1758 },
+        "Micrastur ruficollis": { descritor: "Vieillot", ano: 1817 },
+        "Micrastur semitorquatus": { descritor: "Vieillot", ano: 1817 },
+        "Caracara plancus": { descritor: "Miller", ano: 1777 },
+        "Milvago chimachima": { descritor: "Vieillot", ano: 1816 },
+        "Milvago chimango": { descritor: "Vieillot", ano: 1816 },
+        "Falco sparverius": { descritor: "Linnaeus", ano: 1758 },
+        "Falco rufigularis": { descritor: "Daudin", ano: 1800 },
+        "Falco femoralis": { descritor: "Temminck", ano: 1822 },
+        "Falco peregrinus": { descritor: "Tunstall", ano: 1771 },
+        "Touit melanonotus": { descritor: "Wied", ano: 1820 },
+        "Myiopsitta monachus": { descritor: "Boddaert", ano: 1783 },
+        "Brotogeris tirica": { descritor: "Gmelin", ano: 1788 },
+        "Brotogeris chiriri": { descritor: "Vieillot", ano: 1818 },
+        "Pionopsitta pileata": { descritor: "Scopoli", ano: 1769 },
+        "Triclaria malachitacea": { descritor: "Spix", ano: 1824 },
+        "Pionus maximiliani": { descritor: "Kuhl", ano: 1820 },
+        "Amazona vinacea": { descritor: "Kuhl", ano: 1820 },
+        "Amazona pretrei": { descritor: "Temminck", ano: 1830 },
+        "Amazona aestiva": { descritor: "Linnaeus", ano: 1758 },
+        "Forpus xanthopterygius": { descritor: "Spix", ano: 1824 },
+        "Pyrrhura frontalis": { descritor: "Vieillot", ano: 1817 },
+        "Primolius maracana": { descritor: "Vieillot", ano: 1816 },
+        "Psittacara leucophthalmus": { descritor: "Statius Muller", ano: 1776 },
+        "Terenura maculata": { descritor: "Wied", ano: 1831 },
+        "Myrmotherula unicolor": { descritor: "Menetrés", ano: 1835 },
+        "Formicivora acutirostris": { descritor: "Wied", ano: 1831 },
+        "Rhopias gularis": { descritor: "Spix", ano: 1825 },
+        "Dysithamnus stictothorax": { descritor: "Sclater & Salvin", ano: 1880 },
+        "Dysithamnus mentalis": { descritor: "Temminck", ano: 1823 },
+        "Dysithamnus xanthopterus": { descritor: "Burmeister", ano: 1856 },
+        "Herpsilochmus rufimarginatus": { descritor: "Temminck", ano: 1822 },
+        "Thamnophilus doliatus": { descritor: "Linnaeus", ano: 1764 },
+        "Thamnophilus ruficapillus": { descritor: "Vieillot", ano: 1816 },
+        "Thamnophilus caerulescens": { descritor: "Vieillot", ano: 1816 },
+        "Hypoedaleus guttatus": { descritor: "Vieillot", ano: 1816 },
+        "Batara cinerea": { descritor: "Vieillot", ano: 1819 },
+        "Mackenziaena leachii": { descritor: "Such", ano: 1825 },
+        "Mackenziaena severa": { descritor: "Lichtenstein", ano: 1823 },
+        "Biatas nigropectus": { descritor: "Lafresnaye & d'Orbigny", ano: 1837 },
+        "Myrmoderus squamosus": { descritor: "Pelzeln", ano: 1868 },
+        "Pyriglena leucoptera": { descritor: "Vieillot", ano: 1818 },
+        "Drymophila ferruginea": { descritor: "Temminck", ano: 1822 },
+        "Drymophila rubricollis": { descritor: "Bertoni", ano: 1901 },
+        "Drymophila ochropyga": { descritor: "Hellmayr", ano: 1906 },
+        "Drymophila malura": { descritor: "Temminck & Laugier", ano: 1830 },
+        "Drymophila squamata": { descritor: "Lichtenstein", ano: 1823 },
+        "Conopophaga melanops": { descritor: "Vieillot", ano: 1818 },
+        "Conopophaga lineata": { descritor: "Wied", ano: 1831 },
+        "Grallaria varia": { descritor: "Boddaert", ano: 1783 },
+        "Cryptopezus nattereri": { descritor: "Hellmayr", ano: 1907 },
+        "Psilorhamphus guttatus": { descritor: "Ménétries", ano: 1835 },
+        "Merulaxis ater": { descritor: "Lesson", ano: 1830 },
+        "Eleoscytalopus indigoticus": { descritor: "Wied", ano: 1831 },
+        "Scytalopus iraiensis": { descritor: "Bornschein, Reinert & Pichorim", ano: 1998 },
+        "Scytalopus pachecoi": { descritor: "Maurício", ano: 2005 },
+        "Scytalopus speluncae": { descritor: "Ménétries", ano: 1835 },
+        "Formicarius colma": { descritor: "Boddaert", ano: 1783 },
+        "Chamaeza campanisona": { descritor: "Lichtenstein", ano: 1823 },
+        "Chamaeza ruficauda": { descritor: "Cabanis & Heine", ano: 1859 },
+        "Sclerurus scansor": { descritor: "Ménétries", ano: 1835 },
+        "Geositta cunicularia": { descritor: "Vieillot", ano: 1816 },
+        "Sittasomus griseicapillus": { descritor: "Vieillot", ano: 1818 },
+        "Dendrocincla turdina": { descritor: "Lichtenstein", ano: 1820 },
+        "Dendrocolaptes platyrostris": { descritor: "Spix", ano: 1825 },
+        "Xiphocolaptes albicollis": { descritor: "Vieillot", ano: 1818 },
+        "Xiphorhynchus fuscus": { descritor: "Vieillot", ano: 1818 },
+        "Campylorhamphus falcularius": { descritor: "Vieillot", ano: 1822 },
+        "Lepidocolaptes angustirostris": { descritor: "Vieillot", ano: 1818 },
+        "Lepidocolaptes falcinellus": { descritor: "Cabanis & Heine", ano: 1859 },
+        "Xenops minutus": { descritor: "Sparrman", ano: 1788 },
+        "Xenops rutilans": { descritor: "Temminck", ano: 1821 },
+        "Furnarius figulus": { descritor: "Lichtenstein", ano: 1823 },
+        "Furnarius rufus": { descritor: "Gmelin", ano: 1788 },
+        "Lochmias nematura": { descritor: "Lichtenstein", ano: 1823 },
+        "Phleocryptes melanops": { descritor: "Vieillot", ano: 1817 },
+        "Limnornis curvirostris": { descritor: "Gould", ano: 1839 },
+        "Cinclodes pabsti": { descritor: "Sick", ano: 1969 },
+        "Cinclodes fuscus": { descritor: "Vieillot", ano: 1818 },
+        "Anabazenops fuscus": { descritor: "Vieillot", ano: 1816 },
+        "Cichlocolaptes leucophrus": { descritor: "Jardine & Selby", ano: 1830 },
+        "Heliobletus contaminatus": { descritor: "Berlepsch", ano: 1885 },
+        "Philydor atricapillus": { descritor: "Wied", ano: 1821 },
+        "Anabacerthia amaurotis": { descritor: "Temminck", ano: 1823 },
+        "Anabacerthia lichtensteini": { descritor: "Cabanis & Heine", ano: 1859 },
+        "Syndactyla rufosuperciliata": { descritor: "Lafresnaye", ano: 1832 },
+        "Dendroma rufa": { descritor: "Lesson", ano: 1830 },
+        "Clibanornis dendrocolaptoides": { descritor: "Pelzeln", ano: 1859 },
+        "Automolus leucophthalmus": { descritor: "Wied", ano: 1821 },
+        "Leptasthenura striolata": { descritor: "Pelzeln", ano: 1856 },
+        "Leptasthenura setaria": { descritor: "Temminck", ano: 1824 },
+        "Phacellodomus striaticollis": { descritor: "Orbigny & Lafresnaye", ano: 1838 },
+        "Phacellodomus ferrugineigula": { descritor: "Pelzeln", ano: 1858 },
+        "Anumbius annumbi": { descritor: "Vieillot", ano: 1817 },
+        "Limnoctites rectirostris": { descritor: "Gould", ano: 1839 },
+        "Cranioleuca obsoleta": { descritor: "Reichenbach", ano: 1853 },
+        "Cranioleuca pallida": { descritor: "Wied", ano: 1831 },
+        "Spartonoica maluroides": { descritor: "d'Orbigny & Lafresnaye", ano: 1837 },
+        "Certhiaxis cinnamomeus": { descritor: "Gmelin", ano: 1788 },
+        "Schoeniophylax phryganophilus": { descritor: "Vieillot", ano: 1817 },
+        "Synallaxis cinerascens": { descritor: "Temminck", ano: 1823 },
+        "Synallaxis ruficapilla": { descritor: "Vieillot", ano: 1819 },
+        "Synallaxis spixi": { descritor: "Sclater", ano: 1856 },
+        "Synallaxis albescens": { descritor: "Temminck", ano: 1823 },
+        "Synallaxis frontalis": { descritor: "Pelzeln", ano: 1859 },
+        "Ilicura militaris": { descritor: "Shaw & Nodder", ano: 1809 },
+        "Chiroxiphia caudata": { descritor: "Shaw & Nodder", ano: 1793 },
+        "Manacus manacus": { descritor: "Linnaeus", ano: 1766 },
+        "Carpornis cucullata": { descritor: "Swainson", ano: 1821 },
+        "Phibalura flavirostris": { descritor: "Vieillot", ano: 1816 },
+        "Pyroderus scutatus": { descritor: "Shaw", ano: 1792 },
+        "Lipaugus lanioides": { descritor: "Lesson", ano: 1844 },
+        "Procnias nudicollis": { descritor: "Vieillot", ano: 1817 },
+        "Schiffornis virescens": { descritor: "Lafresnaye", ano: 1838 },
+        "Tityra inquisitor": { descritor: "Lichtenstein", ano: 1823 },
+        "Tityra cayana": { descritor: "Linnaeus", ano: 1766 },
+        "Tityra semifasciata": { descritor: "Spix", ano: 1825 },
+        "Pachyramphus viridis": { descritor: "Vieillot", ano: 1816 },
+        "Pachyramphus castaneus": { descritor: "Jardine & Selby", ano: 1827 },
+        "Pachyramphus polychopterus": { descritor: "Vieillot", ano: 1818 },
+        "Pachyramphus marginatus": { descritor: "Lichtenstein", ano: 1823 },
+        "Pachyramphus validus": { descritor: "Lichtenstein", ano: 1823 },
+        "Oxyruncus cristatus": { descritor: "Swainson", ano: 1821 },
+        "Onychorhynchus swainsoni": { descritor: "Pelzeln", ano: 1868 },
+        "Myiobius barbatus": { descritor: "Gmelin", ano: 1789 },
+        "Myiobius atricaudus": { descritor: "Lawrence", ano: 1863 },
+        "Piprites chloris": { descritor: "Temminck", ano: 1822 },
+        "Piprites pileata": { descritor: "Temminck", ano: 1822 },
+        "Platyrinchus mystaceus": { descritor: "Vieillot", ano: 1818 },
+        "Platyrinchus leucoryphus": { descritor: "Wied", ano: 1831 },
+        "Tachuris rubrigastra": { descritor: "Vieillot", ano: 1817 },
+        "Mionectes rufiventris": { descritor: "Cabanis", ano: 1846 },
+        "Leptopogon amaurocephalus": { descritor: "Tschudi", ano: 1846 },
+        "Corythopis delalandi": { descritor: "Lesson", ano: 1830 },
+        "Phylloscartes eximius": { descritor: "Temminck", ano: 1822 },
+        "Phylloscartes ventralis": { descritor: "Temminck & Laugier", ano: 1828 },
+        "Phylloscartes kronei": { descritor: "Willis & Schuchmann", ano: 1993 },
+        "Phylloscartes oustaleti": { descritor: "Sclater", ano: 1887 },
+        "Phylloscartes difficilis": { descritor: "Ihering & Ihering", ano: 1907 },
+        "Phylloscartes sylviolus": { descritor: "Cabanis & Heine", ano: 1859 },
+        "Tolmomyias sulphurescens": { descritor: "Spix", ano: 1825 },
+        "Todirostrum poliocephalum": { descritor: "Wied", ano: 1831 },
+        "Todirostrum cinereum": { descritor: "Linnaeus", ano: 1766 },
+        "Poecilotriccus plumbeiceps": { descritor: "Lafresnaye", ano: 1846 },
+        "Myiornis auricularis": { descritor: "Vieillot", ano: 1818 },
+        "Hemitriccus diops": { descritor: "Temminck", ano: 1822 },
+        "Hemitriccus obsoletus": { descritor: "Miranda-Ribeiro", ano: 1906 },
+        "Hemitriccus orbitatus": { descritor: "Wied", ano: 1831 },
+        "Hemitriccus nidipendulus": { descritor: "Wied", ano: 1831 },
+        "Hemitriccus kaempferi": { descritor: "Zimmer", ano: 1953 },
+        "Hirundinea ferruginea": { descritor: "Gmelin", ano: 1788 },
+        "Euscarthmus meloryphus": { descritor: "Wied", ano: 1831 },
+        "Tyranniscus burmeisteri": { descritor: "Cabanis & Heine", ano: 1859 },
+        "Camptostoma obsoletum": { descritor: "Temminck", ano: 1824 },
+        "Elaenia flavogaster": { descritor: "Thunberg", ano: 1822 },
+        "Elaenia spectabilis": { descritor: "Pelzeln", ano: 1868 },
+        "Elaenia chilensis": { descritor: "Hellmayr", ano: 1927 },
+        "Elaenia parvirostris": { descritor: "Pelzeln", ano: 1868 },
+        "Elaenia mesoleuca": { descritor: "Deppe", ano: 1830 },
+        "Elaenia obscura": { descritor: "d'Orbigny & Lafresnaye", ano: 1837 },
+        "Myiopagis caniceps": { descritor: "Swainson", ano: 1835 },
+        "Myiopagis viridicata": { descritor: "Vieillot", ano: 1817 },
+        "Capsiempis flaveola": { descritor: "Lichtenstein", ano: 1823 },
+        "Phyllomyias virescens": { descritor: "Temminck", ano: 1824 },
+        "Phyllomyias fasciatus": { descritor: "Thunberg", ano: 1822 },
+        "Phyllomyias griseocapilla": { descritor: "Sclater", ano: 1862 },
+        "Culicivora caudacuta": { descritor: "Vieillot", ano: 1818 },
+        "Polystictus pectoralis": { descritor: "Vieillot", ano: 1817 },
+        "Pseudocolopteryx sclateri": { descritor: "Oustalet", ano: 1892 },
+        "Pseudocolopteryx acutipennis": { descritor: "Sclater & Salvin", ano: 1873 },
+        "Pseudocolopteryx flaviventris": { descritor: "d'Orbigny & Lafresnaye", ano: 1837 },
+        "Serpophaga nigricans": { descritor: "Vieillot", ano: 1817 },
+        "Serpophaga subcristata": { descritor: "Vieillot", ano: 1817 },
+        "Serpophaga griseicapilla": { descritor: "Straneck", ano: 2007 },
+        "Attila phoenicurus": { descritor: "Pelzeln", ano: 1868 },
+        "Attila rufus": { descritor: "Vieillot", ano: 1819 },
+        "Legatus leucophaius": { descritor: "Vieillot", ano: 1818 },
+        "Ramphotrigon megacephalum": { descritor: "Swainson", ano: 1835 },
+        "Myiarchus swainsoni": { descritor: "Cabanis & Heine", ano: 1859 },
+        "Myiarchus ferox": { descritor: "Gmelin", ano: 1789 },
+        "Sirystes sibilator": { descritor: "Vieillot", ano: 1818 },
+        "Pitangus sulphuratus": { descritor: "Linnaeus", ano: 1766 },
+        "Machetornis rixosa": { descritor: "Vieillot", ano: 1819 },
+        "Myiodynastes maculatus": { descritor: "Statius Muller", ano: 1776 },
+        "Megarynchus pitangua": { descritor: "Linnaeus", ano: 1766 },
+        "Myiozetetes similis": { descritor: "Spix", ano: 1825 },
+        "Tyrannus albogularis": { descritor: "Burmeister", ano: 1856 },
+        "Tyrannus melancholicus": { descritor: "Vieillot", ano: 1819 },
+        "Tyrannus savana": { descritor: "Vieillot", ano: 1808 },
+        "Tyrannus tyrannus": { descritor: "Linnaeus", ano: 1758 },
+        "Griseotyrannus aurantioatrocristatus": { descritor: "d'Orbigny & Lafresnaye", ano: 1837 },
+        "Empidonomus varius": { descritor: "Vieillot", ano: 1818 },
+        "Conopias trivirgatus": { descritor: "Wied", ano: 1831 },
+        "Colonia colonus": { descritor: "Vieillot", ano: 1818 },
+        "Arundinicola leucocephala": { descritor: "Linnaeus", ano: 1764 },
+        "Fluvicola albiventer": { descritor: "Spix", ano: 1825 },
+        "Fluvicola nengeta": { descritor: "Linnaeus", ano: 1766 },
+        "Pyrocephalus rubinus": { descritor: "Boddaert", ano: 1783 },
+        "Muscipipra vetula": { descritor: "Lichtenstein", ano: 1823 },
+        "Gubernetes yetapa": { descritor: "Vieillot", ano: 1818 },
+        "Heteroxolmis dominicanus": { descritor: "Vieillot", ano: 1823 },
+        "Myiophobus fasciatus": { descritor: "Statius Muller", ano: 1776 },
+        "Cnemotriccus fuscatus": { descritor: "Wied", ano: 1831 },
+        "Lathrotriccus euleri": { descritor: "Cabanis", ano: 1868 },
+        "Contopus cinereus": { descritor: "Spix", ano: 1825 },
+        "Satrapa icterophrys": { descritor: "Vieillot", ano: 1818 },
+        "Lessonia rufa": { descritor: "Gmelin", ano: 1789 },
+        "Hymenops perspicillatus": { descritor: "Gmelin", ano: 1789 },
+        "Knipolegus lophotes": { descritor: "Boie", ano: 1828 },
+        "Knipolegus nigerrimus": { descritor: "Vieillot", ano: 1818 },
+        "Knipolegus cyanirostris": { descritor: "Vieillot", ano: 1818 },
+        "Xolmis irupero": { descritor: "Vieillot", ano: 1823 },
+        "Xolmis velatus": { descritor: "Lichtenstein", ano: 1823 },
+        "Nengetus cinereus": { descritor: "Vieillot", ano: 1816 },
+        "Cyclarhis gujanensis": { descritor: "Gmelin", ano: 1789 },
+        "Hylophilus poicilotis": { descritor: "Temminck", ano: 1822 },
+        "Vireo chivi": { descritor: "Vieillot", ano: 1817 },
+        "Cyanocorax caeruleus": { descritor: "Vieillot", ano: 1818 },
+        "Cyanocorax cristatellus": { descritor: "Temminck", ano: 1823 },
+        "Cyanocorax chrysops": { descritor: "Vieillot", ano: 1818 },
+        "Pygochelidon cyanoleuca": { descritor: "Vieillot", ano: 1817 },
+        "Alopochelidon fucata": { descritor: "Temminck", ano: 1822 },
+        "Stelgidopteryx ruficollis": { descritor: "Vieillot", ano: 1817 },
+        "Progne tapera": { descritor: "Vieillot", ano: 1817 },
+        "Progne subis": { descritor: "Linnaeus", ano: 1758 },
+        "Progne chalybea": { descritor: "Gmelin", ano: 1789 },
+        "Progne elegans": { descritor: "Baird", ano: 1865 },
+        "Tachycineta albiventer": { descritor: "Boddaert", ano: 1783 },
+        "Tachycineta leucorrhoa": { descritor: "Vieillot", ano: 1817 },
+        "Tachycineta leucopyga": { descritor: "Meyen", ano: 1834 },
+        "Riparia riparia": { descritor: "Linnaeus", ano: 1758 },
+        "Hirundo rustica": { descritor: "Linnaeus", ano: 1758 },
+        "Petrochelidon pyrrhonota": { descritor: "Vieillot", ano: 1817 },
+        "Troglodytes musculus": { descritor: "Naumann", ano: 1823 },
+        "Cistothorus platensis": { descritor: "Latham", ano: 1790 },
+        "Campylorhynchus turdinus": { descritor: "Wied", ano: 1821 },
+        "Cantorchilus longirostris": { descritor: "Vieillot", ano: 1819 },
+        "Ramphocaenus melanurus": { descritor: "Vieillot", ano: 1819 },
+        "Polioptila dumicola": { descritor: "Vieillot", ano: 1817 },
+        "Polioptila lactea": { descritor: "Sharpe", ano: 1885 },
+        "Catharus fuscescens": { descritor: "Stephens", ano: 1817 },
+        "Catharus swainsoni": { descritor: "Tschudi", ano: 1845 },
+        "Turdus flavipes": { descritor: "Vieillot", ano: 1818 },
+        "Turdus leucomelas": { descritor: "Vieillot", ano: 1818 },
+        "Turdus rufiventris": { descritor: "Vieillot", ano: 1818 },
+        "Turdus amaurochalinus": { descritor: "Cabanis", ano: 1850 },
+        "Turdus subalaris": { descritor: "Seebohm", ano: 1887 },
+        "Turdus albicollis": { descritor: "Vieillot", ano: 1818 },
+        "Mimus saturninus": { descritor: "Lichtenstein", ano: 1823 },
+        "Mimus triurus": { descritor: "Vieillot", ano: 1818 },
+        "Sturnus vulgaris": { descritor: "Linnaeus", ano: 1758 },
+        "Estrilda astrild": { descritor: "Linnaeus", ano: 1758 },
+        "Passer domesticus": { descritor: "Linnaeus", ano: 1758 },
+        "Anthus chii": { descritor: "Vieillot", ano: 1818 },
+        "Anthus correndera": { descritor: "Vieillot", ano: 1818 },
+        "Anthus nattereri": { descritor: "Sclater", ano: 1878 },
+        "Anthus hellmayri": { descritor: "Hartert", ano: 1909 },
+        "Spinus magellanicus": { descritor: "Vieillot", ano: 1805 },
+        "Cyanophonia cyanocephala": { descritor: "Wied", ano: 1820 },
+        "Chlorophonia cyanea": { descritor: "Thunberg", ano: 1822 },
+        "Euphonia chlorotica": { descritor: "Linnaeus", ano: 1766 },
+        "Euphonia chalybea": { descritor: "Mikan", ano: 1825 },
+        "Euphonia violacea": { descritor: "Linnaeus", ano: 1758 },
+        "Euphonia pectoralis": { descritor: "Latham", ano: 1801 },
+        "Ammodramus humeralis": { descritor: "Bosc", ano: 1792 },
+        "Arremon semitorquatus": { descritor: "Swainson", ano: 1838 },
+        "Zonotrichia capensis": { descritor: "Statius Muller", ano: 1776 },
+        "Leistes superciliaris": { descritor: "Bonaparte", ano: 1850 },
+        "Cacicus chrysopterus": { descritor: "Vigors", ano: 1825 },
+        "Cacicus haemorrhous": { descritor: "Linnaeus", ano: 1766 },
+        "Icterus pyrrhopterus": { descritor: "Vieillot", ano: 1819 },
+        "Icterus galbula": { descritor: "Linnaeus", ano: 1758 },
+        "Molothrus rufoaxillaris": { descritor: "Cassin", ano: 1866 },
+        "Molothrus oryzivorus": { descritor: "Gmelin", ano: 1788 },
+        "Molothrus bonariensis": { descritor: "Gmelin", ano: 1789 },
+        "Amblyramphus holosericeus": { descritor: "Scopoli", ano: 1786 },
+        "Gnorimopsar chopi": { descritor: "Vieillot", ano: 1819 },
+        "Agelaioides badius": { descritor: "Vieillot", ano: 1819 },
+        "Agelasticus thilius": { descritor: "Molina", ano: 1782 },
+        "Chrysomus ruficapillus": { descritor: "Vieillot", ano: 1819 },
+        "Xanthopsar flavus": { descritor: "Gmelin", ano: 1788 },
+        "Pseudoleistes guirahuro": { descritor: "Vieillot", ano: 1819 },
+        "Pseudoleistes virescens": { descritor: "Vieillot", ano: 1819 },
+        "Geothlypis aequinoctialis": { descritor: "Gmelin", ano: 1789 },
+        "Setophaga cerulea": { descritor: "Wilson", ano: 1810 },
+        "Setophaga pitiayumi": { descritor: "Vieillot", ano: 1817 },
+        "Setophaga striata": { descritor: "Forster", ano: 1772 },
+        "Myiothlypis leucoblephara": { descritor: "Vieillot", ano: 1817 },
+        "Myiothlypis rivularis": { descritor: "Wied", ano: 1821 },
+        "Basileuterus culicivorus": { descritor: "Deppe", ano: 1830 },
+        "Orthogonys chloricterus": { descritor: "Vieillot", ano: 1819 },
+        "Piranga flava": { descritor: "Vieillot", ano: 1822 },
+        "Habia rubica": { descritor: "Vieillot", ano: 1817 },
+        "Amaurospiza moesta": { descritor: "Hartlaub", ano: 1853 },
+        "Cyanoloxia glaucocaerulea": { descritor: "d'Orbigny & Lafresnaye", ano: 1837 },
+        "Cyanoloxia brissonii": { descritor: "Lichtenstein", ano: 1823 },
+        "Orchesticus abeillei": { descritor: "Lesson", ano: 1839 },
+        "Nemosia pileata": { descritor: "Boddaert", ano: 1783 },
+        "Embernagra platensis": { descritor: "Gmelin", ano: 1789 },
+        "Emberizoides herbicola": { descritor: "Vieillot", ano: 1817 },
+        "Emberizoides ypiranganus": { descritor: "Ihering & Ihering", ano: 1907 },
+        "Rhopospina fruticeti": { descritor: "Kittlitz", ano: 1833 },
+        "Chlorophanes spiza": { descritor: "Linnaeus", ano: 1758 },
+        "Hemithraupis guira": { descritor: "Linnaeus", ano: 1766 },
+        "Hemithraupis ruficapilla": { descritor: "Vieillot", ano: 1818 },
+        "Tersina viridis": { descritor: "Illiger", ano: 1811 },
+        "Cyanerpes cyaneus": { descritor: "Linnaeus", ano: 1766 },
+        "Dacnis nigripes": { descritor: "Pelzeln", ano: 1856 },
+        "Dacnis cayana": { descritor: "Linnaeus", ano: 1766 },
+        "Saltator similis": { descritor: "d'Orbigny & Lafresnaye", ano: 1837 },
+        "Saltator maxillosus": { descritor: "Cabanis", ano: 1851 },
+        "Saltator fuliginosus": { descritor: "Daudin", ano: 1800 },
+        "Coereba flaveola": { descritor: "Linnaeus", ano: 1758 },
+        "Asemospiza fuliginosa": { descritor: "Lichtenstein", ano: 1823 },
+        "Volatinia jacarina": { descritor: "Linnaeus", ano: 1766 },
+        "Trichothraupis melanops": { descritor: "Vieillot", ano: 1818 },
+        "Loriotus cristatus": { descritor: "Gmelin", ano: 1789 },
+        "Tachyphonus coronatus": { descritor: "Vieillot", ano: 1822 },
+        "Ramphocelus bresilia": { descritor: "Linnaeus", ano: 1766 },
+        "Ramphocelus carbo": { descritor: "Pallas", ano: 1764 },
+        "Sporophila lineola": { descritor: "Linnaeus", ano: 1758 },
+        "Sporophila frontalis": { descritor: "Verreaux", ano: 1869 },
+        "Sporophila falcirostris": { descritor: "Temminck", ano: 1820 },
+        "Sporophila beltoni": { descritor: "Repenning & Fontana", ano: 2013 },
+        "Sporophila collaris": { descritor: "Boddaert", ano: 1783 },
+        "Sporophila caerulescens": { descritor: "Vieillot", ano: 1817 },
+        "Sporophila leucoptera": { descritor: "Vieillot", ano: 1817 },
+        "Sporophila pileata": { descritor: "Sclater", ano: 1864 },
+        "Sporophila hypoxantha": { descritor: "Cabanis", ano: 1851 },
+        "Sporophila ruficollis": { descritor: "Cabanis", ano: 1851 },
+        "Sporophila palustris": { descritor: "Barrows", ano: 1883 },
+        "Sporophila cinnamomea": { descritor: "Lafresnaye", ano: 1839 },
+        "Sporophila melanogaster": { descritor: "Pelzeln", ano: 1870 },
+        "Sporophila angolensis": { descritor: "Linnaeus", ano: 1766 },
+        "Poospiza nigrorufa": { descritor: "d'Orbigny & Lafresnaye", ano: 1837 },
+        "Thlypopsis sordida": { descritor: "d'Orbigny & Lafresnaye", ano: 1837 },
+        "Thlypopsis pyrrhocoma": { descritor: "Cabanis", ano: 1851 },
+        "Castanozoster thoracicus": { descritor: "Nordmann", ano: 1835 },
+        "Donacospiza albifrons": { descritor: "Vieillot", ano: 1817 },
+        "Microspingus cabanisi": { descritor: "Hellmayr", ano: 1922 },
+        "Conirostrum speciosum": { descritor: "Temminck", ano: 1824 },
+        "Conirostrum bicolor": { descritor: "Vieillot", ano: 1809 },
+        "Sicalis citrina": { descritor: "Pelzeln & Sclater", ano: 1879 },
+        "Sicalis flaveola": { descritor: "Linnaeus", ano: 1766 },
+        "Sicalis luteola": { descritor: "Sparrman", ano: 1789 },
+        "Haplospiza unicolor": { descritor: "Cabanis", ano: 1851 },
+        "Pipraeidea melanonota": { descritor: "Vieillot", ano: 1819 },
+        "Rauenia bonariensis": { descritor: "Gmelin", ano: 1789 },
+        "Stephanophorus diadematus": { descritor: "Temminck", ano: 1823 },
+        "Cissopis leverianus": { descritor: "Gmelin", ano: 1788 },
+        "Schistochlamys ruficapillus": { descritor: "Vieillot", ano: 1817 },
+        "Paroaria coronata": { descritor: "Miller", ano: 1776 },
+        "Thraupis sayaca": { descritor: "Linnaeus", ano: 1766 },
+        "Thraupis cyanoptera": { descritor: "Vieillot", ano: 1817 },
+        "Thraupis palmarum": { descritor: "Wied", ano: 1823 },
+        "Thraupis ornata": { descritor: "Sparrman", ano: 1789 },
+        "Stilpnia peruviana": { descritor: "Desmarest", ano: 1806 },
+        "Stilpnia preciosa": { descritor: "Cabanis", ano: 1851 },
+        "Tangara seledon": { descritor: "Statius Muller", ano: 1776 },
+        "Tangara cyanocephala": { descritor: "Statius Muller", ano: 1776 },
+        "Tangara desmaresti": { descritor: "Vieillot", ano: 1819 },
+    };
+
+
+    let _descSort = { col: 'especie', asc: true };
+    let _descViewMode = 'all'; // 'all' | 'imported'
+
+    function setDescView(mode) {
+        _descViewMode = mode;
+        const btnImp = document.getElementById('desc-view-imported');
+        const btnAll = document.getElementById('desc-view-all');
+        if (mode === 'imported') {
+            if (btnImp) { btnImp.style.background = 'var(--green-base)'; btnImp.style.color = 'white'; }
+            if (btnAll) { btnAll.style.background = 'white'; btnAll.style.color = 'var(--green-base)'; }
+        } else {
+            if (btnAll) { btnAll.style.background = 'var(--green-base)'; btnAll.style.color = 'white'; }
+            if (btnImp) { btnImp.style.background = 'white'; btnImp.style.color = 'var(--green-base)'; }
+        }
+        buildDescTable();
+    }
+    window.setDescView = setDescView;
+
+    function getDescImportedSet() {
+        const s = new Set();
+        document.querySelectorAll('#table-body tr').forEach(tr => {
+            const spCell = tr.querySelector('td.species-col');
+            if (spCell) {
+                const inp = spCell.querySelector('input');
+                const val = inp ? inp.value.trim() : spCell.textContent.trim();
+                if (val) s.add(val);
+            }
+        });
+        return s;
+    }
+
+    function buildDescTable() {
+        const search   = (document.getElementById('desc-search')?.value || '').toLowerCase();
+        const fCentury = document.getElementById('desc-filter-century')?.value || '';
+        const fAuthor  = document.getElementById('desc-filter-author')?.value || '';
+        const importedSet = getDescImportedSet();
+
+        let rows = Object.entries(DESCRIPTOR_DB).map(([especie, info]) => {
+            const cons = conservationData.find(c => c.especie === especie);
+            const taxo = speciesInfo[especie] || {};
+            return {
+                especie,
+                nomePopular: cons ? cons.nomePopular : '-',
+                descritor: info.descritor,
+                ano: info.ano,
+                ordem: taxo.ordem || '-',
+                familia: taxo.familia || '-',
+                inTable: importedSet.has(especie)
+            };
+        });
+
+        if (_descViewMode === 'imported') rows = rows.filter(r => r.inTable);
+
+        if (fCentury) {
+            rows = rows.filter(r => {
+                if (fCentury === '18') return r.ano >= 1700 && r.ano <= 1799;
+                if (fCentury === '19') return r.ano >= 1800 && r.ano <= 1899;
+                if (fCentury === '20') return r.ano >= 1900 && r.ano <= 1999;
+                if (fCentury === '21') return r.ano >= 2000;
+                return true;
+            });
+        }
+        if (fAuthor) rows = rows.filter(r => r.descritor === fAuthor);
+        if (search) rows = rows.filter(r =>
+            r.especie.toLowerCase().includes(search) ||
+            r.nomePopular.toLowerCase().includes(search) ||
+            r.descritor.toLowerCase().includes(search) ||
+            String(r.ano).includes(search) ||
+            r.ordem.toLowerCase().includes(search) ||
+            r.familia.toLowerCase().includes(search)
+        );
+
+        if (_descSort.col) {
+            rows.sort((a, b) => {
+                const va = _descSort.col === 'ano' ? a.ano : (a[_descSort.col] || '');
+                const vb = _descSort.col === 'ano' ? b.ano : (b[_descSort.col] || '');
+                if (_descSort.col === 'ano') return _descSort.asc ? va - vb : vb - va;
+                return _descSort.asc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+            });
+        }
+
+        const tbody = document.getElementById('desc-table-body');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        rows.forEach(r => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><em>${r.especie}</em></td>
+                <td>${r.nomePopular}</td>
+                <td style="font-weight:500; color:var(--green-deep);">${r.descritor}</td>
+                <td style="text-align:center; font-family:'DM Mono',monospace; font-size:13px;">${r.ano}</td>
+                <td style="font-size:13px;">${r.ordem}</td>
+                <td style="font-size:13px;">${r.familia}</td>
+                <td style="text-align:center;">${r.inTable ? '<span class="in-table-yes">✓</span>' : '<span class="in-table-no">—</span>'}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('desc-count').textContent = `${rows.length} espécies exibidas`;
+        buildDescStats(rows);
+    }
+
+    function buildDescStats(rows) {
+        const container = document.getElementById('desc-stats-row');
+        if (!container) return;
+
+        const total     = rows.length;
+        const imported  = rows.filter(r => r.inTable).length;
+        const linnaeus  = rows.filter(r => r.descritor === 'Linnaeus').length;
+        const vieillot  = rows.filter(r => r.descritor === 'Vieillot').length;
+        const centuries = {};
+        rows.forEach(r => {
+            const c = Math.floor(r.ano / 100) * 100;
+            centuries[c] = (centuries[c] || 0) + 1;
+        });
+        const topCentury = Object.entries(centuries).sort((a,b) => b[1]-a[1])[0];
+
+        const stats = [
+            { label: 'Total exibidas',   value: total,   color: 'var(--green-base)' },
+            { label: 'Na tabela',        value: imported, color: 'var(--amber)' },
+            { label: 'Descritas por Linnaeus', value: linnaeus, color: '#2060c0' },
+            { label: 'Descritas por Vieillot', value: vieillot, color: '#8b2fc9' },
+            { label: `Século ${topCentury ? topCentury[0] : '?'}s (mais comum)`, value: topCentury ? topCentury[1] : 0, color: '#1a6b56' },
+        ];
+
+        container.innerHTML = stats.map(s => `
+            <div style="background:white; border:1px solid var(--border-light); border-radius:var(--radius-md); padding:12px 18px; min-width:160px; box-shadow:var(--shadow-card); display:flex; flex-direction:column; gap:4px;">
+                <span style="font-size:22px; font-weight:700; color:${s.color};">${s.value}</span>
+                <span style="font-size:12px; color:var(--text-muted);">${s.label}</span>
+            </div>
+        `).join('');
+    }
+
+    function initDescTab() {
+        // Populate author filter
+        const authors = [...new Set(Object.values(DESCRIPTOR_DB).map(v => v.descritor))].sort();
+        const sa = document.getElementById('desc-filter-author');
+        if (sa) authors.forEach(a => {
+            const o = document.createElement('option'); o.value = a; o.textContent = a; sa.appendChild(o);
+        });
+
+        // Search & filters
+        document.getElementById('desc-search')?.addEventListener('input', buildDescTable);
+        document.getElementById('desc-filter-century')?.addEventListener('change', buildDescTable);
+        document.getElementById('desc-filter-author')?.addEventListener('change', buildDescTable);
+
+        // Sort
+        document.querySelectorAll('#desc-table th[data-sort-desc]').forEach(th => {
+            th.addEventListener('click', () => {
+                const col = th.dataset.sortDesc;
+                if (_descSort.col === col) _descSort.asc = !_descSort.asc;
+                else { _descSort.col = col; _descSort.asc = true; }
+                document.querySelectorAll('#desc-table .sort-arrow-desc').forEach(s => s.textContent = '↕');
+                th.querySelector('.sort-arrow-desc').textContent = _descSort.asc ? '↑' : '↓';
+                buildDescTable();
+            });
+        });
+
+        // Export CSV
+        document.getElementById('desc-export-csv')?.addEventListener('click', () => {
+            const rows = [...document.querySelectorAll('#desc-table-body tr')];
+            const csv = ['Espécie,Nome Popular,Descritor,Ano,Ordem,Família,Na Tabela'];
+            rows.forEach(tr => {
+                const cells = [...tr.querySelectorAll('td')].map(td => '"' + td.textContent.trim().replace(/"/g,'""') + '"');
+                csv.push(cells.join(','));
+            });
+            const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'descritores_SC.csv'; a.click();
+        });
+
+        // Copy
+        document.getElementById('desc-copy')?.addEventListener('click', () => {
+            const rows = [...document.querySelectorAll('#desc-table-body tr')];
+            const text = ['Espécie\tNome Popular\tDescritor\tAno\tOrdem\tFamília\tNa Tabela'];
+            rows.forEach(tr => {
+                text.push([...tr.querySelectorAll('td')].map(td => td.textContent.trim()).join('\t'));
+            });
+            navigator.clipboard.writeText(text.join('\n')).then(() => {
+                const btn = document.getElementById('desc-copy');
+                const orig = btn.textContent;
+                btn.textContent = '✅ Copiado!';
+                setTimeout(() => btn.textContent = orig, 2000);
+            });
+        });
+
+        buildDescTable();
+    }
+
+    // Hook into tab switching
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (btn.dataset.tab === 'descriptor-section' && !window._descTabInitialized) {
+                    window._descTabInitialized = true;
+                    initDescTab();
+                } else if (btn.dataset.tab === 'descriptor-section') {
+                    buildDescTable();
+                }
+            });
+        });
+    });
+    // ==================== FIM DESCRITORES ====================
+
 
     </script>
 
