@@ -1901,7 +1901,33 @@
 
         <!-- Legenda interativa -->
         <div id="curve-legend" style="display: flex; gap: 20px; margin-top: 15px; font-size: 14px;"></div>
-    </div>
+                       <!-- Gráficos dos estimadores de riqueza -->
+        <div id="estimator-charts" style="margin-top: 30px; border-top: 2px solid var(--green-light); padding-top: 20px;">
+            <h3>📈 Estimadores de riqueza (simulados a partir da curva)</h3>
+            <div style="display: flex; flex-direction: column; gap: 30px;">
+                <div>
+                    <h4>Chao2</h4>
+                    <canvas id="chaoChart" style="width:100%; max-height: 250px; height: 250px;"></canvas>
+                </div>
+                <div>
+                    <h4>Jackknife 1ª ordem</h4>
+                    <canvas id="jack1Chart" style="width:100%; max-height: 250px; height: 250px;"></canvas>
+                </div>
+                <div>
+                    <h4>Jackknife 2ª ordem</h4>
+                    <canvas id="jack2Chart" style="width:100%; max-height: 250px; height: 250px;"></canvas>
+                </div>
+                <div>
+                    <h4>Bootstrap</h4>
+                    <canvas id="bootstrapChart" style="width:100%; max-height: 250px; height: 250px;"></canvas>
+                </div>
+                <div>
+                    <h4>Todos os estimadores</h4>
+                    <canvas id="combinedEstimatorChart" style="width:100%; max-height: 350px; height: 350px;"></canvas>
+                </div>
+            </div>
+        </div>
+    
 </section>
 
 <!-- ========== SEÇÃO GUILDA ALIMENTAR ========== -->
@@ -8155,6 +8181,7 @@ generateAvgBtn.addEventListener('click', () => {
     if (totalSpecies === 0) {
         alert('Não há espécies na tabela. Importe dados primeiro.');
         return;
+        
     }
 
     let points = []; // array de objetos { label (string), value (acumulado) }
@@ -8228,6 +8255,9 @@ generateAvgBtn.addEventListener('click', () => {
     // Gerar gráfico
     renderCurveChart(points, totalSpecies);
     updateCurveStats(points, totalSpecies);
+    // Gerar estimadores a partir dos incrementos simulados
+const increments = points.map((p, i) => i === 0 ? p.value : p.value - points[i-1].value);
+generateAndRenderEstimators(increments, totalSpecies);
 });
 
 // Gerar curva modo Específico
@@ -8279,6 +8309,9 @@ generateSpecBtn.addEventListener('click', () => {
 
     renderCurveChart(points, cumulative);
     updateCurveStats(points, cumulative);
+    // Gerar estimadores a partir dos incrementos simulados
+const increments = points.map((p, i) => i === 0 ? p.value : p.value - points[i-1].value);
+generateAndRenderEstimators(increments, totalSpecies);
 });
 
 // Função para renderizar o gráfico com os pontos e a linha de tendência
@@ -10307,6 +10340,269 @@ function updateCurveLegend() {
     });
     // ==================== FIM DESCRITORES ====================
 
+// ==================== ESTIMADORES DE RIQUEZA ====================
+let chaoChart, jack1Chart, jack2Chart, bootstrapChart, combinedChart;
+
+// ==================== ESTIMADORES DE RIQUEZA A PARTIR DA CURVA ====================
+function generateAndRenderEstimators(increments, totalSpecies) {
+    // increments: array com o número de novas espécies em cada evento
+    // totalSpecies: número total de espécies (acumulado final)
+    const nEvents = increments.length;
+    
+    // Simular uma matriz de incidência aleatória que respeite os incrementos
+    // Vamos gerar uma lista de espécies (IDs de 0 a totalSpecies-1) e distribuir pelos eventos
+    const speciesPerEvent = []; // lista de conjuntos de espécies por evento
+    let nextSpeciesId = 0;
+    for (let i = 0; i < nEvents; i++) {
+        const newSpecies = [];
+        for (let j = 0; j < increments[i]; j++) {
+            if (nextSpeciesId < totalSpecies) {
+                newSpecies.push(nextSpeciesId);
+                nextSpeciesId++;
+            }
+        }
+        speciesPerEvent.push(newSpecies);
+    }
+    
+    // Se ainda faltarem espécies (por arredondamento), adiciona no último evento
+    if (nextSpeciesId < totalSpecies) {
+        const remaining = totalSpecies - nextSpeciesId;
+        for (let r = 0; r < remaining; r++) {
+            speciesPerEvent[nEvents-1].push(nextSpeciesId + r);
+        }
+    }
+
+    // Construir matriz de incidência: espécies × eventos (presença/ausência)
+    const incidence = Array.from({ length: totalSpecies }, () => Array(nEvents).fill(0));
+    speciesPerEvent.forEach((speciesList, eventIdx) => {
+        speciesList.forEach(spId => {
+            incidence[spId][eventIdx] = 1;
+        });
+    });
+
+    // Calcular estimadores para cada número de eventos k
+    const results = computeEstimatorsFromIncidence(incidence);
+    
+    // Renderizar gráficos
+    renderEstimatorCharts(results, nEvents);
+}
+
+function computeEstimatorsFromIncidence(incidence) {
+    const nSpecies = incidence.length;
+    const nSamples = incidence[0].length;
+
+    // Matriz transposta: amostras × espécies
+    const samples = Array.from({ length: nSamples }, (_, i) => incidence.map(row => row[i]));
+
+    let obs = [], chao = [], jack1 = [], jack2 = [], boot = [];
+
+    for (let k = 1; k <= nSamples; k++) {
+        const subSamples = samples.slice(0, k);
+        
+        // Espécies observadas nas primeiras k amostras
+        const speciesObs = subSamples.reduce((acc, sample) => {
+            sample.forEach((pres, sp) => { if (pres === 1) acc[sp] = 1; });
+            return acc;
+        }, Array(nSpecies).fill(0));
+        const sObs = speciesObs.reduce((sum, v) => sum + v, 0);
+        obs.push(sObs);
+
+        // Frequências das espécies nas k amostras
+        const freq = Array(nSpecies).fill(0);
+        subSamples.forEach(sample => {
+            sample.forEach((pres, sp) => { if (pres === 1) freq[sp]++; });
+        });
+
+        let q1 = 0, q2 = 0;
+        freq.forEach(f => {
+            if (f === 1) q1++;
+            else if (f === 2) q2++;
+        });
+
+        // Chao2
+        let chaoVal = sObs;
+        if (q2 > 0) {
+            chaoVal = sObs + (q1 * q1) / (2 * q2);
+        } else if (q1 > 0) {
+            chaoVal = sObs + (q1 * (q1 - 1)) / 2;
+        }
+        chao.push(chaoVal);
+
+        // Jackknife 1ª ordem
+        let jack1Val = sObs + q1 * (k - 1) / k;
+        jack1.push(jack1Val);
+
+        // Jackknife 2ª ordem
+        let jack2Val = sObs;
+        if (k >= 2) {
+            jack2Val = sObs + (q1 * (2*k - 3) / k) - (q2 * (k - 2)*(k - 2) / (k*(k - 1)));
+        }
+        jack2.push(jack2Val);
+
+        // Bootstrap
+        let bootVal = sObs;
+        freq.forEach(f => {
+            const p = f / k;
+            if (p > 0 && p < 1) {
+                bootVal += (1 - p) - (1 - p) ** k;
+            }
+        });
+        boot.push(bootVal);
+    }
+
+    return { obs, chao, jack1, jack2, boot };
+}
+
+function average(arr) {
+    return arr.reduce((a,b) => a + b, 0) / arr.length;
+}
+
+function computeEstimators(incidence) {
+    const nSpecies = incidence.length;
+    const nSamples = incidence[0].length;
+
+    // Matriz transposta: amostras × espécies
+    const samples = Array.from({ length: nSamples }, (_, i) => incidence.map(row => row[i]));
+
+    // Inicializa acumuladores para cada número de amostras k
+    let obs = [];          // espécies observadas acumuladas nas primeiras k amostras
+    let chao = [];         // Chao2
+    let jack1 = [];        // Jackknife 1ª ordem
+    let jack2 = [];        // Jackknife 2ª ordem
+    let boot = [];         // Bootstrap (riqueza esperada)
+
+    // Para cada k de 1 a nSamples
+    for (let k = 1; k <= nSamples; k++) {
+        const subSamples = samples.slice(0, k);
+        // Espécies observadas nas k amostras
+        const speciesObs = subSamples.reduce((acc, sample) => {
+            sample.forEach((pres, sp) => { if (pres === 1) acc[sp] = 1; });
+            return acc;
+        }, Array(nSpecies).fill(0));
+        const sObs = speciesObs.reduce((sum, v) => sum + v, 0);
+        obs.push(sObs);
+
+        // Contagem de frequências por espécie nas k amostras
+        const freq = Array(nSpecies).fill(0);
+        subSamples.forEach(sample => {
+            sample.forEach((pres, sp) => { if (pres === 1) freq[sp]++; });
+        });
+
+        // Número de espécies que ocorrem em exatamente 1 amostra (únicas) e em exatamente 2 amostras (duplicadas)
+        let q1 = 0, q2 = 0;
+        freq.forEach(f => {
+            if (f === 1) q1++;
+            else if (f === 2) q2++;
+        });
+
+        // Chao2
+        let chaoVal = sObs;
+        if (q2 > 0) {
+            chaoVal = sObs + (q1 * q1) / (2 * q2);
+        } else if (q1 > 0) {
+            chaoVal = sObs + (q1 * (q1 - 1)) / 2;
+        }
+        chao.push(chaoVal);
+
+        // Jackknife 1ª ordem
+        let jack1Val = sObs + q1 * (k - 1) / k;
+        jack1.push(jack1Val);
+
+        // Jackknife 2ª ordem (se k >= 2)
+        let jack2Val = sObs;
+        if (k >= 2) {
+            jack2Val = sObs + (q1 * (2*k - 3) / k) - (q2 * (k - 2)*(k - 2) / (k*(k - 1)));
+        }
+        jack2.push(jack2Val);
+
+        // Bootstrap (riqueza esperada em k amostras)
+        // p_j = proporção de amostras em que a espécie j ocorre nas k amostras
+        let bootVal = sObs;
+        freq.forEach(f => {
+            const p = f / k;
+            if (p > 0 && p < 1) {
+                bootVal += (1 - p) - (1 - p) ** k;
+            }
+        });
+        boot.push(bootVal);
+    }
+
+    return { obs, chao, jack1, jack2, boot };
+}
+
+function renderEstimatorCharts(results, nSamples) {
+    const labels = Array.from({ length: nSamples }, (_, i) => `Amostra ${i+1}`);
+
+    // Destroi gráficos antigos se existirem
+    if (chaoChart) chaoChart.destroy();
+    if (jack1Chart) jack1Chart.destroy();
+    if (jack2Chart) jack2Chart.destroy();
+    if (bootstrapChart) bootstrapChart.destroy();
+    if (combinedChart) combinedChart.destroy();
+
+    // Função auxiliar para criar gráfico individual
+    function createChart(canvasId, label, data, color) {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        return new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: label,
+                    data: data,
+                    borderColor: color,
+                    backgroundColor: 'transparent',
+                    tension: 0.2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: true }
+                },
+                scales: {
+                    y: { beginAtZero: true, title: { display: true, text: 'Riqueza estimada' } }
+                }
+            }
+        });
+    }
+
+    chaoChart = createChart('chaoChart', 'Chao2', results.chao, '#27ae60');
+    jack1Chart = createChart('jack1Chart', 'Jackknife 1ª ordem', results.jack1, '#e67e22');
+    jack2Chart = createChart('jack2Chart', 'Jackknife 2ª ordem', results.jack2, '#3498db');
+    bootstrapChart = createChart('bootstrapChart', 'Bootstrap', results.boot, '#9b59b6');
+
+    // Gráfico combinado
+    const ctxCombined = document.getElementById('combinedEstimatorChart').getContext('2d');
+    combinedChart = new Chart(ctxCombined, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                { label: 'Observado', data: results.obs, borderColor: '#2c3e50', backgroundColor: 'transparent', tension: 0.2, pointRadius: 3 },
+                { label: 'Chao2', data: results.chao, borderColor: '#27ae60', backgroundColor: 'transparent', tension: 0.2, pointRadius: 3 },
+                { label: 'Jackknife 1', data: results.jack1, borderColor: '#e67e22', backgroundColor: 'transparent', tension: 0.2, pointRadius: 3 },
+                { label: 'Jackknife 2', data: results.jack2, borderColor: '#3498db', backgroundColor: 'transparent', tension: 0.2, pointRadius: 3 },
+                { label: 'Bootstrap', data: results.boot, borderColor: '#9b59b6', backgroundColor: 'transparent', tension: 0.2, pointRadius: 3 }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8 } }
+            },
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: 'Riqueza' } }
+            }
+        }
+    });
+}
 
     </script>
 
