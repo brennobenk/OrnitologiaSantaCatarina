@@ -2619,6 +2619,7 @@
                 <label style="font-size:13px; font-weight:600; display:block; margin-bottom:4px;">Riqueza da comunidade (S total)</label>
                 <input type="number" id="raref-s" min="1" value="50" style="width:110px;">
             </div>
+            <button id="raref-import-avist" class="generate-btn" style="background:var(--amber);">🔭 Importar avistamentos reais</button>
             <button id="raref-run" class="generate-btn">▶ Calcular Rarefação</button>
         </div>
         <div id="raref-multi-container" style="display:flex; flex-direction:column; gap:12px; margin-bottom:16px;">
@@ -2810,6 +2811,30 @@
         </div>
         <div id="cooc-matrix-container" style="margin-top:14px; overflow:auto; max-height:480px;"></div>
         <div id="cooc-top-pairs" style="margin-top:18px;"></div>
+
+        <!-- REDE DE CO-OCORRÊNCIA -->
+        <div id="cooc-network-wrap" style="margin-top:28px; display:none;">
+            <h4 style="color:var(--green-deep); margin-bottom:10px; font-size:15px;">🕸️ Rede de Co-ocorrência</h4>
+            <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:12px;">
+                Cada nó é uma espécie. Espessura da aresta = número de co-ocorrências. Tamanho do nó = grau total. Cor = guilda alimentar. Arraste nós. Scroll para zoom.
+            </p>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px;">
+                <label style="font-size:13px; font-weight:600;">Mín. co-ocorrências para aresta:</label>
+                <input type="number" id="cooc-net-min" min="1" value="2" style="width:70px; padding:6px 8px; border:1.5px solid var(--border); border-radius:6px; font-family:inherit; font-size:13px;">
+                <button id="cooc-net-run" class="generate-btn">🕸️ Gerar Rede</button>
+                <label style="font-size:13px; font-weight:600;">Altura:</label>
+                <select id="cooc-net-size" style="padding:8px 10px; border:1.5px solid var(--border); border-radius:6px; font-family:inherit; font-size:13px; background:#fafdf9;">
+                    <option value="500">Pequena (500px)</option>
+                    <option value="700" selected>Média (700px)</option>
+                    <option value="950">Grande (950px)</option>
+                </select>
+                <button id="cooc-net-reset" class="genealogical-view-btn">🔄 Resetar layout</button>
+            </div>
+            <div id="cooc-net-container" style="width:100%; border:1px solid var(--border); border-radius:var(--radius-md); background:var(--green-mist); position:relative; overflow:hidden;">
+                <canvas id="cooc-net-canvas"></canvas>
+            </div>
+            <div id="cooc-net-legend" style="margin-top:10px; display:flex; flex-wrap:wrap; gap:8px; font-size:12px;"></div>
+        </div>
     </div>
 </section>
 
@@ -11795,24 +11820,26 @@ function setAvistaMode(mode) {
 }
 window.setAvistaMode = setAvistaMode;
 
+const _UNCERTAIN_RE = /\b(sp\.|sp\b|cf\.|cf\b|aff\.|aff\b|nr\.\b|\?)/i;
+
 function parseAvistaSimple(raw) {
     const entries = [];
     raw.split('\n').forEach(line => {
         const name = line.trim();
         if (!name) return;
-        const result = typeof findBirdFuzzy === 'function' ? findBirdFuzzy(name) : null;
+        const isUncert = _UNCERTAIN_RE.test(name);
+        const result = (!isUncert && typeof findBirdFuzzy === 'function') ? findBirdFuzzy(name) : null;
         const confident = result ? result.confident : false;
         entries.push({
             id: ++_avistaIdCounter,
             date: '',
             inputName: name,
-            // Only auto-assign if confident match; otherwise keep inputName so it goes to correction
             scientificName: (result && confident) ? result.bird.scientificName : name,
             commonName:     (result && confident) ? result.bird.commonName     : '',
-            // Store suggestion for uncertain matches
-            suggestedSci:    result ? result.bird.scientificName : null,
-            suggestedCommon: result ? result.bird.commonName     : null,
-            confident
+            suggestedSci:    (!isUncert && result) ? result.bird.scientificName : null,
+            suggestedCommon: (!isUncert && result) ? result.bird.commonName     : null,
+            confident,
+            isUncertain: isUncert
         });
     });
     return entries;
@@ -11824,7 +11851,8 @@ function parseAvistaDate(raw) {
     const dateRe = /^(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})\s+(.+)$/;
 
     function makeEntry(namePart, datePart) {
-        const result = typeof findBirdFuzzy === 'function' ? findBirdFuzzy(namePart) : null;
+        const isUncert = _UNCERTAIN_RE.test(namePart);
+        const result = (!isUncert && typeof findBirdFuzzy === 'function') ? findBirdFuzzy(namePart) : null;
         const confident = result ? result.confident : false;
         return {
             id: ++_avistaIdCounter,
@@ -11832,9 +11860,10 @@ function parseAvistaDate(raw) {
             inputName: namePart,
             scientificName: (result && confident) ? result.bird.scientificName : namePart,
             commonName:     (result && confident) ? result.bird.commonName     : '',
-            suggestedSci:    result ? result.bird.scientificName : null,
-            suggestedCommon: result ? result.bird.commonName     : null,
-            confident
+            suggestedSci:    (!isUncert && result) ? result.bird.scientificName : null,
+            suggestedCommon: (!isUncert && result) ? result.bird.commonName     : null,
+            confident,
+            isUncertain: isUncert
         };
     }
 
@@ -12140,7 +12169,10 @@ function buildCalculoTab() {
         if (_calcPieChart) _calcPieChart.destroy();
         const pieTop = sorted.slice(0, 12);
         const outros = sorted.slice(12).reduce((s, [, v]) => s + v.n, 0);
-        const pieLabels = pieTop.map(([sp]) => sp.split(' ').pop());
+        const pieLabels = pieTop.map(([sp, v]) => {
+            const pop = v.common && v.common !== '—' ? ` (${v.common})` : '';
+            return sp + pop;
+        });
         const pieData   = pieTop.map(([, v]) => v.n);
         if (outros > 0) { pieLabels.push('Outros'); pieData.push(outros); }
         _calcPieChart = new Chart(ctxPie, {
@@ -12148,8 +12180,11 @@ function buildCalculoTab() {
             data: { labels: pieLabels, datasets: [{ data: pieData, backgroundColor: [...CHART_PALETTE.slice(0, 12), '#aaa'], borderWidth: 1 }] },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { position: 'right', labels: { font: { size: 11 }, boxWidth: 12, padding: 6 } },
-                    tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw} (${(ctx.raw/total*100).toFixed(1)}%)` } } }
+                plugins: {
+                    datalabels: { color: '#ffffff', font: { weight: 'bold', size: 12 }, formatter: (v, c) => { const t = c.dataset.data.reduce((a,b)=>a+b,0); return t>0&&v>0 ? ((v/t*100).toFixed(1)+'%') : ''; } },
+                    legend: { position: 'right', labels: { font: { size: 11 }, boxWidth: 12, padding: 6 } },
+                    tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw} (${(ctx.raw/total*100).toFixed(1)}%)` } }
+                }
             }
         });
     }
@@ -12277,6 +12312,52 @@ function rarefacaoRun() {
 
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('raref-run')?.addEventListener('click', rarefacaoRun);
+
+    document.getElementById('raref-import-avist')?.addEventListener('click', () => {
+        const av = window.AVISTAMENTOS || [];
+        if (!av.length) { alert('Nenhum avistamento registrado. Use a aba 🔭 Avistamentos primeiro.'); return; }
+        const byDate = {};
+        av.forEach(r => {
+            const key = r.date || '_semdata';
+            if (!byDate[key]) byDate[key] = new Set();
+            byDate[key].add(r.scientificName);
+        });
+        const sortedDates = Object.keys(byDate).filter(k=>k!=='_semdata').sort();
+        const noDate = byDate['_semdata'];
+        const list = document.getElementById('raref-areas-list');
+        list.innerHTML = '';
+        const allSpSoFar = new Set();
+        sortedDates.forEach((date, i) => {
+            byDate[date].forEach(s => allSpSoFar.add(s));
+            const n = i + 1;
+            const s = allSpSoFar.size;
+            const div = document.createElement('div');
+            div.className = 'raref-area-item';
+            div.style.cssText = 'background:var(--green-mist);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;';
+            const parts = date.split('-');
+            const dateLabel = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : date;
+            div.innerHTML = `<input class="raref-area-name" type="text" value="${dateLabel}" style="width:120px;">
+                <label style="font-size:12px;">N amostras: <input class="raref-area-n" type="number" min="1" value="${n}" style="width:60px;"></label>
+                <label style="font-size:12px;">S riqueza acum.: <input class="raref-area-s" type="number" min="1" value="${s}" style="width:60px;"></label>
+                <button class="delete-btn" style="padding:4px 10px;font-size:12px;" onclick="this.closest('.raref-area-item').remove()">✕</button>`;
+            list.appendChild(div);
+        });
+        if (noDate && noDate.size > 0) {
+            const div = document.createElement('div');
+            div.className = 'raref-area-item';
+            div.style.cssText = 'background:var(--green-mist);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;';
+            div.innerHTML = `<input class="raref-area-name" type="text" value="Sem data" style="width:120px;">
+                <label style="font-size:12px;">N amostras: <input class="raref-area-n" type="number" min="1" value="1" style="width:60px;"></label>
+                <label style="font-size:12px;">S riqueza: <input class="raref-area-s" type="number" min="1" value="${noDate.size}" style="width:60px;"></label>
+                <button class="delete-btn" style="padding:4px 10px;font-size:12px;" onclick="this.closest('.raref-area-item').remove()">✕</button>`;
+            list.appendChild(div);
+        }
+        const totalSp = [...new Set(av.map(r=>r.scientificName))].length;
+        document.getElementById('raref-n').value = sortedDates.length || 1;
+        document.getElementById('raref-s').value = totalSp;
+        alert(`✅ ${sortedDates.length} dia(s) de campo importados como amostras.\nTotal espécies únicas: ${totalSp}\nClique em ▶ Calcular Rarefação.`);
+    });
+
     document.getElementById('raref-add-area')?.addEventListener('click', () => {
         const list = document.getElementById('raref-areas-list');
         const idx = list.children.length + 1;
@@ -12403,57 +12484,102 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('sazon-run')?.addEventListener('click', () => {
         const raw = document.getElementById('sazon-data').value.trim();
         if (!raw) { alert('Insira dados de registros.'); return; }
-        const rows = parseSazonData(raw);
-        if (rows.length === 0) { alert('Formato inválido. Use: Espécie, Mês (1-12)'); return; }
-        const countByMonth = Array(12).fill(0);
-        const spByMonth = Array.from({length:12}, () => new Set());
-        rows.forEach(({sp,m}) => { countByMonth[m-1]++; spByMonth[m-1].add(sp); });
-        const richByMonth = spByMonth.map(s => s.size);
 
-        // Season colors per month (Southern Hemisphere - SC)
-        // Verão: Dec/Jan/Feb = vermelho; Outono: Mar/Apr/May = laranja/amarelo;
-        // Inverno: Jun/Jul/Aug = azul; Primavera: Sep/Oct/Nov = verde
-        const SEASON_COLORS = [
-            '#e74c3c', // Jan - Verão
-            '#e74c3c', // Fev - Verão
-            '#e67e22', // Mar - Outono
-            '#e67e22', // Abr - Outono
-            '#f39c12', // Mai - Outono
-            '#3498db', // Jun - Inverno
-            '#2980b9', // Jul - Inverno
-            '#3498db', // Ago - Inverno
-            '#27ae60', // Set - Primavera
-            '#2ecc71', // Out - Primavera
-            '#1abc9c', // Nov - Primavera
-            '#c0392b', // Dez - Verão
-        ];
-        const SEASON_BORDER = SEASON_COLORS.map(c => c);
-
-        const ctx = document.getElementById('sazonChart').getContext('2d');
-        if (sazonChart) sazonChart.destroy();
-        sazonChart = new Chart(ctx, {
-            type:'bar', data:{ labels:MESES, datasets:[
-                { label:'Nº de registros', data:countByMonth, backgroundColor: SEASON_COLORS.map(c => c + 'CC'), borderColor: SEASON_BORDER, borderWidth:1.5, yAxisID:'y' },
-                { label:'Riqueza de espécies', data:richByMonth, type:'line', borderColor:'#2c3e50', backgroundColor:'transparent', tension:0.3, pointRadius:5, pointBackgroundColor:'#2c3e50', yAxisID:'y2' }
-            ]},
-            options:{ responsive:true, maintainAspectRatio:false,
-                plugins:{ legend:{position:'top'},
-                    tooltip:{ callbacks:{ afterLabel:(ctx)=>{ if(ctx.datasetIndex===0) return `Estação: ${ESTACOES[ctx.dataIndex+1]}`; return ''; } } }
-                },
-                scales:{ y:{title:{display:true,text:'Registros'}, beginAtZero:true}, y2:{position:'right', title:{display:true,text:'Riqueza'}, beginAtZero:true, grid:{drawOnChartArea:false}} }
+        // Detectar formato: "Espécie, AAAA-MM-DD", "Espécie, AAAA-MM" ou "Espécie, M"
+        const SC = {1:'#e74c3c',2:'#e74c3c',3:'#e67e22',4:'#e67e22',5:'#f39c12',6:'#3498db',7:'#2980b9',8:'#3498db',9:'#27ae60',10:'#2ecc71',11:'#1abc9c',12:'#c0392b'};
+        const rowsFull = [];
+        raw.split('\n').forEach(line => {
+            const p = line.split(',');
+            if (p.length < 2) return;
+            const sp = p[0].trim();
+            const dateStr = p[1].trim();
+            const fullMatch = dateStr.match(/^(\d{4})-(\d{1,2})/);
+            if (fullMatch) {
+                rowsFull.push({ sp, year: parseInt(fullMatch[1]), month: parseInt(fullMatch[2]) });
+            } else {
+                const m = parseInt(dateStr);
+                if (m >= 1 && m <= 12) rowsFull.push({ sp, year: 0, month: m });
             }
         });
 
+        if (rowsFull.length === 0) { alert('Formato inválido. Use: Espécie, Mês (1-12) ou Espécie, AAAA-MM'); return; }
+
+        const hasYears = rowsFull.some(r => r.year > 0);
+        const ctx = document.getElementById('sazonChart').getContext('2d');
+        if (sazonChart) sazonChart.destroy();
+
+        if (hasYears) {
+            // Modo timeline: eixo X = AAAA-MM ordenado
+            const periodMap = {};
+            rowsFull.forEach(r => {
+                const key = r.year > 0 ? `${r.year}-${String(r.month).padStart(2,'0')}` : `0000-${String(r.month).padStart(2,'0')}`;
+                if (!periodMap[key]) periodMap[key] = { count: 0, species: new Set(), month: r.month };
+                periodMap[key].count++;
+                periodMap[key].species.add(r.sp);
+            });
+            const sortedKeys = Object.keys(periodMap).sort();
+            const labels = sortedKeys.map(k => {
+                const [y, m] = k.split('-');
+                return y === '0000' ? MESES[parseInt(m)-1] : `${MESES[parseInt(m)-1]}/${y}`;
+            });
+            const counts   = sortedKeys.map(k => periodMap[k].count);
+            const richness = sortedKeys.map(k => periodMap[k].species.size);
+            const bgColors = sortedKeys.map(k => (SC[periodMap[k].month]||'#888') + 'CC');
+            const bdColors = sortedKeys.map(k => SC[periodMap[k].month]||'#888');
+
+            sazonChart = new Chart(ctx, {
+                type:'bar',
+                data:{ labels, datasets:[
+                    { label:'Nº de registros', data:counts, backgroundColor:bgColors, borderColor:bdColors, borderWidth:1.5, yAxisID:'y' },
+                    { label:'Riqueza de espécies', data:richness, type:'line', borderColor:'#2c3e50', backgroundColor:'transparent', tension:0.3, pointRadius:4, pointBackgroundColor:'#2c3e50', yAxisID:'y2' }
+                ]},
+                options:{ responsive:true, maintainAspectRatio:false,
+                    plugins:{ legend:{position:'top'}, datalabels:{display:false},
+                        tooltip:{ callbacks:{ afterLabel:(c)=>{ if(c.datasetIndex===0) return `Estação: ${ESTACOES[periodMap[sortedKeys[c.dataIndex]].month]}`; return ''; } } }
+                    },
+                    scales:{
+                        x:{ ticks:{maxRotation:45, font:{size:10}} },
+                        y:{title:{display:true,text:'Registros'},beginAtZero:true},
+                        y2:{position:'right',title:{display:true,text:'Riqueza'},beginAtZero:true,grid:{drawOnChartArea:false}}
+                    }
+                }
+            });
+        } else {
+            // Modo mensal acumulado (comportamento original)
+            const countByMonth = Array(12).fill(0);
+            const spByMonth = Array.from({length:12}, () => new Set());
+            rowsFull.forEach(({sp,month:m}) => { countByMonth[m-1]++; spByMonth[m-1].add(sp); });
+            const richByMonth = spByMonth.map(s => s.size);
+            const SEASON_COLORS = [SC[1],SC[2],SC[3],SC[4],SC[5],SC[6],SC[7],SC[8],SC[9],SC[10],SC[11],SC[12]];
+            sazonChart = new Chart(ctx, {
+                type:'bar', data:{ labels:MESES, datasets:[
+                    { label:'Nº de registros', data:countByMonth, backgroundColor:SEASON_COLORS.map(c=>c+'CC'), borderColor:SEASON_COLORS, borderWidth:1.5, yAxisID:'y' },
+                    { label:'Riqueza de espécies', data:richByMonth, type:'line', borderColor:'#2c3e50', backgroundColor:'transparent', tension:0.3, pointRadius:5, pointBackgroundColor:'#2c3e50', yAxisID:'y2' }
+                ]},
+                options:{ responsive:true, maintainAspectRatio:false,
+                    plugins:{ legend:{position:'top'}, datalabels:{display:false},
+                        tooltip:{ callbacks:{ afterLabel:(c)=>{ if(c.datasetIndex===0) return `Estação: ${ESTACOES[c.dataIndex+1]}`; return ''; } } }
+                    },
+                    scales:{ y:{title:{display:true,text:'Registros'},beginAtZero:true}, y2:{position:'right',title:{display:true,text:'Riqueza'},beginAtZero:true,grid:{drawOnChartArea:false}} }
+                }
+            });
+        }
+
         const estCount = {Verão:0, Outono:0, Inverno:0, Primavera:0};
-        rows.forEach(({m}) => { estCount[ESTACOES[m]]++; });
+        rowsFull.forEach(({month:m}) => { estCount[ESTACOES[m]]++; });
         const ctx2 = document.getElementById('sazonEstacaoChart').getContext('2d');
         if (sazonEstChart) sazonEstChart.destroy();
         sazonEstChart = new Chart(ctx2, {
             type:'doughnut', data:{ labels:['Verão','Outono','Inverno','Primavera'], datasets:[{ data:[estCount['Verão'],estCount['Outono'],estCount['Inverno'],estCount['Primavera']], backgroundColor:['#e74c3c','#e67e22','#3498db','#27ae60'], borderWidth:1 }] },
-            options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{position:'right'}, title:{display:true, text:'Distribuição por Estação'} } }
+            options:{ responsive:true, maintainAspectRatio:false,
+                plugins:{ legend:{position:'right'},
+                    datalabels:{ color:'#ffffff', font:{weight:'bold',size:12}, formatter:(v,c)=>{ const t=c.dataset.data.reduce((a,b)=>a+b,0); return t>0&&v>0?((v/t*100).toFixed(1)+'%'):''; } },
+                    title:{display:true, text:'Distribuição por Estação'} } }
         });
-        const mPico = richByMonth.indexOf(Math.max(...richByMonth));
-        document.getElementById('sazon-stats').innerHTML = `<strong>Total de registros:</strong> ${rows.length} | <strong>Mês de maior riqueza:</strong> ${MESES[mPico]} (${richByMonth[mPico]} spp) | <strong>Espécies únicas:</strong> ${new Set(rows.map(r=>r.sp)).size} | <span style="color:#e74c3c;">■</span> Verão <span style="color:#e67e22;">■</span> Outono <span style="color:#3498db;">■</span> Inverno <span style="color:#27ae60;">■</span> Primavera`;
+        const richMap = {};
+        rowsFull.forEach(r=>{ if(!richMap[r.month])richMap[r.month]=new Set(); richMap[r.month].add(r.sp); });
+        const mPico = Object.entries(richMap).sort((a,b)=>b[1].size-a[1].size)[0];
+        document.getElementById('sazon-stats').innerHTML = `<strong>Total de registros:</strong> ${rowsFull.length} | <strong>Mês de maior riqueza:</strong> ${mPico?MESES[parseInt(mPico[0])-1]:'-'} (${mPico?mPico[1].size:0} spp) | <strong>Espécies únicas:</strong> ${new Set(rowsFull.map(r=>r.sp)).size} | <span style="color:#e74c3c;">■</span> Verão <span style="color:#e67e22;">■</span> Outono <span style="color:#3498db;">■</span> Inverno <span style="color:#27ae60;">■</span> Primavera`;
     });
 });
 
@@ -13073,6 +13199,233 @@ function runCooc(minCooc) {
     }
 }
 
+// ==================== REDE DE CO-OCORRÊNCIA ====================
+function buildCoocNetwork(minEdge) {
+    const coocMatrix = window._patchCoocMatrix;
+    const coocAllSp  = window._patchCoocAllSp;
+    if (!coocMatrix || !coocAllSp || !coocAllSp.length) {
+        alert('Calcule a matriz de co-ocorrência primeiro (▶ Calcular Matriz).'); return;
+    }
+    const wrap = document.getElementById('cooc-network-wrap');
+    wrap.style.display = '';
+    const size = parseInt(document.getElementById('cooc-net-size').value) || 700;
+    const container = document.getElementById('cooc-net-container');
+    container.style.height = size + 'px';
+    const canvas = document.getElementById('cooc-net-canvas');
+    const W = container.offsetWidth || 700;
+    const H = size;
+    canvas.width = W;
+    canvas.height = H;
+
+    const spDisplayShort = sp => {
+        const pop = typeof speciesInfo !== 'undefined' && speciesInfo[sp] ? speciesInfo[sp].nomePopular : null;
+        return pop ? `${sp.split(' ').slice(-1)[0]} (${pop})` : sp.split(' ').slice(-1)[0];
+    };
+    const GUILD_COLORS = {'Insetívoro':'#2a9d5c','Insetívoro aéreo':'#3490d4','Frugívoro':'#e07820','Granívoro':'#c8a010','Nectarívoro':'#c030a0','Carnívoro':'#d03030','Piscívoro':'#2060d0','Onívoro':'#6040c0','Detritívoro':'#707060','Filtrador':'#20a0a0','Herbívoro':'#50a030','Malacófago':'#a06030','Cleptoparasita':'#a030a0'};
+    function getNodeColor(sp) {
+        if (typeof GUILDA_DB !== 'undefined' && GUILDA_DB[sp]) {
+            const g = GUILDA_DB[sp].guilda||'';
+            for (const [key,col] of Object.entries(GUILD_COLORS)) { if (g.includes(key)) return col; }
+        }
+        return '#2a7d52';
+    }
+    const nodes = {};
+    coocAllSp.forEach(sp => {
+        const deg = coocAllSp.reduce((s,b)=>s+(coocMatrix[sp]?.[b]||0),0);
+        nodes[sp] = { label:spDisplayShort(sp), fullName:sp, degree:deg, color:getNodeColor(sp), x:0,y:0,vx:0,vy:0 };
+    });
+    const edges = [];
+    coocAllSp.forEach((a,i)=>coocAllSp.forEach((b,j)=>{
+        if(j<=i) return;
+        const w = coocMatrix[a]?.[b]||0;
+        if(w>=minEdge) edges.push({a,b,w});
+    }));
+    if (!edges.length) { alert(`Nenhuma aresta com mínimo ${minEdge}. Tente um valor menor.`); return; }
+
+    const spList = Object.keys(nodes);
+    const n = spList.length;
+    const R = Math.min(W,H)*0.38;
+    spList.forEach((sp,i) => {
+        const angle = (2*Math.PI*i)/n - Math.PI/2;
+        nodes[sp].x = W/2 + R*Math.cos(angle);
+        nodes[sp].y = H/2 + R*Math.sin(angle);
+    });
+    const maxDeg = Math.max(1,...spList.map(sp=>nodes[sp].degree));
+    const nodeR = sp => 6 + (nodes[sp].degree/maxDeg)*16;
+    const maxW = Math.max(1,...edges.map(e=>e.w));
+    for(let iter=0;iter<120;iter++){
+        const k = Math.sqrt((W*H)/(n+1))*0.8;
+        const damp = iter<60?0.8:0.9;
+        spList.forEach(a=>spList.forEach(b=>{
+            if(a===b) return;
+            const dx=nodes[a].x-nodes[b].x, dy=nodes[a].y-nodes[b].y;
+            const d=Math.max(1,Math.sqrt(dx*dx+dy*dy));
+            const f=(k*k)/d*0.6;
+            nodes[a].vx+=(dx/d)*f; nodes[a].vy+=(dy/d)*f;
+        }));
+        edges.forEach(e=>{
+            const dx=nodes[e.a].x-nodes[e.b].x, dy=nodes[e.a].y-nodes[e.b].y;
+            const d=Math.max(1,Math.sqrt(dx*dx+dy*dy));
+            const f=(d*d)/k*0.25;
+            nodes[e.a].vx-=(dx/d)*f; nodes[e.a].vy-=(dy/d)*f;
+            nodes[e.b].vx+=(dx/d)*f; nodes[e.b].vy+=(dy/d)*f;
+        });
+        spList.forEach(sp=>{
+            nodes[sp].vx+=(W/2-nodes[sp].x)*0.002;
+            nodes[sp].vy+=(H/2-nodes[sp].y)*0.002;
+        });
+        spList.forEach(sp=>{
+            const pad=nodeR(sp)+5;
+            nodes[sp].x=Math.max(pad,Math.min(W-pad,nodes[sp].x+nodes[sp].vx));
+            nodes[sp].y=Math.max(pad,Math.min(H-pad,nodes[sp].y+nodes[sp].vy));
+            nodes[sp].vx*=damp; nodes[sp].vy*=damp;
+        });
+    }
+    const ctx = canvas.getContext('2d');
+    let hoveredNode=null, draggingNode=null, dragOffX=0, dragOffY=0;
+    let camX=W/2, camY=H/2, camScale=1;
+    let isPanning=false, panSX=0, panSY=0, panCX=0, panCY=0;
+    function toCanvas(wx,wy){ return [(wx-camX)*camScale+W/2,(wy-camY)*camScale+H/2]; }
+    function toWorld(cx,cy){ return [(cx-W/2)/camScale+camX,(cy-H/2)/camScale+camY]; }
+    function draw(){
+        ctx.clearRect(0,0,W,H);
+        ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--green-mist').trim()||'#eaf4ed';
+        ctx.fillRect(0,0,W,H);
+        edges.forEach(e=>{
+            const [ax,ay]=toCanvas(nodes[e.a].x,nodes[e.a].y);
+            const [bx,by]=toCanvas(nodes[e.b].x,nodes[e.b].y);
+            const isHov=(hoveredNode===e.a||hoveredNode===e.b);
+            const alpha=isHov?0.9:0.2+(e.w/maxW)*0.5;
+            ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by);
+            ctx.strokeStyle=isHov?`rgba(200,120,30,${alpha})`:`rgba(80,140,100,${alpha})`;
+            ctx.lineWidth=Math.max(0.5,(1+(e.w/maxW)*5)*camScale);
+            ctx.stroke();
+            if(e.w>=2&&camScale>0.5){
+                ctx.font=`${Math.max(8,9*camScale)}px DM Sans,sans-serif`;
+                ctx.fillStyle='rgba(40,80,50,0.8)'; ctx.textAlign='center';
+                ctx.fillText(e.w,(ax+bx)/2,(ay+by)/2);
+            }
+        });
+        spList.forEach(sp=>{
+            const r=nodeR(sp)*camScale;
+            const [x,y]=toCanvas(nodes[sp].x,nodes[sp].y);
+            const isHov=hoveredNode===sp;
+            ctx.shadowColor='rgba(0,0,0,0.2)'; ctx.shadowBlur=isHov?12:4;
+            ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+            ctx.fillStyle=nodes[sp].color; ctx.fill();
+            ctx.strokeStyle=isHov?'#fff':'rgba(255,255,255,0.8)';
+            ctx.lineWidth=isHov?3:1.5; ctx.stroke();
+            ctx.shadowBlur=0;
+            if(camScale>0.4){
+                const lbl=nodes[sp].label;
+                ctx.font=`${isHov?'bold ':''} ${Math.max(8,Math.min(12,10*camScale))}px DM Sans,sans-serif`;
+                ctx.fillStyle='#1a2e1a'; ctx.textAlign='center';
+                ctx.fillText(lbl.length>22?lbl.slice(0,20)+'…':lbl,x,y+r+12*camScale);
+            }
+        });
+        if(hoveredNode){
+            const sp=hoveredNode;
+            const [x,y]=toCanvas(nodes[sp].x,nodes[sp].y);
+            const pop=typeof speciesInfo!=='undefined'&&speciesInfo[sp]?speciesInfo[sp].nomePopular:'';
+            const lines=[sp,pop?`(${pop})`:'',`Co-ocorrências: ${nodes[sp].degree}`].filter(Boolean);
+            ctx.font='13px DM Sans,sans-serif';
+            const tw=Math.max(...lines.map(l=>ctx.measureText(l).width));
+            const bx2=Math.min(x+10,W-tw-20), by2=Math.max(y-lines.length*18-10,10);
+            ctx.fillStyle='rgba(255,255,255,0.95)'; ctx.strokeStyle='#ccc'; ctx.lineWidth=1;
+            ctx.beginPath(); ctx.roundRect(bx2-8,by2-6,tw+16,lines.length*18+12,6); ctx.fill(); ctx.stroke();
+            ctx.fillStyle='#1a2e1a'; ctx.textAlign='left';
+            lines.forEach((l,i)=>ctx.fillText(l,bx2,by2+14+i*18));
+        }
+    }
+    function getNodeAt(cx,cy){
+        const[wx,wy]=toWorld(cx,cy);
+        return spList.find(sp=>{const dx=nodes[sp].x-wx,dy=nodes[sp].y-wy;return Math.sqrt(dx*dx+dy*dy)<=nodeR(sp)+3;})||null;
+    }
+    canvas.onmousedown=e=>{
+        const rect=canvas.getBoundingClientRect();
+        const cx=e.clientX-rect.left,cy=e.clientY-rect.top;
+        const nd=getNodeAt(cx,cy);
+        if(nd){draggingNode=nd;const[wx,wy]=toWorld(cx,cy);dragOffX=nodes[nd].x-wx;dragOffY=nodes[nd].y-wy;}
+        else{isPanning=true;panSX=cx;panSY=cy;panCX=camX;panCY=camY;}
+    };
+    canvas.onmousemove=e=>{
+        const rect=canvas.getBoundingClientRect();
+        const cx=e.clientX-rect.left,cy=e.clientY-rect.top;
+        if(draggingNode){const[wx,wy]=toWorld(cx,cy);nodes[draggingNode].x=wx+dragOffX;nodes[draggingNode].y=wy+dragOffY;draw();return;}
+        if(isPanning){camX=panCX-(cx-panSX)/camScale;camY=panCY-(cy-panSY)/camScale;draw();return;}
+        const prev=hoveredNode; hoveredNode=getNodeAt(cx,cy);
+        canvas.style.cursor=hoveredNode?'grab':'default';
+        if(prev!==hoveredNode) draw();
+    };
+    canvas.onmouseup=()=>{draggingNode=null;isPanning=false;};
+    canvas.onmouseleave=()=>{draggingNode=null;isPanning=false;hoveredNode=null;draw();};
+    canvas.onwheel=e=>{e.preventDefault();camScale=Math.max(0.2,Math.min(4,camScale*(e.deltaY<0?1.12:0.89)));draw();};
+    draw();
+    const legendEl=document.getElementById('cooc-net-legend');
+    const seen={};
+    spList.forEach(sp=>{const c=nodes[sp].color;if(!seen[c])seen[c]=0;seen[c]++;});
+    const gN={'#2a9d5c':'Insetívoro','#3490d4':'Insetívoro aéreo','#e07820':'Frugívoro','#c8a010':'Granívoro','#c030a0':'Nectarívoro','#d03030':'Carnívoro','#2060d0':'Piscívoro','#6040c0':'Onívoro','#707060':'Detritívoro','#20a0a0':'Filtrador','#50a030':'Herbívoro','#a06030':'Malacófago','#2a7d52':'Outro'};
+    legendEl.innerHTML=Object.keys(seen).map(c=>`<span style="display:inline-flex;align-items:center;gap:4px;background:white;border:1px solid var(--border-light);border-radius:10px;padding:3px 10px;"><span style="width:10px;height:10px;border-radius:50%;background:${c};display:inline-block;"></span><span style="font-size:11px;">${gN[c]||'Outro'}</span></span>`).join('');
+}
+
+// Interceptar runCooc para expor _coocMatrix e _coocAllSp no escopo window
+const _origRunCooc = window.runCooc;
+window.runCooc = function(minCooc) {
+    if (typeof _origRunCooc === 'function') _origRunCooc(minCooc);
+};
+
+// Sobrescrever buildAndRun da co-ocorrência para expor variáveis
+function _patchCoocExpose() {
+    const btn = document.getElementById('cooc-run');
+    const btn2 = document.getElementById('cooc-rerun');
+    if (!btn || btn._netPatched) return;
+    btn._netPatched = true;
+    btn.addEventListener('click', () => {
+        setTimeout(() => {
+            const raw = document.getElementById('cooc-data')?.value.trim();
+            if (!raw) return;
+            const surveys = raw.split(/\n\s*\n/).map(block =>
+                new Set(block.split('\n').map(s=>s.replace(/^Levantamento[^:]*:/i,'').trim()).filter(Boolean))
+            );
+            const allSp = [...new Set(surveys.flatMap(s=>[...s]))].sort();
+            const matrix = {};
+            allSp.forEach(a=>{matrix[a]={};allSp.forEach(b=>{matrix[a][b]=0;});});
+            surveys.forEach(survey=>{
+                const spArr=[...survey];
+                for(let i=0;i<spArr.length;i++) for(let j=i+1;j<spArr.length;j++){
+                    matrix[spArr[i]][spArr[j]]++; matrix[spArr[j]][spArr[i]]++;
+                }
+            });
+            window._patchCoocMatrix = matrix;
+            window._patchCoocAllSp = allSp;
+            const wrap = document.getElementById('cooc-network-wrap');
+            if (wrap) wrap.style.display = '';
+        }, 400);
+    }, true);
+    if (btn2) btn2.addEventListener('click', ()=>{
+        setTimeout(()=>{ if(!window._patchCoocMatrix) btn.click(); }, 100);
+    }, true);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    _patchCoocExpose();
+    document.getElementById('cooc-net-run')?.addEventListener('click', () => {
+        buildCoocNetwork(parseInt(document.getElementById('cooc-net-min').value)||2);
+    });
+    document.getElementById('cooc-net-size')?.addEventListener('change', () => {
+        if (window._patchCoocMatrix) buildCoocNetwork(parseInt(document.getElementById('cooc-net-min').value)||2);
+    });
+    document.getElementById('cooc-net-reset')?.addEventListener('click', () => {
+        if (window._patchCoocMatrix) buildCoocNetwork(parseInt(document.getElementById('cooc-net-min').value)||2);
+    });
+    // Também hookear quando a aba for aberta
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (btn.dataset.tab === 'coocorrencia-section') setTimeout(_patchCoocExpose, 200);
+        });
+    });
+});
+
 window.copiarTopPares = function() {
     if (!window._coocTopPairs || !window._coocTopPairs.length) { alert('Nenhum par para copiar.'); return; }
     const dn = window._coocSpDisplayName || (sp=>sp);
@@ -13185,12 +13538,13 @@ window.correcaoUsarSugestao = function(idx) {
 };
 
 window.correcaoAutocomplete = function(input, idx) {
-    const raw = input.value.trim();
+    const raw = input.value;
+    const trimmed = raw.trim();
     const ac = document.getElementById(`correcao-ac-${idx}`);
     if (!ac) return;
-    if (raw.length < 2) { ac.style.display = 'none'; return; }
+    if (trimmed.length < 2) { ac.style.display = 'none'; return; }
     // Accent-insensitive search using the same normalizer as the main engine
-    const norm = raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[-\s]+/g, ' ');
+    const norm = trimmed.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[-\s]+/g, ' ');
     const matches = (typeof BIRD_DATABASE !== 'undefined' ? BIRD_DATABASE : [])
         .filter(b => {
             const ns = b.scientificName.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
@@ -13545,142 +13899,7 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
 </div>
 
-<script>
-// ==================== MODAL CONFIGURAÇÕES ====================
-const configModal = document.getElementById('config-modal');
-const closeConfigModal = document.getElementById('close-config-modal');
-
-document.getElementById('settings-open-btn')?.addEventListener('click', function() {
-    if (configModal) configModal.style.display = 'block';
-});
-
-if (closeConfigModal) {
-    closeConfigModal.addEventListener('click', () => { configModal.style.display = 'none'; });
-}
-
-window.addEventListener('click', (e) => {
-    if (e.target === configModal) configModal.style.display = 'none';
-});
-
-// ==================== TEMA CLARO / ESCURO ====================
-function setTheme(mode) {
-    if (mode === 'dark') {
-        document.documentElement.setAttribute('data-theme', 'dark');
-    } else {
-        document.documentElement.removeAttribute('data-theme');
-    }
-    try { localStorage.setItem('ornitologia_theme', mode); } catch(e) {}
-}
-
-// Botões dentro do modal de configurações
-document.getElementById('settings-light-btn')?.addEventListener('click', () => setTheme('light'));
-document.getElementById('settings-dark-btn')?.addEventListener('click',  () => setTheme('dark'));
-
-// Restaurar tema salvo
-(function() {
-    let saved = 'light';
-    try { saved = localStorage.getItem('ornitologia_theme') || 'light'; } catch(e) {}
-    setTheme(saved);
-})();
-
-
-// ==================== SALVAR / IMPORTAR SESSÃO ====================
-document.getElementById('session-export-btn')?.addEventListener('click', function() {
-    try {
-        // Coletar espécies importadas da tabela
-        const rows = [];
-        document.querySelectorAll('#table-body tr').forEach(tr => {
-            const inputs = tr.querySelectorAll('input');
-            const rowData = {};
-            inputs.forEach(inp => { if (inp.dataset.field) rowData[inp.dataset.field] = inp.value; });
-            if (rowData.generoEspecie) rows.push(rowData);
-        });
-
-        // Avistamentos
-        const avistamentos = window.AVISTAMENTOS ? window.AVISTAMENTOS.map(a => ({
-            id: a.id,
-            date: a.date,
-            inputName: a.inputName,
-            scientificName: a.scientificName,
-            commonName: a.commonName,
-            confident: a.confident
-        })) : [];
-
-        const session = {
-            version: '1.0',
-            exportedAt: new Date().toISOString(),
-            theme: document.documentElement.getAttribute('data-theme') || 'light',
-            importedRows: rows,
-            avistamentos: avistamentos
-        };
-
-        const blob = new Blob([JSON.stringify(session, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'sessao_ornitologia_' + new Date().toISOString().slice(0,10) + '.json';
-        a.click();
-        URL.revokeObjectURL(url);
-
-        showSessionFeedback('✅ Sessão exportada com sucesso! ' + rows.length + ' espécies e ' + avistamentos.length + ' avistamentos salvos.', 'ok');
-    } catch(e) {
-        showSessionFeedback('❌ Erro ao exportar: ' + e.message, 'err');
-    }
-});
-
-document.getElementById('session-import-file')?.addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(ev) {
-        try {
-            const session = JSON.parse(ev.target.result);
-            if (!session.version || !session.importedRows) throw new Error('Arquivo inválido ou corrompido.');
-
-            // Restaurar tema
-            if (session.theme) setTheme(session.theme);
-
-            // Restaurar espécies — limpa tabela atual e reinsere
-            const tbody = document.getElementById('table-body');
-            if (tbody) {
-                tbody.innerHTML = '';
-                (session.importedRows || []).forEach(rowData => {
-                    if (typeof addTableRow === 'function') {
-                        addTableRow(rowData);
-                    }
-                });
-            }
-
-            // Restaurar avistamentos
-            if (window.AVISTAMENTOS !== undefined && session.avistamentos) {
-                window.AVISTAMENTOS.length = 0;
-                session.avistamentos.forEach(a => window.AVISTAMENTOS.push(a));
-                if (typeof buildAvistaTable === 'function') buildAvistaTable();
-                if (typeof refreshCalculoAvist === 'function') refreshCalculoAvist();
-            }
-
-            const nRows = (session.importedRows || []).length;
-            const nAvist = (session.avistamentos || []).length;
-            showSessionFeedback(`✅ Sessão importada: ${nRows} espécies e ${nAvist} avistamentos restaurados.`, 'ok');
-            e.target.value = '';
-        } catch(err) {
-            showSessionFeedback('❌ Falha ao importar: ' + err.message, 'err');
-        }
-    };
-    reader.readAsText(file);
-});
-
-function showSessionFeedback(msg, type) {
-    const div = document.getElementById('session-import-feedback');
-    if (!div) return;
-    div.style.display = 'block';
-    div.style.background = type === 'ok' ? '#eaf4ed' : '#fdecea';
-    div.style.border = '1px solid ' + (type === 'ok' ? 'var(--green-base)' : '#e74c3c');
-    div.style.color = type === 'ok' ? 'var(--green-deep)' : '#922b21';
-    div.textContent = msg;
-    setTimeout(() => { div.style.display = 'none'; }, 6000);
-}
-</script>
+<!-- patch script removido: correções integradas diretamente -->
 
 </body>
 </html>
