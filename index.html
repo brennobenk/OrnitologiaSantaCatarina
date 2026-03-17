@@ -1825,6 +1825,37 @@
         .in-table-yes { color: var(--green-base); font-weight: 700; font-size: 15px; }
         .in-table-no  { color: #bbb; font-size: 13px; }
     </style>
+
+    <!-- ══════════════════════════════════════════
+         RASTREADOR DE VISITAS
+         Configure no painel-visitas.html (local)
+         e substitua U, R e T pelos seus dados.
+    ══════════════════════════════════════════ -->
+    <script>
+    (async function(){
+      const U="SEU_USUARIO_GITHUB",
+            R="meus-dados-visitas",
+            T="SEU_TOKEN_AQUI",
+            F="visitas.json";
+      const A=`https://api.github.com/repos/${U}/${R}/contents/${F}`;
+      const H={"Authorization":`token ${T}`,"Accept":"application/vnd.github.v3+json","Content-Type":"application/json"};
+      const ua=navigator.userAgent;
+      const getOS=u=>/Windows/.test(u)?"Windows":/iPhone|iPad/.test(u)?"iOS":/Mac/.test(u)?"macOS":/Android/.test(u)?"Android":/Linux/.test(u)?"Linux":"Outro";
+      const getBr=u=>/Edg/.test(u)?"Edge":/OPR|Opera/.test(u)?"Opera":/Chrome/.test(u)?"Chrome":/Firefox/.test(u)?"Firefox":/Safari/.test(u)?"Safari":"Outro";
+      const getDv=u=>/Mobi|Android|iPhone|iPad/.test(u)?"Mobile":"Desktop";
+      let cidade="",pais="";
+      try{const g=await fetch("https://ip-api.com/json/?fields=city,country&lang=pt-BR");const j=await g.json();cidade=j.city||"";pais=j.country||"";}catch(e){}
+      const novo={timestamp:new Date().toISOString(),os:getOS(ua),browser:getBr(ua),dispositivo:getDv(ua),tela:screen.width+"x"+screen.height,idioma:navigator.language||"",cidade,pais};
+      try{
+        let sha=null,lista=[];
+        try{const g=await fetch(A,{headers:H});if(g.ok){const d=await g.json();sha=d.sha;lista=JSON.parse(decodeURIComponent(escape(atob(d.content.replace(/\n/g,"")))));}}catch(e){}
+        lista.push(novo);
+        const body={message:"visita "+novo.timestamp,content:btoa(unescape(encodeURIComponent(JSON.stringify(lista,null,2))))};
+        if(sha)body.sha=sha;
+        await fetch(A,{method:"PUT",headers:H,body:JSON.stringify(body)});
+      }catch(e){}
+    })();
+    </script>
 </head>
 <body>
     <div style="position: fixed; top: 14px; right: 22px; z-index: 3000; display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
