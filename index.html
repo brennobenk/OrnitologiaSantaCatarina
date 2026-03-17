@@ -4922,21 +4922,59 @@ function generateColorMap(categories) {
         let currentInput = null;
         let selectedSuggestionIndex = -1;
 
+        // Stopwords de nomes populares de aves (preposições/artigos que variam)
+        const _STOP = new Set(['de','do','da','dos','das','o','a','os','as','e','em','no','na','nos','nas','um','uma']);
+
         function normalizeForSearch(str) {
             if (!str) return '';
             return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[-\s]+/g, ' ').trim();
         }
 
+        // Normalização fonética leve para erros comuns em nomes populares de aves
+        function phoneticNorm(str) {
+            return str
+                // vogais finais confundidas: u→o, i→e em terminações
+                .replace(/u\b/g, 'o')          // senhaçu → senhaço, sabiú → sabio
+                .replace(/([aeiou])s\b/g, '$1') // plural opcional: tucanos → tucano
+                // consoantes comuns confundidas
+                .replace(/ss/g, 's')
+                .replace(/rr/g, 'r')
+                .replace(/nh/g, 'n')            // sanhaco→sanaco (permite achar via Lev)
+                .replace(/lh/g, 'l')
+                .replace(/ch/g, 'x')
+                .replace(/qu/g, 'k')
+                .replace(/c([ei])/g, 's$1')    // cegonha→segonha
+                .replace(/ç/g, 's')
+                .replace(/x/g, 's')
+                .replace(/ph/g, 'f')
+                .replace(/y/g, 'i')
+                .replace(/w/g, 'v')
+                // vogais confundidas
+                .replace(/ae/g, 'e')
+                .replace(/oe/g, 'e')
+                .replace(/ao/g, 'a')
+                .replace(/(\w)\1+/g, '$1');    // letras dobradas → simples
+        }
+
+        // Remove stopwords de uma string já normalizada
+        function stripStops(norm) {
+            return norm.split(' ').filter(w => w && !_STOP.has(w)).join(' ');
+        }
+
         function buildSearchIndex() {
             const index = [];
             BIRD_DATABASE.forEach(b => {
+                const nc  = normalizeForSearch(b.commonName);
+                const ns  = normalizeForSearch(b.scientificName);
                 index.push({
                     text: `${b.scientificName} – ${b.commonName}`,
                     normalized: normalizeForSearch(b.scientificName + ' ' + b.commonName),
                     scientific: b.scientificName,
                     common: b.commonName,
-                    nc: normalizeForSearch(b.commonName),
-                    ns: normalizeForSearch(b.scientificName),
+                    nc,
+                    ns,
+                    ncStripped: stripStops(nc),    // sem artigos/preposições
+                    ncPhonetic: phoneticNorm(stripStops(nc)), // fonético
                     data: b
                 });
             });
@@ -4978,10 +5016,14 @@ function generateColorMap(categories) {
         // 3: palavra do nome popular começa com o termo
         // 4: termo aparece em qualquer posição do nome popular
         // 5: termo aparece em qualquer posição do nome científico
+        // 5.5: match exato após remover stopwords (do/de/da…)
+        // 5.8: match exato fonético
         // 6: fuzzy por palavras
+        // 6.5: fuzzy por palavras sem stopwords
+        // 6.8: fuzzy fonético
         // 7+: Levenshtein
         function scoreCandidate(item, norm) {
-            const { nc, ns } = item;
+            const { nc, ns, ncStripped, ncPhonetic } = item;
             if (nc === norm || ns === norm) return { score: 0, pos: 0 };
             if (nc.startsWith(norm))  return { score: 1, pos: 0 };
             if (ns.startsWith(norm))  return { score: 2, pos: 0 };
@@ -4994,6 +5036,23 @@ function generateColorMap(categories) {
             // Substring em nome científico
             const idxS = ns.indexOf(norm);
             if (idxS !== -1) return { score: 5, pos: idxS };
+
+            // ── Sem stopwords ──────────────────────────────────────────────────
+            const normStripped = stripStops(norm);
+            if (normStripped && ncStripped) {
+                if (ncStripped === normStripped) return { score: 5.5, pos: 0 };
+                if (ncStripped.startsWith(normStripped)) return { score: 5.6, pos: 0 };
+                if (ncStripped.indexOf(normStripped) !== -1) return { score: 5.7, pos: ncStripped.indexOf(normStripped) };
+                if (allWordsFuzzy(normStripped, ncStripped)) return { score: 6.5, pos: 0 };
+            }
+
+            // ── Fonético ───────────────────────────────────────────────────────
+            const normPhonetic = phoneticNorm(normStripped || norm);
+            if (normPhonetic && ncPhonetic) {
+                if (ncPhonetic === normPhonetic) return { score: 5.8, pos: 0 };
+                if (allWordsFuzzy(normPhonetic, ncPhonetic)) return { score: 6.8, pos: 0 };
+            }
+
             // Fuzzy por palavras (aceita pequenos erros)
             if (allWordsFuzzy(norm, nc) || allWordsFuzzy(norm, ns)) return { score: 6, pos: 0 };
             // Levenshtein completo (último recurso)
@@ -5055,9 +5114,9 @@ function generateColorMap(categories) {
 
             if (!best) return null;
 
-            // confident = match exato ou começa com o termo ou substring clara (scores 0-5)
-            // score 6+ = fuzzy / Levenshtein → incerto, vai para correção
-            const confident = bestScore <= 5;
+            // confident = match exato, prefixo, substring clara, ou via stopwords/fonético (scores 0–6.8)
+            // score 7+ = Levenshtein puro → incerto, vai para correção
+            const confident = bestScore < 7;
             return { bird: best.data, isFuzzy: bestScore > 0, score: bestScore, confident };
         }
         // CORRIGIDO: exposto globalmente para ser acessível em outros <script>
@@ -11841,11 +11900,16 @@ function buildAvistaTable() {
     updateAvistaDateFilter();
 }
 
+function isUncertainRecord(r) {
+    const n = (r.inputName || r.scientificName || '').trim();
+    return /\bsp\.\b|\bcf\.\b|\?/.test(n);
+}
+
 function buildAvistaStats() {
     const container = document.getElementById('avist-stats-row');
     if (!container) return;
     const total = AVISTAMENTOS.length;
-    const uniqueSp = new Set(AVISTAMENTOS.map(r => r.scientificName)).size;
+    const uniqueSp = new Set(AVISTAMENTOS.filter(r => !isUncertainRecord(r)).map(r => r.scientificName)).size;
     const withDate = AVISTAMENTOS.filter(r => r.date).length;
     const uniqueDates = new Set(AVISTAMENTOS.map(r => r.date).filter(Boolean)).size;
     const stats = [
@@ -12017,7 +12081,8 @@ function buildCalculoTab() {
     // Stats cards
     const statsEl = document.getElementById('calculo-stats-row');
     if (statsEl) {
-        const uniqueSp = sorted.length;
+        const uniqueSp = rows.filter(r => !isUncertainRecord(r))
+            .reduce((acc, r) => { acc.add(r.scientificName); return acc; }, new Set()).size;
         const uniqueDates = new Set(rows.map(r => r.date).filter(Boolean)).size;
         const maxSp = sorted[0] ? sorted[0][1].n : 0;
         const maxSpObj = sorted[0] ? sorted[0] : null;
