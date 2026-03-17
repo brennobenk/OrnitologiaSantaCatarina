@@ -24,8 +24,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/svg2pdf.js@2.0.0/dist/svg2pdf.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/lossless-image-compressor@2.0.0/dist/lossless-image-compressor.min.js"></script>
+    <!-- svg2pdf.js e lossless-image-compressor removidos: não existem/não são usados -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -1957,6 +1956,7 @@
         </table>
     </div>
 </div>
+    </div><!-- /section-content -->
             </section>
             
             <!-- Área de avisos de correção taxonômica -->
@@ -2429,7 +2429,8 @@
                 </div>
             </div>
         </div>
-    
+    </div><!-- /section-content -->
+
 </section>
 
 <!-- ========== SEÇÃO GUILDA ALIMENTAR ========== -->
@@ -2758,7 +2759,6 @@
                 <textarea id="cooc-data" rows="8" placeholder="Levantamento 1:&#10;Turdus rufiventris&#10;Thraupis sayaca&#10;&#10;Levantamento 2:&#10;Turdus rufiventris&#10;Columbina talpacoti&#10;..."></textarea>
             </div>
             <div style="display:flex; flex-direction:column; gap:8px;">
-        <div style="display:flex; flex-direction:column; gap:8px;">
                 <button id="cooc-import-avist" class="generate-btn" style="background:var(--amber);">🔭 Importar avistamentos por data</button>
                 <button id="cooc-run" class="generate-btn">▶ Calcular Matriz</button>
                 <label style="font-size:13px; font-weight:600;">Mín. co-ocorrências:</label>
@@ -4432,7 +4432,9 @@ function findBirdByNormalizedName(input) {
         });
 
         // Construir BIRD_DATABASE a partir de speciesInfo
-        const BIRD_DATABASE = [];
+        // CORRIGIDO: exposto globalmente via window para ser acessível em outros <script>
+        window.BIRD_DATABASE = [];
+        const BIRD_DATABASE = window.BIRD_DATABASE;
         for (let [sciName, info] of Object.entries(speciesInfo)) {
             BIRD_DATABASE.push({
                 scientificName: sciName,
@@ -5018,6 +5020,8 @@ function generateColorMap(categories) {
             const confident = bestScore <= 5;
             return { bird: best.data, isFuzzy: bestScore > 0, score: bestScore, confident };
         }
+        // CORRIGIDO: exposto globalmente para ser acessível em outros <script>
+        window.findBirdFuzzy = findBirdFuzzy;
 
         function findBirdByNormalizedName(input) {
             const result = findBirdFuzzy(input);
@@ -12967,8 +12971,7 @@ function runCooc(minCooc) {
 window.copiarTopPares = function() {
     if (!window._coocTopPairs || !window._coocTopPairs.length) { alert('Nenhum par para copiar.'); return; }
     const dn = window._coocSpDisplayName || (sp=>sp);
-    const text = window._coocTopPairs.map((p,i) => `${i+1}. ${dn(p.a)} + ${dn(p.b)}: ${p.n} co-ocorrência(s)`).join('
-');
+    const text = window._coocTopPairs.map((p,i) => `${i+1}. ${dn(p.a)} + ${dn(p.b)}: ${p.n} co-ocorrência(s)`).join('\n');
     navigator.clipboard.writeText(text).then(() => {
         alert('✅ Lista copiada para área de transferência!');
     }).catch(() => {
@@ -12981,9 +12984,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const raw = document.getElementById('cooc-data').value.trim();
         if (!raw) { alert('Insira levantamentos.'); return; }
         const minCooc = parseInt(document.getElementById('cooc-min').value)||2;
-        const surveys = raw.split(/
-\s*
-/).map(block => new Set(block.split('\n').map(s=>s.replace(/^Levantamento[^:]*:/i,'').trim()).filter(Boolean)));
+        const surveys = raw.split(/\n\s*\n/).map(block => new Set(block.split('\n').map(s=>s.replace(/^Levantamento[^:]*:/i,'').trim()).filter(Boolean)));
         const allSp = [...new Set(surveys.flatMap(s=>[...s]))].sort();
         if (allSp.length === 0) { alert('Nenhuma espécie detectada.'); return; }
         const matrix = {};
@@ -13006,11 +13007,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('cooc-min')?.addEventListener('keydown', e => {
         if (e.key === 'Enter') { e.preventDefault(); document.getElementById('cooc-rerun')?.click(); }
     });
-
-    document.getElementById('cooc-run')?.addEventListener('click_OLD_REMOVED', () => {
-        const raw = document.getElementById('cooc-data').value.trim();
-        if (!raw) { alert('Insira levantamentos.'); return; }
-        const minCooc = parseInt(document.getElementById('cooc-min').value)||2;
+});
 
 // ==================== MODAL DE CORREÇÃO DE AVISTAMENTOS ====================
 let _correcaoPendentes = [];
