@@ -1827,15 +1827,15 @@
     </style>
 
     <!-- ══════════════════════════════════════════
-         RASTREADOR DE VISITAS
+        
          Configure no painel-visitas.html (local)
          e substitua U, R e T pelos seus dados.
     ══════════════════════════════════════════ -->
     <script>
     (async function(){
-      const U="SEU_USUARIO_GITHUB",
-            R="meus-dados-visitas",
-            T="SEU_TOKEN_AQUI",
+      const U="brennobenk",
+            R="painel-visitasAves",
+            T="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",
             F="visitas.json";
       const A=`https://api.github.com/repos/${U}/${R}/contents/${F}`;
       const H={"Authorization":`token ${T}`,"Accept":"application/vnd.github.v3+json","Content-Type":"application/json"};
