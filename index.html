@@ -1835,7 +1835,7 @@
     <script>
     (async function(){
       var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwUpawmV_X1Bn8VgF30gP2GMjlSE7gH-CdFT-wwxtdbJblW4IoyNs6uTaIM2KY-9iEb/exec";
-      if (SCRIPT_URL === "https://script.google.com/macros/s/AKfycbwUpawmV_X1Bn8VgF30gP2GMjlSE7gH-CdFT-wwxtdbJblW4IoyNs6uTaIM2KY-9iEb/exec") return; // não configurado ainda
+      if (!SCRIPT_URL || SCRIPT_URL === "COLE_A_URL_AQUI") return; // segurança: só sai se não configurado
       var ua = navigator.userAgent;
       var getOS = function(u){ return /Windows/.test(u)?"Windows":/iPhone|iPad/.test(u)?"iOS":/Mac/.test(u)?"macOS":/Android/.test(u)?"Android":/Linux/.test(u)?"Linux":"Outro"; };
       var getBr = function(u){ return /Edg/.test(u)?"Edge":/OPR|Opera/.test(u)?"Opera":/Chrome/.test(u)?"Chrome":/Firefox/.test(u)?"Firefox":/Safari/.test(u)?"Safari":"Outro"; };
