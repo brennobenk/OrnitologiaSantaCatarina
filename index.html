@@ -1827,33 +1827,41 @@
     </style>
 
     <!-- ══════════════════════════════════════════
-        
-         Configure no painel-visitas.html (local)
-         e substitua U, R e T pelos seus dados.
+         RASTREADOR DE VISITAS — Google Sheets
+         Substitua COLE_A_URL_AQUI pela URL do
+         seu Web App (Google Apps Script).
+         Nenhum token exposto aqui!
     ══════════════════════════════════════════ -->
     <script>
     (async function(){
-      const U="",
-            R="",
-            T="",
-            F="visitas.json";
-      const A=`https://api.github.com/repos/${U}/${R}/contents/${F}`;
-      const H={"Authorization":`token ${T}`,"Accept":"application/vnd.github.v3+json","Content-Type":"application/json"};
-      const ua=navigator.userAgent;
-      const getOS=u=>/Windows/.test(u)?"Windows":/iPhone|iPad/.test(u)?"iOS":/Mac/.test(u)?"macOS":/Android/.test(u)?"Android":/Linux/.test(u)?"Linux":"Outro";
-      const getBr=u=>/Edg/.test(u)?"Edge":/OPR|Opera/.test(u)?"Opera":/Chrome/.test(u)?"Chrome":/Firefox/.test(u)?"Firefox":/Safari/.test(u)?"Safari":"Outro";
-      const getDv=u=>/Mobi|Android|iPhone|iPad/.test(u)?"Mobile":"Desktop";
-      let cidade="",pais="";
-      try{const g=await fetch("https://ip-api.com/json/?fields=city,country&lang=pt-BR");const j=await g.json();cidade=j.city||"";pais=j.country||"";}catch(e){}
-      const novo={timestamp:new Date().toISOString(),os:getOS(ua),browser:getBr(ua),dispositivo:getDv(ua),tela:screen.width+"x"+screen.height,idioma:navigator.language||"",cidade,pais};
-      try{
-        let sha=null,lista=[];
-        try{const g=await fetch(A,{headers:H});if(g.ok){const d=await g.json();sha=d.sha;lista=JSON.parse(decodeURIComponent(escape(atob(d.content.replace(/\n/g,"")))));}}catch(e){}
-        lista.push(novo);
-        const body={message:"visita "+novo.timestamp,content:btoa(unescape(encodeURIComponent(JSON.stringify(lista,null,2))))};
-        if(sha)body.sha=sha;
-        await fetch(A,{method:"PUT",headers:H,body:JSON.stringify(body)});
-      }catch(e){}
+      var SCRIPT_URL = "COLE_A_URL_AQUI";
+      if (SCRIPT_URL === "COLE_A_URL_AQUI") return; // não configurado ainda
+      var ua = navigator.userAgent;
+      var getOS = function(u){ return /Windows/.test(u)?"Windows":/iPhone|iPad/.test(u)?"iOS":/Mac/.test(u)?"macOS":/Android/.test(u)?"Android":/Linux/.test(u)?"Linux":"Outro"; };
+      var getBr = function(u){ return /Edg/.test(u)?"Edge":/OPR|Opera/.test(u)?"Opera":/Chrome/.test(u)?"Chrome":/Firefox/.test(u)?"Firefox":/Safari/.test(u)?"Safari":"Outro"; };
+      var getDv = function(u){ return /Mobi|Android|iPhone|iPad/.test(u)?"Mobile":"Desktop"; };
+      var cidade = "", pais = "";
+      try {
+        var g = await fetch("https://ip-api.com/json/?fields=city,country&lang=pt-BR");
+        var j = await g.json();
+        cidade = j.city || ""; pais = j.country || "";
+      } catch(e) {}
+      var dados = {
+        timestamp:   new Date().toISOString(),
+        os:          getOS(ua),
+        browser:     getBr(ua),
+        dispositivo: getDv(ua),
+        tela:        screen.width + "x" + screen.height,
+        idioma:      navigator.language || "",
+        cidade:      cidade,
+        pais:        pais
+      };
+      try {
+        await fetch(SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify(dados)
+        });
+      } catch(e) {}
     })();
     </script>
 </head>
