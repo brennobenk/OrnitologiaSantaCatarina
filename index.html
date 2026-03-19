@@ -5933,6 +5933,14 @@ function escapeHtml(str) {
 }
 
         document.addEventListener('DOMContentLoaded', function() {
+    // ── Utilitário: fecha todos os modais principais ─────────────────────
+    function closeAllMainModals() {
+        ['help-modal', 'config-modal', 'download-charts-modal'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+        });
+    }
+
     // Abrir modal de ajuda (toggle)
     const helpBtn = document.getElementById('help-button');
     const helpBtnFixed = document.getElementById('help-button-fixed');
@@ -5941,7 +5949,9 @@ function escapeHtml(str) {
 
     const toggleHelp = () => {
         if (!helpModal) return;
-        helpModal.style.display = helpModal.style.display === 'block' ? 'none' : 'block';
+        const isOpen = helpModal.style.display === 'block';
+        closeAllMainModals();
+        if (!isOpen) helpModal.style.display = 'block';
     };
     const closeHelpFn = () => { if (helpModal) helpModal.style.display = 'none'; };
 
@@ -5959,7 +5969,10 @@ function escapeHtml(str) {
     const closeConfigBtn = document.getElementById('close-config-modal');
 
     if (settingsOpenBtn) settingsOpenBtn.addEventListener('click', () => {
-        if (configModal) configModal.style.display = configModal.style.display === 'block' ? 'none' : 'block';
+        if (!configModal) return;
+        const isOpen = configModal.style.display === 'block';
+        closeAllMainModals();
+        if (!isOpen) configModal.style.display = 'block';
     });
     if (closeConfigBtn) closeConfigBtn.addEventListener('click', () => { if (configModal) configModal.style.display = 'none'; });
     window.addEventListener('click', (event) => {
@@ -6037,97 +6050,127 @@ function escapeHtml(str) {
     // ── Pasta de destino selecionada via File System Access API ──
     let _dlFolderHandle = null;
 
-    // Renderiza um gráfico Chart.js em alta resolução preservando a proporção original
-    // Redesenha o gráfico num canvas offscreen grande — não tira print da tela
+    // Renderiza um gráfico Chart.js em alta resolução
+    // Estratégia: nova instância num canvas offscreen MAIOR com padding generoso,
+    // depois recorta só a área pintada — legenda nunca é cortada.
     async function renderChartHQ(canvasId) {
         const canvas = document.getElementById(canvasId);
         if (!canvas) return null;
 
-        // Garante seção visível para Chart.getChart funcionar
-        const section = canvas.closest('.tab-section');
-        const wasHidden = section && getComputedStyle(section).display === 'none';
-        if (wasHidden) {
-            section.style.setProperty('display', 'block', 'important');
-            section.style.visibility = 'hidden';
-            await new Promise(r => setTimeout(r, 60));
-        }
+        if (typeof Chart === 'undefined') return null;
+        const inst = Chart.getChart(canvas);
+        if (!inst) return null;
 
+        // ── Tipo e dimensões base ────────────────────────────────────────────────
+        const chartType  = (inst.config?.type || 'bar').toLowerCase();
+        const isCircular = ['pie', 'doughnut', 'polararea'].includes(chartType);
+
+        // Canvas interno generoso — Chart.js usa isso para calcular tudo
+        const outW = isCircular ? 2800 : 4000;
+        const outH = isCircular ? 2800 : 2200;
+
+        // Padding ao redor do gráfico (evita corte de legenda/labels nas bordas)
+        const PAD = Math.round(outW * 0.045); // ~4.5% de cada lado
+
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width  = outW;
+        offCanvas.height = outH;
+        offCanvas.style.cssText = 'position:fixed;left:-99999px;top:-99999px;width:' + outW + 'px;height:' + outH + 'px;';
+        document.body.appendChild(offCanvas);
+
+        let offChart = null;
         try {
-            // Obtém dimensões reais do canvas no layout atual
-            const srcW = canvas.offsetWidth  || canvas.width  || 900;
-            const srcH = canvas.offsetHeight || canvas.height || 450;
+            const origConfig = inst.config;
+            const cloned = JSON.parse(JSON.stringify({
+                type:    origConfig.type,
+                data:    origConfig.data,
+                options: origConfig.options || {}
+            }));
 
-            // Calcula escala para atingir pelo menos 1920px na dimensão maior,
-            // preservando SEMPRE a proporção original do gráfico
-            const TARGET = 1920;
-            const scale = Math.max(Math.ceil(TARGET / Math.max(srcW, srcH)), 2);
-            const outW = srcW * scale;
-            const outH = srcH * scale;
+            // Sem responsividade — tamanho fixo
+            cloned.options.responsive          = false;
+            cloned.options.maintainAspectRatio = false;
+            cloned.options.animation           = false;
 
-            // Cria canvas offscreen de alta resolução com proporção preservada
-            const off = document.createElement('canvas');
-            off.width  = outW;
-            off.height = outH;
-            const octx = off.getContext('2d');
+            // Padding interno amplo — garante que nada seja cortado
+            cloned.options.layout = {
+                padding: {
+                    top:    PAD,
+                    bottom: PAD,
+                    left:   PAD,
+                    right:  PAD
+                }
+            };
 
-            // Fundo branco
-            octx.fillStyle = '#ffffff';
-            octx.fillRect(0, 0, outW, outH);
+            // Escala de fonte relativa ao canvas de saída
+            const fontScale = isCircular ? (outW / 700) : (outW / 1100);
 
-            // Tenta redesenhar via Chart.js (qualidade máxima — redesenha vetorialmente)
-            let rendered = false;
-            if (typeof Chart !== 'undefined') {
-                try {
-                    const inst = Chart.getChart(canvas);
-                    if (inst) {
-                        // Salva config original
-                        const origWidth  = canvas.width;
-                        const origHeight = canvas.height;
-                        const origStyleW = canvas.style.width;
-                        const origStyleH = canvas.style.height;
+            if (!cloned.options.plugins) cloned.options.plugins = {};
+            const pl = cloned.options.plugins;
 
-                        // Redimensiona temporariamente para alta resolução mantendo proporção
-                        canvas.width  = outW;
-                        canvas.height = outH;
-                        canvas.style.width  = outW + 'px';
-                        canvas.style.height = outH + 'px';
+            // Legenda — sempre visível, fonte grande, sem corte
+            if (!pl.legend) pl.legend = {};
+            pl.legend.display = true;
+            pl.legend.position = pl.legend.position || 'top';
+            if (!pl.legend.labels) pl.legend.labels = {};
+            pl.legend.labels.font     = { size: Math.round(20 * fontScale) };
+            pl.legend.labels.boxWidth = Math.round(28 * fontScale);
+            pl.legend.labels.padding  = Math.round(22 * fontScale);
+            // Garante que a legenda nunca seja truncada — sem maxItems
+            delete pl.legend.maxHeight;
+            delete pl.legend.maxWidth;
 
-                        // Força redraw em alta resolução
-                        inst.resize(outW, outH);
-                        inst.render();
-                        await new Promise(r => setTimeout(r, 80));
+            // Título
+            if (pl.title?.display) {
+                if (!pl.title.font) pl.title.font = {};
+                pl.title.font.size = Math.round(26 * fontScale);
+                pl.title.padding   = { top: PAD / 2, bottom: PAD / 2 };
+            }
 
-                        // Copia o canvas redesenhado para o offscreen com fundo branco
-                        octx.fillStyle = '#ffffff';
-                        octx.fillRect(0, 0, outW, outH);
-                        octx.drawImage(canvas, 0, 0);
+            // Datalabels
+            if (pl.datalabels) {
+                if (!pl.datalabels.font) pl.datalabels.font = {};
+                pl.datalabels.font.size = Math.round(16 * fontScale);
+                pl.datalabels.clamp     = true;  // mantém dentro do canvas
+            }
 
-                        // Restaura tamanho original
-                        canvas.width  = origWidth;
-                        canvas.height = origHeight;
-                        canvas.style.width  = origStyleW;
-                        canvas.style.height = origStyleH;
-                        inst.resize();
-                        inst.render();
-
-                        rendered = true;
+            // Eixos — fontes grandes e sem truncamento
+            if (cloned.options.scales) {
+                Object.values(cloned.options.scales).forEach(axis => {
+                    if (!axis) return;
+                    if (!axis.ticks) axis.ticks = {};
+                    if (!axis.ticks.font) axis.ticks.font = {};
+                    axis.ticks.font.size  = Math.round(17 * fontScale);
+                    axis.ticks.maxRotation = 45;
+                    axis.ticks.autoSkip    = false; // mostra todos os labels
+                    if (axis.title) {
+                        if (!axis.title.font) axis.title.font = {};
+                        axis.title.font.size = Math.round(20 * fontScale);
                     }
-                } catch(e) { console.warn('HQ render error:', e); }
+                });
             }
 
-            // Fallback: escala o canvas existente com interpolação de alta qualidade
-            if (!rendered) {
-                octx.imageSmoothingEnabled = true;
-                octx.imageSmoothingQuality = 'high';
-                octx.drawImage(canvas, 0, 0, srcW, srcH, 0, 0, outW, outH);
-            }
+            // ── Cria nova instância ──────────────────────────────────────────────
+            offChart = new Chart(offCanvas, cloned);
+            await new Promise(r => setTimeout(r, 400));
 
-            return off.toDataURL('image/png', 1.0);
+            // ── Exporta com fundo branco ─────────────────────────────────────────
+            const finalCanvas = document.createElement('canvas');
+            finalCanvas.width  = outW;
+            finalCanvas.height = outH;
+            const ctx = finalCanvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, outW, outH);
+            ctx.drawImage(offCanvas, 0, 0);
+
+            return finalCanvas.toDataURL('image/png', 1.0);
+
+        } catch(e) {
+            console.warn('renderChartHQ error:', e);
+            return null;
         } finally {
-            if (wasHidden) {
-                section.style.removeProperty('display');
-                section.style.visibility = '';
-            }
+            if (offChart) { try { offChart.destroy(); } catch(_) {} }
+            if (offCanvas.parentNode) offCanvas.parentNode.removeChild(offCanvas);
         }
     }
 
@@ -6193,7 +6236,9 @@ function escapeHtml(str) {
 
     if (dlBtn) dlBtn.addEventListener('click', () => {
         buildDownloadList();
-        if (dlModal) dlModal.style.display = dlModal.style.display === 'block' ? 'none' : 'block';
+        const isOpen = dlModal && dlModal.style.display === 'block';
+        closeAllMainModals();
+        if (dlModal && !isOpen) dlModal.style.display = 'block';
     });
     if (closeDlModal) closeDlModal.addEventListener('click', () => { if (dlModal) dlModal.style.display = 'none'; });
     window.addEventListener('click', e => { if (e.target === dlModal) dlModal.style.display = 'none'; });
@@ -6252,7 +6297,7 @@ function escapeHtml(str) {
             }
         }
         const folderInfo = _dlFolderHandle ? ` na pasta "${_dlFolderHandle.name}"` : ' na pasta Downloads';
-        if (status) status.textContent = `✅ ${done} gráfico(s) exportado(s) em HD (proporção original ×4 — até 1920px)${folderInfo}${skipped ? ` · ${skipped} pulados` : ''}.`;
+        if (status) status.textContent = `✅ ${done} gráfico(s) exportado(s) em alta resolução (proporção original preservada — mín. 2400px)${folderInfo}${skipped ? ` · ${skipped} pulados` : ''}.`;
     });
 
     // Abrir automaticamente ao carregar a página
@@ -6260,6 +6305,229 @@ function escapeHtml(str) {
         setTimeout(() => { helpModal.style.display = 'block'; }, 400);
     }
 });
+
+/* ═══════════════════════════════════════════════════════════════
+   TEMA CLARO / ESCURO
+   setTheme(mode) — chamado pelos onclick dos botões em Configurações
+═══════════════════════════════════════════════════════════════ */
+(function () {
+    function applyTheme(mode) {
+        if (mode === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+        }
+        try { localStorage.setItem('ornitologia_theme', mode); } catch(_) {}
+    }
+
+    window.setTheme = function(mode) { applyTheme(mode); };
+
+    // Restaura tema salvo ao carregar
+    document.addEventListener('DOMContentLoaded', () => {
+        try {
+            const saved = localStorage.getItem('ornitologia_theme');
+            if (saved) applyTheme(saved);
+        } catch(_) {}
+    });
+})();
+
+/* ═══════════════════════════════════════════════════════════════
+   EXPORTAR / IMPORTAR SESSÃO
+   Salva e restaura: tabela de espécies, avistamentos e listas de comparação.
+═══════════════════════════════════════════════════════════════ */
+(function () {
+
+    // ── Coleta todos os dados da sessão atual ───────────────────────────────
+    function collectSession() {
+        const session = { version: 2, ts: Date.now() };
+
+        // 1. Tabela de espécies (modo básico / avançado)
+        const tableRows = [];
+        document.querySelectorAll('#table-body tr').forEach(row => {
+            const rowData = {};
+            row.querySelectorAll('input[data-field]').forEach(inp => {
+                rowData[inp.dataset.field] = inp.value;
+            });
+            if (Object.keys(rowData).length) tableRows.push(rowData);
+        });
+        session.tableRows = tableRows;
+
+        // 2. Textarea de importação
+        const importTA = document.getElementById('import-data');
+        session.importText = importTA ? importTA.value : '';
+
+        // 3. Avistamentos
+        session.avistamentos = window.AVISTAMENTOS ? [...window.AVISTAMENTOS] : [];
+
+        // 4. Listas de comparação
+        const listsData = [];
+        document.querySelectorAll('#lists-container .list-item').forEach((listDiv, i) => {
+            const legendInput = listDiv.querySelector('.list-legend');
+            const textarea    = listDiv.querySelector('.compare-import');
+            const tbody       = listDiv.querySelector('.list-body');
+            const processed   = [];
+            if (tbody) tbody.querySelectorAll('tr td:first-child').forEach(td => processed.push(td.textContent.trim()));
+            listsData.push({
+                legend:    legendInput ? legendInput.value : `Lista ${i + 1}`,
+                textarea:  textarea   ? textarea.value   : '',
+                processed: processed
+            });
+        });
+        session.compareLists = listsData;
+
+        // 5. Tema atual
+        session.theme = document.documentElement.getAttribute('data-theme') || 'light';
+
+        return session;
+    }
+
+    // ── Restaura sessão a partir de um objeto JSON ──────────────────────────
+    function restoreSession(session) {
+        const feedback = document.getElementById('session-import-feedback');
+        function showFeedback(msg, ok) {
+            if (!feedback) return;
+            feedback.style.display = 'block';
+            feedback.style.background = ok ? '#d4f0dc' : '#fde8d0';
+            feedback.style.color      = ok ? '#1e6b35' : '#922b21';
+            feedback.style.border     = ok ? '1px solid #a0d8b0' : '1px solid #f5b7a0';
+            feedback.textContent = msg;
+        }
+
+        try {
+            // Tema
+            if (session.theme && window.setTheme) window.setTheme(session.theme);
+
+            // Tabela de espécies — limpa e recria
+            const tableBody = document.getElementById('table-body');
+            if (tableBody && session.tableRows && session.tableRows.length) {
+                tableBody.innerHTML = '';
+                session.tableRows.forEach(rowData => {
+                    if (typeof addTableRow === 'function') {
+                        addTableRow(rowData);
+                    } else {
+                        // fallback manual
+                        const row = document.createElement('tr');
+                        ['filo','classe','ordem','familia','subfamilia','generoEspecie'].forEach(field => {
+                            const td  = document.createElement('td');
+                            const inp = document.createElement('input');
+                            inp.type = 'text'; inp.value = rowData[field] || ''; inp.dataset.field = field;
+                            td.appendChild(inp); row.appendChild(td);
+                        });
+                        tableBody.appendChild(row);
+                    }
+                });
+            }
+
+            // Textarea de importação
+            const importTA = document.getElementById('import-data');
+            if (importTA && session.importText !== undefined) importTA.value = session.importText;
+
+            // Avistamentos
+            if (session.avistamentos && Array.isArray(session.avistamentos)) {
+                window.AVISTAMENTOS = session.avistamentos;
+                if (typeof buildAvistaTable === 'function') buildAvistaTable();
+            }
+
+            // Listas de comparação
+            if (session.compareLists && session.compareLists.length) {
+                const container = document.getElementById('lists-container');
+                if (container) {
+                    // Remove listas existentes (mantém pelo menos 1)
+                    const existing = container.querySelectorAll('.list-item');
+                    existing.forEach((el, i) => { if (i > 0) el.remove(); });
+
+                    session.compareLists.forEach((listData, i) => {
+                        let listEl;
+                        if (i === 0) {
+                            listEl = container.querySelector('.list-item');
+                        } else {
+                            // Simula clique no botão "Adicionar Lista"
+                            const addBtn = document.getElementById('add-list-btn');
+                            if (addBtn) addBtn.click();
+                            const items = container.querySelectorAll('.list-item');
+                            listEl = items[items.length - 1];
+                        }
+                        if (!listEl) return;
+                        const legendInp = listEl.querySelector('.list-legend');
+                        const ta        = listEl.querySelector('.compare-import');
+                        if (legendInp) legendInp.value = listData.legend;
+                        if (ta)        ta.value        = listData.textarea;
+
+                        // Restaura linhas processadas
+                        const tbody = listEl.querySelector('.list-body');
+                        if (tbody && listData.processed && listData.processed.length) {
+                            tbody.innerHTML = '';
+                            listData.processed.forEach(sp => {
+                                const tr = document.createElement('tr');
+                                const td = document.createElement('td');
+                                td.textContent = sp;
+                                tr.appendChild(td); tbody.appendChild(tr);
+                            });
+                        }
+                    });
+                }
+            }
+
+            showFeedback(`✅ Sessão restaurada com sucesso! (${session.tableRows?.length || 0} espécies, ${session.avistamentos?.length || 0} avistamentos, ${session.compareLists?.length || 0} lista(s))`, true);
+        } catch(e) {
+            console.error('Erro ao restaurar sessão:', e);
+            showFeedback('❌ Erro ao restaurar sessão: ' + e.message, false);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // ── Botão Exportar Sessão ──────────────────────────────────────────
+        const exportBtn = document.getElementById('session-export-btn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
+                try {
+                    const session = collectSession();
+                    const json    = JSON.stringify(session, null, 2);
+                    const blob    = new Blob([json], { type: 'application/json' });
+                    const url     = URL.createObjectURL(blob);
+                    const a       = document.createElement('a');
+                    const date    = new Date().toISOString().slice(0, 10);
+                    a.href        = url;
+                    a.download    = `ornitologia_sessao_${date}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    setTimeout(() => URL.revokeObjectURL(url), 2000);
+                } catch(e) {
+                    alert('Erro ao exportar sessão: ' + e.message);
+                }
+            });
+        }
+
+        // ── Input de importação de sessão ──────────────────────────────────
+        const importFile = document.getElementById('session-import-file');
+        if (importFile) {
+            importFile.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try {
+                        const session = JSON.parse(ev.target.result);
+                        if (!session || typeof session !== 'object') throw new Error('Arquivo inválido.');
+                        restoreSession(session);
+                    } catch(err) {
+                        const fb = document.getElementById('session-import-feedback');
+                        if (fb) {
+                            fb.style.display = 'block';
+                            fb.style.background = '#fde8d0';
+                            fb.style.color = '#922b21';
+                            fb.textContent = '❌ Arquivo inválido ou corrompido: ' + err.message;
+                        }
+                    }
+                };
+                reader.readAsText(file);
+                importFile.value = ''; // permite reimportar o mesmo arquivo
+            });
+        }
+    });
+})();
 
         function loadExampleData() {
     // Número de espécies a sortear (entre 5 e 10)
@@ -12649,12 +12917,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 num.style.cssText = 'font-size:12px;color:var(--text-muted);width:22px;text-align:right;flex-shrink:0;';
                 num.textContent = idx + 1;
 
-                // Input de edição
+                // Coluna central: nome científico (input) + nome popular abaixo
+                const nameWrap = document.createElement('div');
+                nameWrap.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:2px;min-width:0;';
+
+                // Input de edição (nome científico)
                 const inp = document.createElement('input');
                 inp.type = 'text';
                 inp.value = item.name;
-                inp.style.cssText = 'flex:1;padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:"DM Sans",sans-serif;font-size:13.5px;font-style:italic;background:var(--surface);color:var(--text-dark);';
-                inp.addEventListener('input', () => { items[idx].name = inp.value.trim(); });
+                inp.style.cssText = 'width:100%;padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:"DM Sans",sans-serif;font-size:13.5px;font-style:italic;background:var(--surface);color:var(--text-dark);';
+
+                // Busca nome popular no BIRD_DATABASE
+                function getPopularName(sciName) {
+                    if (typeof BIRD_DATABASE === 'undefined') return '';
+                    const entry = BIRD_DATABASE.find(b => b.scientificName && b.scientificName.trim().toLowerCase() === sciName.trim().toLowerCase());
+                    return entry ? (entry.commonName || '') : '';
+                }
+
+                // Span nome popular
+                const popularSpan = document.createElement('span');
+                popularSpan.style.cssText = 'font-size:12px;color:var(--green-mid);padding-left:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;';
+                function updatePopular(sciName) {
+                    const pop = getPopularName(sciName);
+                    popularSpan.textContent = pop ? '🐦 ' + pop : '';
+                    popularSpan.style.display = pop ? '' : 'none';
+                }
+                updatePopular(item.name);
+
+                inp.addEventListener('input', () => {
+                    items[idx].name = inp.value.trim();
+                    updatePopular(inp.value.trim());
+                });
+
+                nameWrap.appendChild(inp);
+                nameWrap.appendChild(popularSpan);
 
                 // Botão lápis (foca no input)
                 const editBtn = document.createElement('button');
@@ -12675,7 +12971,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 delBtn.addEventListener('mouseout',  () => delBtn.style.opacity = '.7');
 
                 row.appendChild(num);
-                row.appendChild(inp);
+                row.appendChild(nameWrap);
                 row.appendChild(editBtn);
                 row.appendChild(delBtn);
                 listEl.appendChild(row);
