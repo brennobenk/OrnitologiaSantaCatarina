@@ -97,6 +97,13 @@
             background-image: radial-gradient(ellipse 80% 40% at 50% -10%, rgba(42,125,82,0.12) 0%, transparent 70%);
         }
 
+        /* No modo escuro o overlay fica um pouco mais denso */
+        [data-theme="dark"] #hdr-overlay.hdr-visible {
+            background:
+                linear-gradient(to right, rgba(2,10,5,.88) 0%, rgba(2,10,5,.55) 30%, rgba(2,10,5,.28) 55%, rgba(2,10,5,.55) 75%, rgba(2,10,5,.88) 100%),
+                linear-gradient(to bottom, rgba(2,10,5,.40) 0%, transparent 40%, transparent 60%, rgba(2,10,5,.65) 100%);
+        }
+
         [data-theme="dark"] input,
         [data-theme="dark"] textarea,
         [data-theme="dark"] select {
@@ -289,7 +296,163 @@
             gap: 24px;
             border-bottom: 1px solid var(--border-light);
             position: relative;
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+            overflow: hidden;
+            transition: padding 0.4s ease, min-height 0.4s ease;
         }
+
+        header.hdr-has-photo {
+            min-height: 200px;
+            padding-top: 32px;
+            padding-bottom: 48px;
+            cursor: zoom-in;
+        }
+
+        #hdr-bg {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center 35%;
+            background-repeat: no-repeat;
+            opacity: 0;
+            transition: opacity 1s ease;
+            z-index: 0;
+            pointer-events: none;
+        }
+        #hdr-bg.hdr-visible { opacity: 1; }
+
+        #hdr-overlay {
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(to right, rgba(5,20,10,.80) 0%, rgba(5,20,10,.45) 30%, rgba(5,20,10,.18) 55%, rgba(5,20,10,.45) 75%, rgba(5,20,10,.80) 100%),
+                linear-gradient(to bottom, rgba(5,20,10,.30) 0%, transparent 40%, transparent 60%, rgba(5,20,10,.55) 100%);
+            opacity: 0;
+            transition: opacity 1s ease;
+            z-index: 1;
+            pointer-events: none;
+        }
+        #hdr-overlay.hdr-visible { opacity: 1; }
+
+        header > *:not(#hdr-bg):not(#hdr-overlay):not(#hdr-credit):not(#hdr-shuffle) {
+            position: relative;
+            z-index: 3;
+        }
+
+        header.hdr-has-photo h1 {
+            color: #fff;
+            text-shadow: 0 2px 16px rgba(0,0,0,.65);
+        }
+        header.hdr-has-photo .description > span > span {
+            background: rgba(255,255,255,.13) !important;
+            color: rgba(255,255,255,.9) !important;
+            border: 1px solid rgba(255,255,255,.22) !important;
+            backdrop-filter: blur(3px);
+        }
+        header.hdr-has-photo .description > span > span:last-child {
+            background: rgba(181,134,58,.28) !important;
+            color: #f5d98c !important;
+            border-color: rgba(181,134,58,.4) !important;
+        }
+
+        #hdr-credit {
+            position: absolute;
+            bottom: 14px;
+            right: 16px;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.6s ease 0.4s;
+            pointer-events: none;
+        }
+        #hdr-credit.hdr-visible { opacity: 1; pointer-events: auto; }
+        #hdr-credit a {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0,0,0,.52);
+            color: rgba(255,255,255,.92);
+            text-decoration: none;
+            font-size: 11.5px;
+            font-family: 'DM Sans', sans-serif;
+            padding: 5px 13px;
+            border-radius: 20px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,.16);
+            white-space: nowrap;
+            transition: background .2s;
+        }
+        #hdr-credit a:hover { background: rgba(42,125,82,.65); border-color: rgba(255,255,255,.3); }
+        #hdr-credit .cr-bird   { font-weight: 700; }
+        #hdr-credit .cr-sep    { opacity: .4; margin: 0 1px; }
+        #hdr-credit .cr-author { opacity: .72; }
+
+        #hdr-shuffle {
+            position: absolute;
+            top: 12px;
+            left: 14px;
+            z-index: 10;
+            width: 30px; height: 30px;
+            background: rgba(0,0,0,.42);
+            border: 1px solid rgba(255,255,255,.2);
+            border-radius: 50%;
+            color: rgba(255,255,255,.8);
+            font-size: 14px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(6px);
+            transition: background .2s, transform .35s;
+            padding: 0;
+        }
+        #hdr-shuffle:hover { background: rgba(42,125,82,.65); transform: rotate(180deg); box-shadow: none; }
+        #hdr-shuffle.hdr-visible { display: flex; }
+
+        #hdr-lightbox {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9500;
+            background: rgba(0,0,0,.93);
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+            flex-direction: column;
+            gap: 14px;
+        }
+        #hdr-lightbox.lb-open { display: flex; }
+        #hdr-lightbox img {
+            max-width: 90vw;
+            max-height: 82vh;
+            border-radius: 8px;
+            box-shadow: 0 12px 60px rgba(0,0,0,.8);
+            object-fit: contain;
+            animation: lbIn .22s ease;
+        }
+        @keyframes lbIn { from{opacity:0;transform:scale(.96)} to{opacity:1;transform:scale(1)} }
+        #hdr-lb-cap {
+            color: rgba(255,255,255,.82);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13.5px;
+            text-align: center;
+        }
+        #hdr-lb-cap a { color: #7dd4a8; text-decoration: none; }
+        #hdr-lb-cap a:hover { text-decoration: underline; }
+        #hdr-lb-close {
+            position: absolute;
+            top: 18px; right: 22px;
+            color: rgba(255,255,255,.75);
+            font-size: 26px;
+            cursor: pointer;
+            background: rgba(255,255,255,.1);
+            border: 1px solid rgba(255,255,255,.2);
+            border-radius: 50%;
+            width: 42px; height: 42px;
+            display: flex; align-items: center; justify-content: center;
+            transition: background .2s;
+            padding: 0;
+        }
+        #hdr-lb-close:hover { background: rgba(255,255,255,.2); }
 
         header::after {
             content: '';
@@ -301,6 +464,7 @@
             height: 3px;
             background: linear-gradient(90deg, var(--green-base), var(--green-light));
             border-radius: 2px;
+            z-index: 4;
         }
 
         .logo {
@@ -320,6 +484,14 @@
             background-image: url('https://img.lightshot.app/1hoA8uRfRcuwwCsfjjPjYw.png');
             box-shadow: 0 0 0 4px var(--green-pale), 0 4px 16px rgba(20,64,42,0.2);
             flex-shrink: 0;
+            position: relative;
+            z-index: 3;
+        }
+
+        /* Garante que o bloco de texto do header também fica acima */
+        header > div:not(#hdr-bg):not(#hdr-overlay):not(#hdr-credit) {
+            position: relative;
+            z-index: 3;
         }
 
         h1 {
@@ -1942,7 +2114,30 @@
         <button id="download-charts-btn" title="Baixar gráficos" style="width:36px;height:36px;font-size:18px;border-radius:50%;background:var(--green-base);border:1.5px solid var(--green-base);color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-soft);transition:all var(--transition);">⬇️</button>
     </div>
     <div class="container">
-        <header>
+
+        <!-- ══ LIGHTBOX ══ -->
+        <div id="hdr-lightbox">
+            <button id="hdr-lb-close" onclick="hdrLbClose()">✕</button>
+            <img id="hdr-lb-img" src="" alt="">
+            <div id="hdr-lb-cap"></div>
+        </div>
+
+        <header id="main-header">
+            <!-- camada foto -->
+            <div id="hdr-bg"></div>
+            <!-- camada escurecimento -->
+            <div id="hdr-overlay"></div>
+            <!-- botão nova foto (visível só com foto ativa) -->
+            <button id="hdr-shuffle" title="Nova foto aleatória" onclick="hdrShuffle(event)">🔀</button>
+            <!-- crédito inferior direito -->
+            <div id="hdr-credit">
+                <a id="hdr-credit-link" href="#" target="_blank" rel="noopener">
+                    <span class="cr-cam">📷</span>
+                    <span class="cr-bird" id="hdr-cr-bird"></span>
+                    <span class="cr-sep">·</span>
+                    <span class="cr-author">por <span id="hdr-cr-author"></span></span>
+                </a>
+            </div>
     <div class="logo" id="logo-placeholder" style="background-image: url('https://img.lightshot.app/1hoA8uRfRcuwwCsfjjPjYw.png');">
     <!-- O texto "LOGO" será ocultado pelo CSS -->
 </div>
@@ -15278,6 +15473,208 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+})();
+</script>
+
+<!-- ══════════════════════════════════════════════════════════
+     SISTEMA DE FOTO DE FUNDO DO CABEÇALHO
+     - Busca lista de arquivos via GitHub Contents API
+     - 3 fotógrafos: Brenno Benk / Gabriel Schroeder / Luiz Alves
+     - Foto aleatória a cada carregamento da página
+     - Crédito clicável (WikiAves) no canto inferior direito
+     - Clique no header (fora de botões/abas) abre lightbox
+     - Botão 🔀 sorteia nova foto sem recarregar
+═══════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+    'use strict';
+
+    /* ── Configuração fixa — só você edita isso ── */
+    const REPO   = 'brennobenk/OrnitologiaSantaCatarina';
+    const BRANCH = 'main';
+    const RAW    = `https://raw.githubusercontent.com/${REPO}/${BRANCH}`;
+    const API    = `https://api.github.com/repos/${REPO}/contents`;
+
+    const PHOTOGRAPHERS = [
+        { folder: 'Brenno Benk',       wikiaves: 'https://www.wikiaves.com.br/perfil_dcc43de6f78f848' },
+        { folder: 'Gabriel Schroeder', wikiaves: 'https://www.wikiaves.com.br/perfil_4cc609de624abb3' },
+        { folder: 'Luiz Alves',        wikiaves: 'https://www.wikiaves.com.br/perfil_c2e0b43568d6f75' }
+    ];
+
+    /* ── Pool de fotos carregado da API ── */
+    let photoPool = []; // [{url, name, author, wikiaves}]
+    let current   = null;
+
+    /* ── "0011_choca-da-mata.jpg" → "Choca-Da-Mata" ── */
+    function birdName(filename) {
+        return filename
+            .replace(/\.[^.]+$/, '')          // remove extensão
+            .replace(/^\d+[_\-\s]+/, '')       // remove prefixo numérico
+            .replace(/[_\-]+/g, ' ')           // hifens/underscores → espaço
+            .trim()
+            .replace(/\b\w/g, c => c.toUpperCase()); // Title Case
+    }
+
+    /* ── Aplica a foto no header ── */
+    function applyPhoto(photo) {
+        if (!photo) return;
+        current = photo;
+
+        const header  = document.getElementById('main-header');
+        const bg      = document.getElementById('hdr-bg');
+        const overlay = document.getElementById('hdr-overlay');
+        const credit  = document.getElementById('hdr-credit');
+        const shuffle = document.getElementById('hdr-shuffle');
+        const link    = document.getElementById('hdr-credit-link');
+        const bird    = document.getElementById('hdr-cr-bird');
+        const author  = document.getElementById('hdr-cr-author');
+
+        /* Fade out → troca imagem → fade in */
+        bg.classList.remove('hdr-visible');
+        overlay.classList.remove('hdr-visible');
+        credit.classList.remove('hdr-visible');
+
+        const img = new Image();
+        img.onload = function () {
+            bg.style.backgroundImage = `url('${photo.url}')`;
+            /* Pequeno delay para o fade funcionar mesmo na primeira vez */
+            setTimeout(() => {
+                bg.classList.add('hdr-visible');
+                overlay.classList.add('hdr-visible');
+                credit.classList.add('hdr-visible');
+            }, 50);
+        };
+        img.onerror = function () {
+            console.warn('[FotoBG] Falha ao carregar imagem:', photo.url);
+        };
+        img.src = photo.url;
+
+        /* Metadados */
+        bird.textContent   = birdName(photo.name);
+        author.textContent = photo.author;
+        link.href          = photo.wikiaves;
+
+        /* Ativa estilos */
+        header.classList.add('hdr-has-photo');
+        shuffle.classList.add('hdr-visible');
+    }
+
+    /* ── Sorteia foto aleatória do pool ── */
+    function pickRandom() {
+        if (!photoPool.length) return null;
+        return photoPool[Math.floor(Math.random() * photoPool.length)];
+    }
+
+    /* ── Botão shuffle ── */
+    window.hdrShuffle = function (e) {
+        if (e) e.stopPropagation();
+        const next = pickRandom();
+        if (next && next !== current) applyPhoto(next);
+        else if (next) applyPhoto(next); // só 1 foto? mostra ela de qualquer forma
+    };
+
+    /* ── Lightbox ── */
+    window.hdrLbClose = function () {
+        document.getElementById('hdr-lightbox').classList.remove('lb-open');
+    };
+
+    function hdrLbOpen() {
+        if (!current) return;
+        const lb    = document.getElementById('hdr-lightbox');
+        const img   = document.getElementById('hdr-lb-img');
+        const cap   = document.getElementById('hdr-lb-cap');
+        img.src     = current.url;
+        img.alt     = birdName(current.name) + ' — ' + current.author;
+        cap.innerHTML = `<strong>${birdName(current.name)}</strong> &nbsp;·&nbsp; `
+            + `<a href="${current.wikiaves}" target="_blank" rel="noopener">📷 ${current.author}</a>`;
+        lb.classList.add('lb-open');
+    }
+
+    /* Clique no header → lightbox (ignora botões, abas e crédito) */
+    document.addEventListener('DOMContentLoaded', function () {
+        const header = document.getElementById('main-header');
+
+        header.addEventListener('click', function (e) {
+            if (!current) return;
+            /* Ignora cliques em qualquer botão, aba, link, input */
+            if (e.target.closest(
+                'button, a, input, select, label, ' +
+                '.tab-btn, .tab-btn-primary, ' +
+                '#hdr-shuffle, #hdr-credit'
+            )) return;
+            hdrLbOpen();
+        });
+
+        /* Fecha lightbox ao clicar no fundo ou pressionar ESC */
+        document.getElementById('hdr-lightbox').addEventListener('click', function (e) {
+            if (e.target === this) hdrLbClose();
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') hdrLbClose();
+        });
+    });
+
+    /* ── Busca lista de arquivos via GitHub Contents API ── */
+    /* Cache em sessionStorage — evita chamada repetida na mesma sessão */
+    async function loadPhotos() {
+        const CACHE_KEY = 'oasc_photo_pool_v1';
+
+        /* Tenta usar cache da sessão */
+        try {
+            const cached = sessionStorage.getItem(CACHE_KEY);
+            if (cached) {
+                photoPool = JSON.parse(cached);
+                if (photoPool.length > 0) {
+                    console.info(`[FotoBG] ${photoPool.length} foto(s) do cache de sessão.`);
+                    applyPhoto(pickRandom());
+                    return;
+                }
+            }
+        } catch(e) {}
+
+        const promises = PHOTOGRAPHERS.map(async (ph) => {
+            try {
+                const url  = `${API}/${encodeURIComponent(ph.folder)}?ref=${BRANCH}`;
+                const resp = await fetch(url, {
+                    headers: { 'Accept': 'application/vnd.github.v3+json' }
+                });
+                if (!resp.ok) {
+                    console.warn(`[FotoBG] API retornou ${resp.status} para "${ph.folder}"`);
+                    return [];
+                }
+                const files = await resp.json();
+                return files
+                    .filter(f => f.type === 'file' && /\.(jpg|jpeg|png|webp)$/i.test(f.name))
+                    .map(f => ({
+                        name    : f.name,
+                        url     : `${RAW}/${encodeURIComponent(ph.folder)}/${encodeURIComponent(f.name)}`,
+                        author  : ph.folder,
+                        wikiaves: ph.wikiaves
+                    }));
+            } catch (err) {
+                console.warn(`[FotoBG] Erro ao carregar "${ph.folder}":`, err);
+                return [];
+            }
+        });
+
+        const results = await Promise.all(promises);
+        photoPool = results.flat();
+
+        if (photoPool.length === 0) {
+            console.info('[FotoBG] Nenhuma foto encontrada nas pastas do repositório.');
+            return;
+        }
+
+        /* Salva no cache de sessão */
+        try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(photoPool)); } catch(e) {}
+
+        console.info(`[FotoBG] ${photoPool.length} foto(s) de ${results.filter(r=>r.length).length} fotógrafo(s).`);
+        applyPhoto(pickRandom());
+    }
+
+    /* ── Inicia ── */
+    loadPhotos();
+
 })();
 </script>
 
