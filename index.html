@@ -1824,6 +1824,66 @@
         #guild-table th[data-sort]:hover { background: var(--green-mid); }
         .in-table-yes { color: var(--green-base); font-weight: 700; font-size: 15px; }
         .in-table-no  { color: #bbb; font-size: 13px; }
+
+        /* ── Loading Overlay (papagaio) ── */
+        #parrot-loading-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(20, 64, 42, 0.52);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+            z-index: 99999;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        #parrot-loading-overlay.active { display: flex; }
+        .parrot-box {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 34px 52px;
+            box-shadow: 0 8px 40px rgba(20,64,42,0.35);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            border: 2px solid var(--green-pale);
+        }
+        .parrot-emoji {
+            font-size: 56px;
+            animation: parrotBounce 0.44s ease-in-out infinite alternate;
+            display: block;
+            line-height: 1;
+            user-select: none;
+        }
+        @keyframes parrotBounce {
+            0%   { transform: translateY(0)    rotate(-7deg) scale(1);    }
+            50%  { transform: translateY(-16px) rotate(5deg) scale(1.10); }
+            100% { transform: translateY(-22px) rotate(-4deg) scale(1.14);}
+        }
+        .parrot-label {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 15.5px;
+            font-weight: 600;
+            color: var(--green-deep);
+            letter-spacing: 0.2px;
+        }
+        .parrot-dots { display: flex; align-items: center; gap: 0; }
+        .parrot-dots span {
+            display: inline-block;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--green-base);
+            margin: 0 4px;
+            animation: parrotDot 1.1s ease-in-out infinite;
+        }
+        .parrot-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .parrot-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes parrotDot {
+            0%, 80%, 100% { transform: scale(0.55); opacity: 0.35; }
+            40%            { transform: scale(1.25); opacity: 1;    }
+        }
     </style>
 
     <!-- ══════════════════════════════════════════
@@ -1867,9 +1927,19 @@
     </script>
 </head>
 <body>
+<!-- ═══════ LOADING OVERLAY — PAPAGAIO ═══════ -->
+<div id="parrot-loading-overlay" role="status" aria-live="polite">
+    <div class="parrot-box">
+        <span class="parrot-emoji">🦜</span>
+        <span class="parrot-label">Calculando métricas…</span>
+        <div class="parrot-dots"><span></span><span></span><span></span></div>
+    </div>
+</div>
+<!-- ════════════════════════════════════════════ -->
     <div style="position: fixed; top: 14px; right: 22px; z-index: 3000; display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
-        <button id="help-button-fixed" title="Ajuda" style="width:36px;height:36px;font-size:18px;">?</button>
-        <button id="settings-open-btn" title="Configurações" style="width:36px;height:36px;font-size:18px;border-radius:50%;background:var(--surface);border:1.5px solid var(--border);color:var(--text-dark);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-soft);transition:all var(--transition);">⚙️</button>
+        <button id="help-button-fixed" title="Ajuda" style="width:36px;height:36px;font-size:18px;border-radius:50%;background:var(--green-base);border:1.5px solid var(--green-base);color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-soft);">?</button>
+        <button id="settings-open-btn" title="Configurações" style="width:36px;height:36px;font-size:18px;border-radius:50%;background:var(--green-base);border:1.5px solid var(--green-base);color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-soft);transition:all var(--transition);">⚙️</button>
+        <button id="download-charts-btn" title="Baixar gráficos" style="width:36px;height:36px;font-size:18px;border-radius:50%;background:var(--green-base);border:1.5px solid var(--green-base);color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-soft);transition:all var(--transition);">⬇️</button>
     </div>
     <div class="container">
         <header>
@@ -1878,7 +1948,21 @@
 </div>
     <div>
         <h1>Ornitologia Avançada estado de Santa Catarina</h1>
-        <p class="description">Plataforma de análise ornitológica para Santa Catarina: importe listas de aves, visualize árvores filogenéticas baseadas em genômica moderna, consulte status de conservação (SC, ICMBio, IUCN), mapeie ocorrências com dados GBIF e eBird, compare listas por similaridade de Jaccard e gere curvas de riqueza — tudo no navegador, sem enviar dados a servidores externos.</p>
+        <p class="description">
+            <span style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:8px;">
+                <span style="background:var(--green-pale); border-radius:20px; padding:3px 12px; font-size:12px; font-weight:600; color:var(--green-deep);">🌳 Filogenia</span>
+                <span style="background:var(--green-pale); border-radius:20px; padding:3px 12px; font-size:12px; font-weight:600; color:var(--green-deep);">🛡️ Conservação SC · ICMBio · IUCN</span>
+                <span style="background:var(--green-pale); border-radius:20px; padding:3px 12px; font-size:12px; font-weight:600; color:var(--green-deep);">🗺️ Mapa GBIF · eBird</span>
+                <span style="background:var(--green-pale); border-radius:20px; padding:3px 12px; font-size:12px; font-weight:600; color:var(--green-deep);">📈 Curva do Coletor</span>
+                <span style="background:var(--green-pale); border-radius:20px; padding:3px 12px; font-size:12px; font-weight:600; color:var(--green-deep);">📉 Rarefação</span>
+                <span style="background:var(--green-pale); border-radius:20px; padding:3px 12px; font-size:12px; font-weight:600; color:var(--green-deep);">📅 Sazonalidade</span>
+                <span style="background:var(--green-pale); border-radius:20px; padding:3px 12px; font-size:12px; font-weight:600; color:var(--green-deep);">🌸 Fenologia</span>
+                <span style="background:var(--green-pale); border-radius:20px; padding:3px 12px; font-size:12px; font-weight:600; color:var(--green-deep);">🔄 Turnover</span>
+                <span style="background:var(--green-pale); border-radius:20px; padding:3px 12px; font-size:12px; font-weight:600; color:var(--green-deep);">📊 Rank-Abundância</span>
+                <span style="background:var(--green-pale); border-radius:20px; padding:3px 12px; font-size:12px; font-weight:600; color:var(--green-deep);">🔗 Co-ocorrência</span>
+                <span style="background:var(--amber-pale); border-radius:20px; padding:3px 12px; font-size:12px; font-weight:600; color:var(--amber);">~800 spp · 100% no navegador</span>
+            </span>
+        </p>
     </div>
 
 </header>
@@ -1895,7 +1979,7 @@
                 <button class="tab-btn" data-tab="conservation-section">🛡️ Conservação</button>
                 <button class="tab-btn" data-tab="distribution-charts-section">📊 Distribuição</button>
                 <button class="tab-btn" data-tab="map-section">🗺️ Mapa</button>
-                <button class="tab-btn" data-tab="curve-section">📈 Curva</button>
+                <button class="tab-btn" data-tab="curve-section">📈 Curvas</button>
                 <button class="tab-btn" data-tab="compare-section">🔀 Comparar</button>
                 <button class="tab-btn" data-tab="guild-section">🍽️ Guilda</button>
                 <button class="tab-btn" data-tab="descriptor-section">🏷️ Descritores</button>
@@ -1910,6 +1994,7 @@
             <div class="tab-group tab-group-right">
                 <div class="tab-group-label">🔭 Avistamentos</div>
                 <button class="tab-btn-primary tab-btn" data-tab="avistamentos-section">🔭 Registrar Avistamentos</button>
+                <button class="tab-btn" data-tab="picos-horarios-section">🕐 Picos de Horários</button>
                 <button class="tab-btn" data-tab="calculo-avist-section">📋 Cálculo</button>
                 <button class="tab-btn" data-tab="rarefacao-section">📉 Rarefação</button>
                 <button class="tab-btn" data-tab="sazonalidade-section">📅 Sazonalidade</button>
@@ -2014,27 +2099,13 @@
             Registre avistamentos de campo — com ou sem data. Os registros são armazenados localmente na sessão e ficam disponíveis para todas as análises (Sazonalidade, Fenologia, Turnover, Rank-Abundância, Co-ocorrência). Use o botão <strong>"Importar avistamentos"</strong> dentro de cada aba para carregar os dados.
         </p>
 
-        <!-- Dois modos -->
-        <div style="display:flex; gap:12px; margin-bottom:22px; flex-wrap:wrap;">
-            <button id="avist-mode-simple-btn" class="tree-type-btn active" onclick="setAvistaMode('simple')">🐦 Apenas Avistamentos</button>
-            <button id="avist-mode-date-btn" class="tree-type-btn" onclick="setAvistaMode('date')">📅 Avistamentos com Data</button>
-        </div>
-
-        <!-- Modo simples -->
-        <div id="avist-simple-panel">
-            <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">Um nome por linha (nome popular ou científico):</label>
-            <textarea id="avist-simple-input" rows="10" placeholder="sabiá barranco&#10;bem-te-vi&#10;urubu preto&#10;Turdus rufiventris&#10;quero-quero&#10;..."></textarea>
-            <div id="avist-simple-autocomplete" class="autocomplete-suggestions" style="display:none;"></div>
-            <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
-                <button id="avist-simple-add" class="generate-btn">➕ Adicionar à lista de avistamentos</button>
-                <button id="avist-simple-clear-input" class="delete-btn" style="background:#8e6325;">🗑️ Limpar campo</button>
-            </div>
-        </div>
-
-        <!-- Modo com data -->
-        <div id="avist-date-panel" style="display:none;">
-            <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">Formato: <code>DD/MM/AAAA nome da espécie</code> — data e nome separados por espaço, um avistamento por linha:</label>
-            <textarea id="avist-date-input" rows="12" placeholder="01/03/2026 polícia inglesa do sul&#10;01/03/2026 urubu preto&#10;01/03/2026 marreca ananai&#10;28/02/2026 quero-quero&#10;28/02/2026 tiziu&#10;28/02/2026 coruja buraqueira&#10;..."></textarea>
+        <!-- Modo único: data e hora -->
+        <div id="avist-date-panel">
+            <label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">
+                Formato: <code>DD/MM/AAAA HH:MM nome da espécie</code> — um avistamento por linha.
+                <span style="color:var(--text-muted); font-weight:400;"> A hora é opcional; sem ela, basta <code>DD/MM/AAAA nome</code>.</span>
+            </label>
+            <textarea id="avist-date-input" rows="12" placeholder="28/05/2024 06:40 saracura do mato&#10;28/05/2024 06:45 socó-dorminhoco&#10;28/05/2024 06:53 quero quero&#10;01/03/2026 polícia inglesa do sul&#10;01/03/2026 urubu preto&#10;..."></textarea>
             <div id="avist-date-autocomplete" class="autocomplete-suggestions" style="display:none;"></div>
             <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
                 <button id="avist-date-add" class="generate-btn">➕ Adicionar à lista de avistamentos</button>
@@ -2063,13 +2134,16 @@
             <button id="avist-send-to-import" class="generate-btn" style="background:var(--amber);">📥 Enviar espécies únicas para Importação</button>
         </div>
 
+
         <!-- Tabela de avistamentos -->
+        <div id="avist-sub-lista">
         <div class="table-container" style="max-height:420px; overflow-y:auto;">
             <table id="avist-table">
                 <thead>
                     <tr>
                         <th style="width:40px;">#</th>
                         <th>Data</th>
+                        <th>Hora</th>
                         <th>Nome inserido</th>
                         <th>Espécie reconhecida</th>
                         <th>Nome popular</th>
@@ -2080,10 +2154,27 @@
             </table>
         </div>
         <div id="avist-count" style="margin-top:10px; font-size:13px; color:var(--text-muted);"></div>
+        </div><!-- /avist-sub-lista -->
 
     </div>
 </section>
 <!-- ==================== FIM AVISTAMENTOS ====================  -->
+
+<!-- ==================== ABA PICOS DE HORÁRIOS ==================== -->
+<section class="app-section tab-section" id="picos-horarios-section">
+    <div class="section-header" style="cursor:default; margin-bottom:20px;">
+        <span class="collapse-indicator" style="display:none;"></span>
+        <h2>🕐 Picos de Horários</h2>
+    </div>
+    <div class="section-content">
+        <p style="background:#eef4e4; border-left:4px solid var(--green-base); padding:10px 14px; border-radius:4px; margin-bottom:20px; font-size:13.5px;">
+            Distribuição dos avistamentos ao longo das <strong>24 horas do dia</strong>. Apenas registros com hora (formato <code>DD/MM/AAAA HH:MM nome</code>) são considerados. Os 3 horários com mais registros são destacados em verde escuro.
+        </p>
+        <div style="position:relative; height:360px;"><canvas id="picosHorariosChart"></canvas></div>
+        <div id="picos-stats" style="margin-top:14px; font-size:13px; color:var(--text-mid);"></div>
+    </div>
+</section>
+<!-- ==================== FIM PICOS ====================  -->
 
 <!-- ==================== ABA CÁLCULO DE AVISTAMENTOS ==================== -->
 <section class="app-section tab-section" id="calculo-avist-section">
@@ -2624,11 +2715,11 @@
         </div>
         <div id="raref-multi-container" style="display:flex; flex-direction:column; gap:12px; margin-bottom:16px;">
             <h4 style="margin:0; color:var(--green-mid);">Áreas / Amostras para comparar</h4>
-            <div id="raref-areas-list" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
+            <div id="raref-areas-list" style="display:flex; flex-wrap:wrap; gap:10px; max-height:320px; overflow-y:auto; padding:4px 2px; border:1px solid var(--border-light); border-radius:var(--radius-sm); background:var(--surface);"></div>
             <button id="raref-add-area" class="generate-btn" style="align-self:flex-start;">➕ Adicionar Área</button>
         </div>
         <div style="margin-top:18px;"><canvas id="rarefChart" style="width:100%; max-height:420px; height:420px;"></canvas></div>
-        <div id="raref-stats" style="margin-top:14px; padding:12px; background:#f5f7e9; border-radius:8px; font-size:13.5px;"></div>
+        <div id="raref-stats" style="margin-top:14px;"></div>
     </div>
 </section>
 
@@ -2684,6 +2775,7 @@
             ℹ️ <strong>Nota:</strong> valores negativos no eixo X são apenas para fins de visualização — representam o deslocamento relativo das barras no gráfico Gantt. Os dias de atividade real de cada espécie são mostrados no tooltip ao passar o mouse e na tabela abaixo.
         </p>
         <div id="fenol-table-wrap" class="table-container" style="margin-top:18px; max-height:320px; overflow-y:auto;"></div>
+        <div id="fenol-analysis" style="margin-top:18px;"></div>
     </div>
 </section>
 
@@ -2697,7 +2789,7 @@
         <p style="background:#eef4e4; border-left:4px solid var(--green-base); padding:10px 14px; border-radius:4px; margin-bottom:18px; font-size:13.5px;">
             Analise quais espécies entram (ganhos) e saem (perdas) da comunidade entre períodos consecutivos. Informe as listas de cada período.
         </p>
-        <div id="turnover-periods-container" style="display:flex; flex-wrap:wrap; gap:14px; margin-bottom:16px;"></div>
+        <div id="turnover-periods-container" style="display:flex; flex-wrap:wrap; gap:14px; margin-bottom:16px; max-height:360px; overflow-y:auto; padding:4px 2px; border:1px solid var(--border-light); border-radius:var(--radius-sm); background:var(--surface);"></div>
         <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
             <button id="turnover-add-period" class="generate-btn">➕ Adicionar Período</button>
             <button id="turnover-import-avist" class="generate-btn" style="background:var(--amber);">🔭 Importar avistamentos por data</button>
@@ -2705,6 +2797,7 @@
         </div>
         <div style="margin-top:18px;"><canvas id="turnoverChart" style="width:100%; max-height:380px; height:380px;"></canvas></div>
         <div id="turnover-results" class="table-container" style="margin-top:18px; max-height:360px; overflow-y:auto;"></div>
+        <div id="turnover-summary" style="margin-top:18px;"></div>
     </div>
 </section>
 
@@ -2731,6 +2824,7 @@
         </div>
         <div id="indicadoras-results" class="table-container" style="max-height:420px; overflow-y:auto; margin-top:14px;"></div>
         <div style="margin-top:18px;"><canvas id="indicadorasChart" style="width:100%; max-height:320px; height:320px;"></canvas></div>
+        <div id="indicadoras-analysis" style="margin-top:18px;"></div>
     </div>
 </section>
 
@@ -2781,6 +2875,7 @@
         </div>
         <div style="margin-top:18px;"><canvas id="rankabundChart" style="width:100%; max-height:440px; height:440px;"></canvas></div>
         <div id="rankabund-indices" style="margin-top:14px; display:flex; flex-wrap:wrap; gap:12px;"></div>
+        <div id="rankabund-analysis" style="margin-top:18px;"></div>
     </div>
 </section>
 
@@ -2811,6 +2906,7 @@
         </div>
         <div id="cooc-matrix-container" style="margin-top:14px; overflow:auto; max-height:480px;"></div>
         <div id="cooc-top-pairs" style="margin-top:18px;"></div>
+        <div id="cooc-matrix-analysis" style="margin-top:18px;"></div>
 
         <!-- REDE DE CO-OCORRÊNCIA -->
         <div id="cooc-network-wrap" style="margin-top:28px; display:none;">
@@ -2828,15 +2924,66 @@
                     <option value="700" selected>Média (700px)</option>
                     <option value="950">Grande (950px)</option>
                 </select>
+                <button id="cooc-net-spread" class="genealogical-view-btn" style="background:var(--amber);color:white;border-color:var(--amber);">💥 Separar Pontos</button>
                 <button id="cooc-net-reset" class="genealogical-view-btn">🔄 Resetar layout</button>
             </div>
             <div id="cooc-net-container" style="width:100%; border:1px solid var(--border); border-radius:var(--radius-md); background:var(--green-mist); position:relative; overflow:hidden;">
                 <canvas id="cooc-net-canvas"></canvas>
             </div>
             <div id="cooc-net-legend" style="margin-top:10px; display:flex; flex-wrap:wrap; gap:8px; font-size:12px;"></div>
+
+            <!-- Tabela de visibilidade dos taxons -->
+            <div id="cooc-net-taxon-table-wrap" style="margin-top:18px; display:none;">
+                <h5 style="color:var(--green-deep); margin-bottom:8px; font-size:13.5px;">👁️ Visibilidade dos Taxons na Rede</h5>
+                <div id="cooc-net-taxon-table" style="max-height:260px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius-sm);"></div>
+            </div>
+
+            <!-- Análise da rede -->
+            <div id="cooc-net-analysis" style="margin-top:14px;"></div>
         </div>
     </div>
 </section>
+
+<!-- ==================== MODAL DOWNLOAD GRÁFICOS ==================== -->
+<div id="download-charts-modal" class="modal">
+    <div class="modal-content" style="max-width:680px;">
+        <span class="close-modal" id="close-download-charts-modal">&times;</span>
+        <h2 class="modal-title">⬇️ Exportar Gráficos em PNG</h2>
+
+        <div style="background:var(--green-mist);border-left:4px solid var(--green-base);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:12px 16px;margin-bottom:16px;font-size:13.5px;color:var(--text-mid);line-height:1.7;">
+            <strong style="color:var(--green-deep);">Como funciona:</strong> Escolha a pasta de destino, selecione os gráficos e clique em <strong>"⬇️ Baixar Selecionados"</strong>. Cada gráfico é <strong>renderizado em alta qualidade (mínimo 1280×720px)</strong> e salvo como PNG na pasta escolhida. Gráficos marcados como "✓ Gerado" estão prontos para exportar.
+        </div>
+
+        <div style="background:var(--amber-pale);border:1px solid var(--amber-light);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:16px;font-size:13px;">
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                <div>
+                    <strong>📁 Pasta de destino:</strong>
+                    <span id="dl-folder-name" style="margin-left:8px;font-style:italic;color:var(--text-muted);">Nenhuma pasta selecionada</span>
+                </div>
+                <button id="dl-pick-folder" style="padding:8px 16px;background:var(--green-base);color:white;border:none;border-radius:var(--radius-sm);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">📂 Escolher Pasta</button>
+            </div>
+            <label style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+                <span style="white-space:nowrap;font-weight:600;font-size:13px;">Prefixo do nome:</span>
+                <input type="text" id="dl-prefix" value="ornitologia" placeholder="Ex: campo_maio_2024" style="flex:1;padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;">
+                <span style="font-size:12px;color:var(--text-muted);white-space:nowrap;">_NomeGráfico.png</span>
+            </label>
+            <p id="dl-folder-fallback" style="display:none;margin-top:8px;font-size:12px;color:#c0392b;">⚠️ Seu navegador não suporta seleção de pasta. Os arquivos serão salvos na pasta padrão de downloads.</p>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+            <button onclick="downloadChartsSelectAll(true)"  style="padding:7px 16px;background:var(--green-base);color:white;border:none;border-radius:var(--radius-sm);font-family:inherit;font-size:13px;cursor:pointer;">✅ Selecionar Todos</button>
+            <button onclick="downloadChartsSelectAll(false)" style="padding:7px 16px;background:#888;color:white;border:none;border-radius:var(--radius-sm);font-family:inherit;font-size:13px;cursor:pointer;">☐ Desmarcar Todos</button>
+        </div>
+
+        <div id="download-charts-list" style="display:flex;flex-direction:column;gap:8px;max-height:52vh;overflow-y:auto;padding-right:8px;"></div>
+
+        <div style="display:flex;gap:12px;margin-top:20px;justify-content:flex-end;">
+            <button id="download-charts-go" style="padding:11px 28px;background:var(--green-base);color:white;border:none;border-radius:var(--radius-sm);font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">⬇️ Baixar Selecionados</button>
+            <button onclick="document.getElementById('download-charts-modal').style.display='none'" style="padding:11px 20px;background:var(--surface);color:var(--text-dark);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:inherit;font-size:14px;cursor:pointer;">Fechar</button>
+        </div>
+        <div id="download-charts-status" style="margin-top:12px;font-size:13px;color:var(--text-muted);text-align:center;"></div>
+    </div>
+</div>
 
 <!-- ==================== MODAL CONFIGURAÇÕES ==================== -->
 <div id="config-modal" class="modal">
@@ -5146,6 +5293,8 @@ function generateColorMap(categories) {
         }
         // CORRIGIDO: exposto globalmente para ser acessível em outros <script>
         window.findBirdFuzzy = findBirdFuzzy;
+        window.normalizeForSearch = normalizeForSearch;
+        window.fuzzySearchCandidates = fuzzySearchCandidates;
 
         function findBirdByNormalizedName(input) {
             const result = findBirdFuzzy(input);
@@ -5605,14 +5754,13 @@ document.addEventListener('click', (e) => {
         });
     }
 
-    // Modo simples: o nome começa desde o início da linha
-    setupAvistAutocomplete('avist-simple-input', 'avist-simple-autocomplete', (line) => line.trim());
-
-    // Modo com data (DD/MM/AAAA nome): extrai tudo após a data
+    // Modo unificado data+hora: extrai nome (após data e hora opcionais)
     setupAvistAutocomplete('avist-date-input', 'avist-date-autocomplete', (line) => {
-        // Remove prefixo de data (DD/MM/AAAA ) se existir
-        const dateMatch = line.match(/^\d{2}\/\d{2}\/\d{4}\s+(.*)$/);
-        return dateMatch ? dateMatch[1].trim() : line.trim();
+        // Remove prefixo DD/MM/AAAA HH:MM ou DD/MM/AAAA se existir
+        const dtMatch = line.match(/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\s+\d{2}:\d{2}\s+(.*)$/);
+        if (dtMatch) return dtMatch[1].trim();
+        const dMatch = line.match(/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\s+(.*)$/);
+        return dMatch ? dMatch[1].trim() : line.trim();
     });
 })();
 
@@ -5759,27 +5907,323 @@ function escapeHtml(str) {
 }
 
         document.addEventListener('DOMContentLoaded', function() {
-    // Abrir modal de ajuda
+    // Abrir modal de ajuda (toggle)
     const helpBtn = document.getElementById('help-button');
     const helpBtnFixed = document.getElementById('help-button-fixed');
     const helpModal = document.getElementById('help-modal');
     const closeHelp = document.getElementById('close-help-modal');
 
-    const openHelp = () => { helpModal.style.display = 'block'; };
+    const toggleHelp = () => {
+        if (!helpModal) return;
+        helpModal.style.display = helpModal.style.display === 'block' ? 'none' : 'block';
+    };
+    const closeHelpFn = () => { if (helpModal) helpModal.style.display = 'none'; };
 
-    if (helpBtn) helpBtn.addEventListener('click', openHelp);
-    if (helpBtnFixed) helpBtnFixed.addEventListener('click', openHelp);
-
-    if (closeHelp) {
-        closeHelp.addEventListener('click', () => {
-            helpModal.style.display = 'none';
-        });
-    }
+    if (helpBtn) helpBtn.addEventListener('click', toggleHelp);
+    if (helpBtnFixed) helpBtnFixed.addEventListener('click', toggleHelp);
+    if (closeHelp) closeHelp.addEventListener('click', closeHelpFn);
 
     window.addEventListener('click', (event) => {
-        if (event.target === helpModal) {
-            helpModal.style.display = 'none';
+        if (event.target === helpModal) closeHelpFn();
+    });
+
+    // Abrir modal configurações
+    const settingsOpenBtn = document.getElementById('settings-open-btn');
+    const configModal = document.getElementById('config-modal');
+    const closeConfigBtn = document.getElementById('close-config-modal');
+
+    if (settingsOpenBtn) settingsOpenBtn.addEventListener('click', () => {
+        if (configModal) configModal.style.display = configModal.style.display === 'block' ? 'none' : 'block';
+    });
+    if (closeConfigBtn) closeConfigBtn.addEventListener('click', () => { if (configModal) configModal.style.display = 'none'; });
+    window.addEventListener('click', (event) => {
+        if (event.target === configModal) configModal.style.display = 'none';
+    });
+
+    // ── Modal Download Gráficos ──
+    // All charts in the platform
+    const DOWNLOAD_CHARTS_DEF = [
+        // 📋 Cálculo de Avistamentos
+        { label: '📋 Cálculo — Frequência por espécie (barras)',  canvasIds: ['calculo-bar-chart'] },
+        { label: '📋 Cálculo — Proporção (pizza)',                canvasIds: ['calculo-pie-chart'] },
+        { label: '📋 Cálculo — Registros por data',              canvasIds: ['calculo-date-chart'] },
+        // 🕐 Picos de Horários
+        { label: '🕐 Picos de Horários',                         canvasIds: ['picosHorariosChart'] },
+        // 🛡️ Conservação
+        { label: '🛡️ Conservação — Status SC (pizza)',           canvasIds: ['scPieChart'] },
+        { label: '🛡️ Conservação — Status ICMBio (pizza)',       canvasIds: ['icmbioPieChart'] },
+        { label: '🛡️ Conservação — Status IUCN (pizza)',         canvasIds: ['iucnPieChart'] },
+        // 📊 Distribuição Taxonômica
+        { label: '📊 Distribuição — Ordens (barras)',             canvasIds: ['ordemBarChart'] },
+        { label: '📊 Distribuição — Ordens (pizza)',              canvasIds: ['ordemPieChart'] },
+        { label: '📊 Distribuição — Famílias (barras)',           canvasIds: ['familiaBarChart'] },
+        { label: '📊 Distribuição — Famílias (pizza)',            canvasIds: ['familiaPieChart'] },
+        // 📈 Curva do Coletor e Estimadores
+        { label: '📈 Curvas — Curva do Coletor',                 canvasIds: ['collectorChart'] },
+        { label: '📈 Curvas — Chao2',                            canvasIds: ['chaoChart'] },
+        { label: '📈 Curvas — Jackknife 1ª ordem',               canvasIds: ['jack1Chart'] },
+        { label: '📈 Curvas — Jackknife 2ª ordem',               canvasIds: ['jack2Chart'] },
+        { label: '📈 Curvas — Bootstrap',                        canvasIds: ['bootstrapChart'] },
+        { label: '📈 Curvas — Todos os estimadores',             canvasIds: ['combinedEstimatorChart'] },
+        // 🔀 Comparar Listas
+        { label: '🔀 Comparar — Contagem por lista (barras)',     canvasIds: ['countChart'] },
+        { label: '🔀 Comparar — Similaridade Jaccard',           canvasIds: ['similarityChart'] },
+        { label: '🔀 Comparar — Espécies únicas (pizza)',         canvasIds: ['uniqueChart'] },
+        // 🍽️ Guilda
+        { label: '🍽️ Guilda — Por Guilda Alimentar',             canvasIds: ['guild-pie-guilda'] },
+        { label: '🍽️ Guilda — Por Habitat',                      canvasIds: ['guild-pie-habitat'] },
+        // 📉 Rarefação
+        { label: '📉 Rarefação',                                  canvasIds: ['rarefChart'] },
+        // 📅 Sazonalidade
+        { label: '📅 Sazonalidade — Barras mensais',              canvasIds: ['sazonChart'] },
+        { label: '📅 Sazonalidade — Distribuição por estação',    canvasIds: ['sazonEstacaoChart'] },
+        // 🌸 Fenologia
+        { label: '🌸 Fenologia',                                  canvasIds: ['fenolChart'] },
+        // 🔄 Turnover
+        { label: '🔄 Turnover Temporal',                          canvasIds: ['turnoverChart'] },
+        // ⚠️ Indicadoras
+        { label: '⚠️ Espécies Indicadoras',                       canvasIds: ['indicadorasChart'] },
+        // 📊 Rank-Abundância
+        { label: '📊 Rank-Abundância (Whittaker)',                canvasIds: ['rankabundChart'] },
+        // 🔗 Co-ocorrência
+        { label: '🔗 Co-ocorrência — Pares mais frequentes',      canvasIds: ['cooc-pairs-bar-chart'] },
+    ];
+
+    // Verifica se o gráfico foi gerado usando Chart.js registry (funciona mesmo com display:none)
+    function canvasHasData(canvasId) {
+        const c = document.getElementById(canvasId);
+        if (!c) return false;
+        if (typeof Chart !== 'undefined') {
+            try {
+                const inst = Chart.getChart(c);
+                if (inst && inst.data && inst.data.datasets && inst.data.datasets.some(ds => ds.data && ds.data.length > 0)) return true;
+            } catch(e) {}
+            // fallback: percorre todas instâncias
+            try {
+                for (const ch of Object.values(Chart.instances || {})) {
+                    if (ch.canvas === c && ch.data && ch.data.datasets && ch.data.datasets.some(ds => ds.data && ds.data.length > 0)) return true;
+                }
+            } catch(e) {}
         }
+        return false;
+    }
+
+    // ── Pasta de destino selecionada via File System Access API ──
+    let _dlFolderHandle = null;
+
+    // Renderiza um gráfico Chart.js em alta resolução (mínimo 1280×720)
+    // Redesenha o gráfico num canvas offscreen grande — não tira print da tela
+    async function renderChartHQ(canvasId) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return null;
+
+        // Garante seção visível para Chart.getChart funcionar
+        const section = canvas.closest('.tab-section');
+        const wasHidden = section && getComputedStyle(section).display === 'none';
+        if (wasHidden) {
+            section.style.setProperty('display', 'block', 'important');
+            section.style.visibility = 'hidden';
+            await new Promise(r => setTimeout(r, 60));
+        }
+
+        try {
+            // Dimensão mínima 1280×720
+            const MIN_W = 1280, MIN_H = 720;
+            const srcW = canvas.offsetWidth  || 900;
+            const srcH = canvas.offsetHeight || 450;
+            const scale = Math.max(Math.ceil(MIN_W / srcW), Math.ceil(MIN_H / srcH), 2);
+            const outW = Math.max(srcW * scale, MIN_W);
+            const outH = Math.max(srcH * scale, MIN_H);
+
+            // Cria canvas offscreen de alta resolução
+            const off = document.createElement('canvas');
+            off.width  = outW;
+            off.height = outH;
+            const octx = off.getContext('2d');
+
+            // Fundo branco
+            octx.fillStyle = '#ffffff';
+            octx.fillRect(0, 0, outW, outH);
+
+            // Tenta redesenhar via Chart.js (qualidade máxima — redesenha vetorialmente)
+            let rendered = false;
+            if (typeof Chart !== 'undefined') {
+                try {
+                    const inst = Chart.getChart(canvas);
+                    if (inst) {
+                        // Salva config original
+                        const origWidth  = canvas.width;
+                        const origHeight = canvas.height;
+                        const origStyleW = canvas.style.width;
+                        const origStyleH = canvas.style.height;
+
+                        // Redimensiona temporariamente para alta resolução
+                        canvas.width  = outW;
+                        canvas.height = outH;
+                        canvas.style.width  = outW + 'px';
+                        canvas.style.height = outH + 'px';
+
+                        // Força redraw em alta resolução
+                        inst.resize(outW, outH);
+                        inst.render();
+                        await new Promise(r => setTimeout(r, 80));
+
+                        // Copia o canvas redesenhado para o offscreen com fundo branco
+                        octx.fillStyle = '#ffffff';
+                        octx.fillRect(0, 0, outW, outH);
+                        octx.drawImage(canvas, 0, 0);
+
+                        // Restaura tamanho original
+                        canvas.width  = origWidth;
+                        canvas.height = origHeight;
+                        canvas.style.width  = origStyleW;
+                        canvas.style.height = origStyleH;
+                        inst.resize();
+                        inst.render();
+
+                        rendered = true;
+                    }
+                } catch(e) { console.warn('HQ render error:', e); }
+            }
+
+            // Fallback: escala o canvas existente com interpolação de alta qualidade
+            if (!rendered) {
+                octx.imageSmoothingEnabled = true;
+                octx.imageSmoothingQuality = 'high';
+                octx.drawImage(canvas, 0, 0, srcW, srcH, 0, 0, outW, outH);
+            }
+
+            return off.toDataURL('image/png', 1.0);
+        } finally {
+            if (wasHidden) {
+                section.style.removeProperty('display');
+                section.style.visibility = '';
+            }
+        }
+    }
+
+    // Salva dataUrl como arquivo — usa pasta selecionada se disponível, senão link <a>
+    async function saveFile(filename, dataUrl) {
+        const blob = await (await fetch(dataUrl)).blob();
+        if (_dlFolderHandle) {
+            try {
+                const fh = await _dlFolderHandle.getFileHandle(filename, { create: true });
+                const wr = await fh.createWritable();
+                await wr.write(blob);
+                await wr.close();
+                return true;
+            } catch(e) { console.warn('Folder write error:', e); }
+        }
+        // Fallback: download via link
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        return true;
+    }
+
+    function buildDownloadList() {
+        const el = document.getElementById('download-charts-list');
+        if (!el) return;
+        let anyHasData = false;
+        const rows = DOWNLOAD_CHARTS_DEF.map((def, i) => {
+            const hasData = def.canvasIds.some(id => canvasHasData(id));
+            if (hasData) anyHasData = true;
+            const statusBadge = hasData
+                ? `<span style="margin-left:auto;font-size:11px;background:#d4f0dc;color:#1e6b35;border-radius:10px;padding:2px 9px;font-weight:600;">✓ Gerado</span>`
+                : `<span style="margin-left:auto;font-size:11px;background:#f0e0e0;color:#922b21;border-radius:10px;padding:2px 9px;">Sem dados</span>`;
+            return `<label style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:var(--${hasData ? 'green-mist' : 'surface'});border:1px solid var(--border-light);border-radius:var(--radius-sm);cursor:${hasData ? 'pointer' : 'not-allowed'};font-size:13px;opacity:${hasData ? 1 : 0.5};">
+                <input type="checkbox" id="dl-chk-${i}" ${hasData ? 'checked' : 'disabled'} style="width:15px;height:15px;cursor:${hasData ? 'pointer' : 'not-allowed'};accent-color:var(--green-base);">
+                <span>${def.label}</span>
+                ${statusBadge}
+            </label>`;
+        });
+        if (!anyHasData) {
+            el.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted);font-size:14px;">
+                <div style="font-size:36px;margin-bottom:12px;">📊</div>
+                Nenhum gráfico foi gerado ainda.<br>
+                <span style="font-size:12.5px;">Navegue pelas abas, importe dados e gere os gráficos para poder exportá-los.</span>
+            </div>`;
+        } else {
+            el.innerHTML = rows.join('');
+        }
+    }
+
+    window.downloadChartsSelectAll = function(val) {
+        DOWNLOAD_CHARTS_DEF.forEach((def, i) => {
+            const chk = document.getElementById(`dl-chk-${i}`);
+            if (chk && !chk.disabled) chk.checked = val;
+        });
+    };
+
+    const dlBtn = document.getElementById('download-charts-btn');
+    const dlModal = document.getElementById('download-charts-modal');
+    const closeDlModal = document.getElementById('close-download-charts-modal');
+
+    if (dlBtn) dlBtn.addEventListener('click', () => {
+        buildDownloadList();
+        if (dlModal) dlModal.style.display = dlModal.style.display === 'block' ? 'none' : 'block';
+    });
+    if (closeDlModal) closeDlModal.addEventListener('click', () => { if (dlModal) dlModal.style.display = 'none'; });
+    window.addEventListener('click', e => { if (e.target === dlModal) dlModal.style.display = 'none'; });
+
+    // Botão escolher pasta
+    document.getElementById('dl-pick-folder')?.addEventListener('click', async () => {
+        const fallbackEl = document.getElementById('dl-folder-fallback');
+        const nameEl = document.getElementById('dl-folder-name');
+        if (!('showDirectoryPicker' in window)) {
+            if (fallbackEl) fallbackEl.style.display = 'block';
+            if (nameEl) nameEl.textContent = 'Salvando na pasta Downloads padrão';
+            return;
+        }
+        try {
+            _dlFolderHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+            if (nameEl) {
+                nameEl.textContent = `📂 ${_dlFolderHandle.name}`;
+                nameEl.style.color = 'var(--green-deep)';
+                nameEl.style.fontStyle = 'normal';
+                nameEl.style.fontWeight = '600';
+            }
+            if (fallbackEl) fallbackEl.style.display = 'none';
+        } catch(e) {
+            if (e.name !== 'AbortError') {
+                if (fallbackEl) fallbackEl.style.display = 'block';
+            }
+        }
+    });
+
+    document.getElementById('download-charts-go')?.addEventListener('click', async () => {
+        const status = document.getElementById('download-charts-status');
+        const selected = DOWNLOAD_CHARTS_DEF.filter((_, i) => {
+            const chk = document.getElementById(`dl-chk-${i}`);
+            return chk && chk.checked && !chk.disabled;
+        });
+        if (!selected.length) { if (status) status.textContent = '⚠️ Nenhum gráfico selecionado com dados.'; return; }
+
+        const prefix = (document.getElementById('dl-prefix')?.value?.trim() || 'ornitologia').replace(/[^\wÀ-ÿ\-_]/g, '') || 'ornitologia';
+        let done = 0, skipped = 0;
+        if (status) status.innerHTML = '⏳ Renderizando em alta resolução… <span id="dl-progress"></span>';
+
+        for (let di = 0; di < selected.length; di++) {
+            const def = selected[di];
+            const prog = document.getElementById('dl-progress');
+            if (prog) prog.textContent = `(${di+1}/${selected.length}) ${def.label.replace(/[^a-zA-ZÀ-ÿ\s]/g,'').trim()}`;
+            for (const cid of def.canvasIds) {
+                if (!canvasHasData(cid)) { skipped++; continue; }
+                try {
+                    const dataUrl = await renderChartHQ(cid);
+                    if (!dataUrl) { skipped++; continue; }
+                    const safeName = def.label.replace(/[^\wÀ-ÿ\s\-–]/g,'').trim().replace(/\s+/g,'_');
+                    await saveFile(`${prefix}_${safeName}.png`, dataUrl);
+                    done++;
+                } catch(e) { skipped++; console.warn('Export error:', e); }
+                await new Promise(r => setTimeout(r, 200));
+            }
+        }
+        const folderInfo = _dlFolderHandle ? ` na pasta "${_dlFolderHandle.name}"` : ' na pasta Downloads';
+        if (status) status.textContent = `✅ ${done} gráfico(s) exportado(s) em alta resolução (≥1280×720)${folderInfo}${skipped ? ` · ${skipped} pulados` : ''}.`;
     });
 
     // Abrir automaticamente ao carregar a página
@@ -10503,9 +10947,12 @@ function updateCurveLegend() {
         });
 
         function makeChart(id, title, countObj, palette) {
+            const numItems = Object.keys(countObj).length;
+            // Dynamic height: base 220px + 22px per legend item
+            const chartH = Math.max(220, 120 + numItems * 22);
             const wrapper = document.createElement('div');
-            wrapper.style.cssText = 'flex:1 1 300px; min-width:250px; max-width:420px; background:var(--surface); border:1px solid var(--border-light); border-radius:var(--radius-md); padding:16px; box-shadow:var(--shadow-soft);';
-            wrapper.innerHTML = `<h4 style="text-align:center; margin-bottom:10px; color:var(--green-deep); font-size:14px;">${title}</h4><div style="height:280px;"><canvas id="${id}"></canvas></div>`;
+            wrapper.style.cssText = 'flex:1 1 300px; min-width:260px; max-width:480px; background:var(--surface); border:1px solid var(--border-light); border-radius:var(--radius-md); padding:16px; box-shadow:var(--shadow-soft);';
+            wrapper.innerHTML = `<h4 style="text-align:center; margin-bottom:10px; color:var(--green-deep); font-size:14px;">${title}</h4><div style="height:${chartH}px;"><canvas id="${id}"></canvas></div>`;
             chartsRow.appendChild(wrapper);
 
             const labels = Object.keys(countObj);
@@ -10523,9 +10970,37 @@ function updateCurveLegend() {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: { padding: { bottom: 8 } },
                     plugins: {
-                        legend: { position: 'right', labels: { font: { size: 11 }, boxWidth: 14, padding: 8 } },
-                        tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw} (${((ctx.raw/rows.length)*100).toFixed(1)}%)` } }
+                        legend: {
+                            position: numItems > 8 ? 'bottom' : 'right',
+                            labels: {
+                                font: { size: 11 },
+                                boxWidth: 12,
+                                padding: 6,
+                                generateLabels: chart => {
+                                    const ds = chart.data.datasets[0];
+                                    return chart.data.labels.map((lbl, i) => ({
+                                        text: `${lbl} (${ds.data[i]})`,
+                                        fillStyle: ds.backgroundColor[i],
+                                        strokeStyle: '#fff',
+                                        lineWidth: 1,
+                                        hidden: false,
+                                        index: i
+                                    }));
+                                }
+                            }
+                        },
+                        tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw} (${((ctx.raw/rows.length)*100).toFixed(1)}%)` } },
+                        datalabels: {
+                            display: ctx => ctx.dataset.data[ctx.dataIndex] > 0,
+                            color: '#ffffff',
+                            font: { size: 11, weight: '700' },
+                            formatter: (v) => {
+                                const pct = (v / rows.length * 100);
+                                return pct >= 5 ? v : '';
+                            }
+                        }
                     }
                 }
             });
@@ -11747,12 +12222,12 @@ function renderEstimatorCharts(results, nSamples) {
                 labels: labels,
                 datasets: [{
                     label: label,
-                    data: data,
+                    data: data.map(v => parseFloat(v.toFixed(2))),
                     borderColor: color,
-                    backgroundColor: 'transparent',
+                    backgroundColor: color + '22',
                     tension: 0.2,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
                     fill: false
                 }]
             },
@@ -11761,10 +12236,24 @@ function renderEstimatorCharts(results, nSamples) {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { display: false },
-                    tooltip: { enabled: true }
+                    datalabels: {
+                        display: true,
+                        formatter: v => Number(v).toFixed(2),
+                        font: { size: 9, weight: '600' },
+                        color: color,
+                        backgroundColor: 'rgba(255,255,255,0.82)',
+                        borderRadius: 3,
+                        padding: { top: 2, bottom: 2, left: 3, right: 3 },
+                        anchor: 'end',
+                        align: 'top',
+                        offset: 2,
+                        clamp: true
+                    },
+                    tooltip: { callbacks: { label: item => `${label}: ${Number(item.raw).toFixed(2)}` } }
                 },
+                layout: { padding: { top: 24 } },
                 scales: {
-                    y: { beginAtZero: true, title: { display: true, text: 'Riqueza estimada' } }
+                    y: { beginAtZero: true, title: { display: true, text: 'Riqueza estimada' }, ticks: { callback: v => Number(v).toFixed(2) } }
                 }
             }
         });
@@ -11782,24 +12271,68 @@ function renderEstimatorCharts(results, nSamples) {
         data: {
             labels: labels,
             datasets: [
-                { label: 'Observado', data: results.obs, borderColor: '#2c3e50', backgroundColor: 'transparent', tension: 0.2, pointRadius: 3 },
-                { label: 'Chao2', data: results.chao, borderColor: '#27ae60', backgroundColor: 'transparent', tension: 0.2, pointRadius: 3 },
-                { label: 'Jackknife 1', data: results.jack1, borderColor: '#e67e22', backgroundColor: 'transparent', tension: 0.2, pointRadius: 3 },
-                { label: 'Jackknife 2', data: results.jack2, borderColor: '#3498db', backgroundColor: 'transparent', tension: 0.2, pointRadius: 3 },
-                { label: 'Bootstrap', data: results.boot, borderColor: '#9b59b6', backgroundColor: 'transparent', tension: 0.2, pointRadius: 3 }
+                { label: 'Observado', data: results.obs.map(v=>parseFloat(v.toFixed(2))), borderColor: '#2c3e50', backgroundColor: 'transparent', tension: 0.2, pointRadius: 3 },
+                { label: 'Chao2', data: results.chao.map(v=>parseFloat(v.toFixed(2))), borderColor: '#27ae60', backgroundColor: 'transparent', tension: 0.2, pointRadius: 3 },
+                { label: 'Jackknife 1', data: results.jack1.map(v=>parseFloat(v.toFixed(2))), borderColor: '#e67e22', backgroundColor: 'transparent', tension: 0.2, pointRadius: 3 },
+                { label: 'Jackknife 2', data: results.jack2.map(v=>parseFloat(v.toFixed(2))), borderColor: '#3498db', backgroundColor: 'transparent', tension: 0.2, pointRadius: 3 },
+                { label: 'Bootstrap', data: results.boot.map(v=>parseFloat(v.toFixed(2))), borderColor: '#9b59b6', backgroundColor: 'transparent', tension: 0.2, pointRadius: 3 }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8 } }
+                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8 } },
+                tooltip: { callbacks: { label: item => `${item.dataset.label}: ${Number(item.raw).toFixed(2)}` } }
             },
             scales: {
-                y: { beginAtZero: true, title: { display: true, text: 'Riqueza' } }
+                y: { beginAtZero: true, title: { display: true, text: 'Riqueza' }, ticks: { callback: v => Number(v).toFixed(2) } }
             }
         }
     });
+
+    // Análise automática dos estimadores
+    const sObs = results.obs[results.obs.length-1];
+    const chaoFinal = results.chao[results.chao.length-1];
+    const jack1Final = results.jack1[results.jack1.length-1];
+    const jack2Final = results.jack2[results.jack2.length-1];
+    const bootFinal = results.boot[results.boot.length-1];
+    const meanEst = (chaoFinal+jack1Final+jack2Final+bootFinal)/4;
+    const completeness = sObs > 0 ? (sObs/meanEst*100).toFixed(1) : '0.0';
+    const estimatorTable = document.getElementById('estimator-charts');
+    if (estimatorTable) {
+        const analysisDiv = document.getElementById('estimator-analysis') || document.createElement('div');
+        analysisDiv.id = 'estimator-analysis';
+        analysisDiv.style.cssText = 'margin-top:24px;';
+        analysisDiv.innerHTML = `
+        <div style="background:var(--green-mist);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px 20px;">
+            <strong style="color:var(--green-deep);font-size:14px;">📊 Resumo dos Estimadores (última amostra)</strong>
+            <table style="width:100%;border-collapse:collapse;margin-top:12px;font-size:13px;">
+                <thead><tr style="background:rgba(42,125,82,0.12);">
+                    <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);">Estimador</th>
+                    <th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);">Riqueza estimada</th>
+                    <th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);">Spp. não detectadas*</th>
+                </tr></thead>
+                <tbody>
+                    <tr><td style="padding:7px 8px;border-bottom:1px solid var(--border-light);">Observado (Sobs)</td><td style="padding:7px 8px;text-align:center;font-weight:700;">${sObs.toFixed(2)}</td><td style="padding:7px 8px;text-align:center;">—</td></tr>
+                    <tr><td style="padding:7px 8px;border-bottom:1px solid var(--border-light);">Chao2</td><td style="padding:7px 8px;text-align:center;color:#27ae60;font-weight:700;">${chaoFinal.toFixed(2)}</td><td style="padding:7px 8px;text-align:center;">${Math.max(0,chaoFinal-sObs).toFixed(2)}</td></tr>
+                    <tr><td style="padding:7px 8px;border-bottom:1px solid var(--border-light);">Jackknife 1ª ordem</td><td style="padding:7px 8px;text-align:center;color:#e67e22;font-weight:700;">${jack1Final.toFixed(2)}</td><td style="padding:7px 8px;text-align:center;">${Math.max(0,jack1Final-sObs).toFixed(2)}</td></tr>
+                    <tr><td style="padding:7px 8px;border-bottom:1px solid var(--border-light);">Jackknife 2ª ordem</td><td style="padding:7px 8px;text-align:center;color:#3498db;font-weight:700;">${jack2Final.toFixed(2)}</td><td style="padding:7px 8px;text-align:center;">${Math.max(0,jack2Final-sObs).toFixed(2)}</td></tr>
+                    <tr><td style="padding:7px 8px;">Bootstrap</td><td style="padding:7px 8px;text-align:center;color:#9b59b6;font-weight:700;">${bootFinal.toFixed(2)}</td><td style="padding:7px 8px;text-align:center;">${Math.max(0,bootFinal-sObs).toFixed(2)}</td></tr>
+                </tbody>
+            </table>
+            <p style="font-size:11px;color:var(--text-muted);margin-top:6px;">* Diferença entre estimado e observado.</p>
+            <div style="margin-top:12px;font-size:13px;line-height:1.8;color:var(--text-mid);">
+                <strong>🔬 Análise:</strong>
+                Completude amostral estimada (Sobs/média estimadores): <strong>${completeness}%</strong>.<br>
+                ${parseFloat(completeness) >= 85 ? '✅ Alta completude — o esforço amostral parece suficiente para detectar a maior parte das espécies.' :
+                  parseFloat(completeness) >= 60 ? '🔶 Completude moderada — há espécies não detectadas; aumentar o número de amostras é recomendado.' :
+                  '⚠️ Baixa completude — grande parte das espécies estimadas ainda não foi detectada. Esforço amostral insuficiente.'}<br>
+                O estimador Chao2 é baseado em singletons/doubletons e tende a ser conservador; Jackknife 2 é geralmente mais preciso com muitas amostras; Bootstrap tende a subestimar levemente.
+            </div>
+        </div>`;
+        if (!document.getElementById('estimator-analysis')) estimatorTable.appendChild(analysisDiv);
+    }
 }
 
     </script>
@@ -11807,56 +12340,41 @@ function renderEstimatorCharts(results, nSamples) {
 <script>
 // ==================== AVISTAMENTOS ====================
 // Armazenamento global em memória da sessão
-window.AVISTAMENTOS = []; // [{id, date, inputName, scientificName, commonName}]
+window.AVISTAMENTOS = []; // [{id, date, time, inputName, scientificName, commonName}]
 let _avistaIdCounter = 0;
-let _avistaMode = 'simple';
 
-function setAvistaMode(mode) {
-    _avistaMode = mode;
-    document.getElementById('avist-simple-panel').style.display = mode === 'simple' ? '' : 'none';
-    document.getElementById('avist-date-panel').style.display  = mode === 'date'   ? '' : 'none';
-    document.getElementById('avist-mode-simple-btn').classList.toggle('active', mode === 'simple');
-    document.getElementById('avist-mode-date-btn').classList.toggle('active', mode === 'date');
-}
+function setAvistaMode(mode) { /* mantido por compatibilidade */ }
 window.setAvistaMode = setAvistaMode;
+
+function setAvistaSubTab(tab) { /* removido — picos agora é aba própria */ }
+window.setAvistaSubTab = setAvistaSubTab;
 
 const _UNCERTAIN_RE = /\b(sp\.|sp\b|cf\.|cf\b|aff\.|aff\b|nr\.\b|\?)/i;
 
 function parseAvistaSimple(raw) {
-    const entries = [];
-    raw.split('\n').forEach(line => {
-        const name = line.trim();
-        if (!name) return;
-        const isUncert = _UNCERTAIN_RE.test(name);
-        const result = (!isUncert && typeof findBirdFuzzy === 'function') ? findBirdFuzzy(name) : null;
-        const confident = result ? result.confident : false;
-        entries.push({
-            id: ++_avistaIdCounter,
-            date: '',
-            inputName: name,
-            scientificName: (result && confident) ? result.bird.scientificName : name,
-            commonName:     (result && confident) ? result.bird.commonName     : '',
-            suggestedSci:    (!isUncert && result) ? result.bird.scientificName : null,
-            suggestedCommon: (!isUncert && result) ? result.bird.commonName     : null,
-            confident,
-            isUncertain: isUncert
-        });
-    });
-    return entries;
+    // mantido por compatibilidade: trata como linha sem data
+    return parseAvistaDatetime(raw);
 }
 
 function parseAvistaDate(raw) {
+    return parseAvistaDatetime(raw);
+}
+
+function parseAvistaDatetime(raw) {
     const entries = [];
     const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
-    const dateRe = /^(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})\s+(.+)$/;
+    // Aceita: DD/MM/AAAA HH:MM nome  ou  DD/MM/AAAA nome  ou  só nome
+    const dateTimeRe = /^(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})\s+(\d{2}:\d{2})\s+(.+)$/;
+    const dateOnlyRe = /^(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})\s+(.+)$/;
 
-    function makeEntry(namePart, datePart) {
+    function makeEntry(namePart, datePart, timePart) {
         const isUncert = _UNCERTAIN_RE.test(namePart);
         const result = (!isUncert && typeof findBirdFuzzy === 'function') ? findBirdFuzzy(namePart) : null;
         const confident = result ? result.confident : false;
         return {
             id: ++_avistaIdCounter,
             date: datePart ? normalizeDate(datePart) : '',
+            time: timePart || '',
             inputName: namePart,
             scientificName: (result && confident) ? result.bird.scientificName : namePart,
             commonName:     (result && confident) ? result.bird.commonName     : '',
@@ -11868,12 +12386,11 @@ function parseAvistaDate(raw) {
     }
 
     lines.forEach(line => {
-        const m = line.match(dateRe);
-        if (m) {
-            entries.push(makeEntry(m[2].trim(), m[1].trim()));
-        } else {
-            entries.push(makeEntry(line, null));
-        }
+        let m = line.match(dateTimeRe);
+        if (m) { entries.push(makeEntry(m[3].trim(), m[1].trim(), m[2].trim())); return; }
+        m = line.match(dateOnlyRe);
+        if (m) { entries.push(makeEntry(m[2].trim(), m[1].trim(), '')); return; }
+        entries.push(makeEntry(line, null, null));
     });
     return entries;
 }
@@ -11916,6 +12433,7 @@ function buildAvistaTable() {
         tr.innerHTML = `
             <td style="text-align:center; color:var(--text-muted); font-size:12px;">${idx + 1}</td>
             <td style="font-family:'DM Mono',monospace; font-size:13px; white-space:nowrap;">${displayDateBR(r.date)}</td>
+            <td style="font-family:'DM Mono',monospace; font-size:13px; white-space:nowrap;">${r.time || '—'}</td>
             <td style="font-size:13px;">${r.inputName}</td>
             <td style="font-size:13px;"><em style="color:${isRecognized ? 'var(--green-deep)' : 'var(--text-muted)'};">${r.scientificName}</em></td>
             <td style="font-size:13px; color:var(--text-muted);">${r.commonName || '—'}</td>
@@ -11941,11 +12459,13 @@ function buildAvistaStats() {
     const uniqueSp = new Set(AVISTAMENTOS.filter(r => !isUncertainRecord(r)).map(r => r.scientificName)).size;
     const withDate = AVISTAMENTOS.filter(r => r.date).length;
     const uniqueDates = new Set(AVISTAMENTOS.map(r => r.date).filter(Boolean)).size;
+    const withHour = AVISTAMENTOS.filter(r => r.time).length;
     const stats = [
         { label: 'Total de avistamentos', value: total, color: 'var(--green-base)' },
         { label: 'Espécies únicas', value: uniqueSp, color: 'var(--amber)' },
         { label: 'Com data', value: withDate, color: '#2060c0' },
-        { label: 'Dias de campo', value: uniqueDates, color: '#8b2fc9' },
+        { label: 'Com hora', value: withHour, color: '#8b2fc9' },
+        { label: 'Dias de campo', value: uniqueDates, color: '#c0392b' },
     ];
     container.innerHTML = stats.map(s => `
         <div style="background:white;border:1px solid var(--border-light);border-radius:var(--radius-md);padding:12px 18px;min-width:140px;flex:1;text-align:center;box-shadow:var(--shadow-card);">
@@ -11969,6 +12489,69 @@ function updateAvistaDateFilter() {
     });
 }
 
+let _picosChart = null;
+function buildPicosHorarios() {
+    const withTime = AVISTAMENTOS.filter(r => r.time);
+    const el = document.getElementById('picos-stats');
+    if (!withTime.length) {
+        const ctx = document.getElementById('picosHorariosChart');
+        if (ctx) ctx.getContext('2d').clearRect(0,0,ctx.width,ctx.height);
+        if (el) el.innerHTML = '<em style="color:var(--text-muted);">Nenhum avistamento com hora registrado. Use o formato DD/MM/AAAA HH:MM nome.</em>';
+        return;
+    }
+    // Contagem por hora (0-23)
+    const counts = Array(24).fill(0);
+    withTime.forEach(r => {
+        const h = parseInt(r.time.split(':')[0]);
+        if (!isNaN(h) && h >= 0 && h < 24) counts[h]++;
+    });
+    const labels = Array.from({length:24}, (_,i) => `${String(i).padStart(2,'0')}:00`);
+    const ctx = document.getElementById('picosHorariosChart');
+    if (!ctx) return;
+    if (_picosChart) _picosChart.destroy();
+    // Colors: highlight top 3 hours
+    const sorted = [...counts].sort((a,b)=>b-a);
+    const top3 = sorted[2];
+    const colors = counts.map(v => v >= top3 && v > 0 ? 'rgba(42,125,82,0.85)' : 'rgba(42,125,82,0.4)');
+    _picosChart = new Chart(ctx, {
+        type:'bar',
+        data:{ labels, datasets:[{ label:'Avistamentos', data:counts, backgroundColor:colors, borderColor:'#1d6140', borderWidth:1, borderRadius:3 }] },
+        options:{
+            responsive:true, maintainAspectRatio:false,
+            plugins:{
+                legend:{display:false},
+                datalabels:{
+                    display: ctx => ctx.dataset.data[ctx.dataIndex] > 0,
+                    color:'#ffffff',
+                    font:{ size:11, weight:'700' },
+                    anchor:'center', align:'center',
+                    formatter: v => v
+                },
+                tooltip:{ callbacks:{ label: item => `${item.raw} avistamento(s)` } }
+            },
+            scales:{
+                x:{ title:{display:true,text:'Hora do dia'} },
+                y:{ beginAtZero:true, title:{display:true,text:'Nº de avistamentos'}, ticks:{stepSize:1} }
+            }
+        }
+    });
+    // Análise
+    const peak = counts.indexOf(Math.max(...counts));
+    const horasAtivas = counts.filter(v=>v>0).length;
+    const manha = counts.slice(5,12).reduce((s,v)=>s+v,0);
+    const tarde = counts.slice(12,18).reduce((s,v)=>s+v,0);
+    const noite = counts.slice(18,24).reduce((s,v)=>s+v,0) + counts.slice(0,5).reduce((s,v)=>s+v,0);
+    const dominant = manha >= tarde && manha >= noite ? 'manhã (05h–11h)' : tarde >= noite ? 'tarde (12h–17h)' : 'noturno/crepuscular';
+    if (el) el.innerHTML = `<div style="background:var(--green-mist);border-left:4px solid var(--green-base);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:12px 16px;line-height:1.8;">
+        <strong>🕐 Análise de Picos de Horários</strong><br>
+        Pico máximo: <strong>${labels[peak]}</strong> com <strong>${counts[peak]}</strong> avistamento(s) · 
+        Horas ativas: <strong>${horasAtivas}h</strong> de 24 · 
+        Período dominante: <strong>${dominant}</strong><br>
+        Manhã: <strong>${manha}</strong> reg. · Tarde: <strong>${tarde}</strong> reg. · Noturno/crepuscular: <strong>${noite}</strong> reg.<br>
+        <span style="font-size:12px;color:var(--text-muted);">Barras em verde escuro = top 3 horários mais ativos. Total com hora: ${withTime.length} de ${AVISTAMENTOS.length} registros.</span>
+    </div>`;
+}
+
 function removeAvistamento(id) {
     const idx = AVISTAMENTOS.findIndex(r => r.id === id);
     if (idx >= 0) AVISTAMENTOS.splice(idx, 1);
@@ -11981,49 +12564,34 @@ window.getAvistamentos = function() { return AVISTAMENTOS; };
 
 // Exportar CSV
 function exportAvistaCSV() {
-    const header = 'Data,Nome inserido,Espécie reconhecida,Nome popular';
-    const rows = AVISTAMENTOS.map(r => `"${displayDateBR(r.date)}","${r.inputName}","${r.scientificName}","${r.commonName}"`);
+    const header = 'Data,Hora,Nome inserido,Espécie reconhecida,Nome popular';
+    const rows = AVISTAMENTOS.map(r => `"${displayDateBR(r.date)}","${r.time||''}","${r.inputName}","${r.scientificName}","${r.commonName}"`);
     const blob = new Blob([header + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = 'avistamentos.csv'; a.click();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Botão adicionar modo simples
+    // Botão adicionar (modo unificado)
     // ── Core function: process entries, show banner + correction modal ──
     function processAvistaEntries(entries, clearedField) {
         if (!entries.length) { alert('Nenhum dado válido inserido.'); return; }
-
-        // Unrecognized = scientificName === inputName (no match at all)
-        // Uncertain = matched but not confident (score >= 6)
         const unrecognized = entries.filter(e => !e.confident);
-        // confirmed = entries with confident match
         const confirmed    = entries.filter(e => e.confident);
-
         AVISTAMENTOS.push(...entries);
         buildAvistaTable();
         if (clearedField) clearedField.value = '';
-
-        // Show post-add banner
         const banner = document.getElementById('avist-post-add-banner');
         if (banner) banner.style.display = 'flex';
-
-        // Show correction modal if there are unrecognized/uncertain entries
         if (unrecognized.length > 0) {
             showAvistaCorrecaoModal(unrecognized);
         }
     }
 
-    document.getElementById('avist-simple-add')?.addEventListener('click', () => {
-        const raw = document.getElementById('avist-simple-input').value.trim();
-        if (!raw) { alert('Nenhum dado inserido.'); return; }
-        processAvistaEntries(parseAvistaSimple(raw), document.getElementById('avist-simple-input'));
-    });
-
     document.getElementById('avist-date-add')?.addEventListener('click', () => {
         const raw = document.getElementById('avist-date-input').value.trim();
         if (!raw) { alert('Nenhum dado inserido.'); return; }
-        processAvistaEntries(parseAvistaDate(raw), document.getElementById('avist-date-input'));
+        processAvistaEntries(parseAvistaDatetime(raw), document.getElementById('avist-date-input'));
     });
 
     // Post-add banner: send to Importação
@@ -12037,7 +12605,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Limpar campos
-    document.getElementById('avist-simple-clear-input')?.addEventListener('click', () => { document.getElementById('avist-simple-input').value = ''; });
     document.getElementById('avist-date-clear-input')?.addEventListener('click', () => { document.getElementById('avist-date-input').value = ''; });
 
     // Limpar todos
@@ -12305,9 +12872,30 @@ function rarefacaoRun() {
     if (rarefChart) rarefChart.destroy();
     rarefChart = new Chart(ctx, {
         type:'line', data:{ datasets },
-        options:{ responsive:true, maintainAspectRatio:false, scales:{ x:{type:'linear',title:{display:true,text:'Nº de amostras'}}, y:{title:{display:true,text:'Riqueza esperada E[S]'}, beginAtZero:true} }, plugins:{ legend:{position:'top'} } }
+        options:{
+            responsive:true, maintainAspectRatio:false,
+            scales:{
+                x:{ type:'linear', title:{display:true,text:'Nº de amostras'}, ticks:{ callback: v => Number.isInteger(v) ? v : '' } },
+                y:{ title:{display:true,text:'Riqueza esperada E[S]'}, beginAtZero:true, ticks:{ callback: v => Number(v).toFixed(2) } }
+            },
+            plugins:{
+                legend:{position:'top'},
+                datalabels:{ display: false },
+                tooltip:{ callbacks:{ label: item => `${item.dataset.label}: ${Number(item.raw.y ?? item.raw).toFixed(2)}` } }
+            }
+        }
     });
-    document.getElementById('raref-stats').innerHTML = `<strong>Áreas comparadas:</strong> ${datasets.length} | Cada curva mostra a riqueza esperada com esforço crescente.`;
+    // Análise automática
+    let analise = `<strong>Áreas comparadas:</strong> ${datasets.length}`;
+    if (datasets.length >= 2) {
+        const finalVals = datasets.map(d => ({ name: d.label, val: d.data[d.data.length-1]?.y ?? d.data[d.data.length-1] }));
+        const maxArea = finalVals.reduce((a,b) => a.val > b.val ? a : b);
+        const minArea = finalVals.reduce((a,b) => a.val < b.val ? a : b);
+        analise += `<br>📊 Área com maior riqueza estimada ao final: <strong>${maxArea.name}</strong> (${Number(maxArea.val).toFixed(2)} spp)`;
+        analise += ` · Menor: <strong>${minArea.name}</strong> (${Number(minArea.val).toFixed(2)} spp).`;
+        analise += `<br>As curvas ${datasets.every(d=>{ const last2 = d.data.slice(-3); return last2.length>=2 && Math.abs((last2[last2.length-1]?.y??0)-(last2[0]?.y??0)) < 1; }) ? 'parecem estar estabilizando (assíntota próxima) — o esforço amostral pode ser suficiente.' : 'ainda apresentam tendência de crescimento — recomenda-se aumentar o esforço amostral.'}`;
+    }
+    document.getElementById('raref-stats').innerHTML = `<div style="background:var(--green-mist);border-left:4px solid var(--green-base);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:12px 16px;line-height:1.8;">${analise}</div>`;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -12325,7 +12913,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const sortedDates = Object.keys(byDate).filter(k=>k!=='_semdata').sort();
         const noDate = byDate['_semdata'];
         const list = document.getElementById('raref-areas-list');
-        list.innerHTML = '';
+        list.innerHTML = ''; // Remove todas as áreas existentes (inclusive Área 1 e Área 2 padrão)
         const allSpSoFar = new Set();
         sortedDates.forEach((date, i) => {
             byDate[date].forEach(s => allSpSoFar.add(s));
@@ -12355,7 +12943,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const totalSp = [...new Set(av.map(r=>r.scientificName))].length;
         document.getElementById('raref-n').value = sortedDates.length || 1;
         document.getElementById('raref-s').value = totalSp;
-        alert(`✅ ${sortedDates.length} dia(s) de campo importados como amostras.\nTotal espécies únicas: ${totalSp}\nClique em ▶ Calcular Rarefação.`);
+
     });
 
     document.getElementById('raref-add-area')?.addEventListener('click', () => {
@@ -12393,7 +12981,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (imported.length === 0) { alert('Nenhuma espécie importada na tabela principal.'); return; }
         const lines = imported.map((sp,i)=> `${sp},${(i%12)+1}`).join('\n');
         document.getElementById('sazon-data').value = lines;
-        alert(`${imported.length} espécies importadas com meses distribuídos (edite os meses conforme seus dados reais).`);
+
     });
 
     // 🔭 Importar avistamentos → Sazonalidade (usa mês real da data quando disponível)
@@ -12409,7 +12997,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         noDate.forEach((r, i) => { lines.push(`${r.scientificName},${(i % 12) + 1}`); });
         document.getElementById('sazon-data').value = lines.join('\n');
-        alert(`${av.length} avistamento(s) importado(s).\n✅ ${withDate.length} com mês real detectado.${noDate.length ? '\n⚠️ ' + noDate.length + ' sem data — meses distribuídos sequencialmente (edite conforme necessário).' : ''}`);
+        setTimeout(() => document.getElementById('sazon-run')?.click(), 50);
     });
 
     // 🔭 Importar avistamentos → Fenologia
@@ -12419,7 +13007,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!withDate.length) { alert('Nenhum avistamento com data registrado. Use a aba 🔭 Avistamentos (modo com data).'); return; }
         const lines = withDate.map(r => `${r.scientificName},${r.date}`);
         document.getElementById('fenol-data').value = lines.join('\n');
-        alert(`${withDate.length} avistamento(s) com data importado(s).`);
+        // Trigger render automatically
+        document.getElementById('fenol-run')?.click();
     });
 
     // 🔭 Importar avistamentos → Turnover (agrupa por data)
@@ -12446,7 +13035,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <textarea class="turn-period-data" rows="5" style="width:100%;">${byDate[date].join('\n')}</textarea>`;
             container.appendChild(div);
         });
-        alert(`${sortedDates.length} período(s) criado(s) a partir dos avistamentos com data.`);
+        setTimeout(() => document.getElementById('turnover-run')?.click(), 50);
     });
 
     // 🔭 Importar avistamentos → Rank-Abundância (conta frequência de cada espécie)
@@ -12457,7 +13046,7 @@ document.addEventListener('DOMContentLoaded', () => {
         av.forEach(r => { freq[r.scientificName] = (freq[r.scientificName] || 0) + 1; });
         const lines = Object.entries(freq).sort((a,b)=>b[1]-a[1]).map(([sp,n])=>`${sp},${n}`);
         document.getElementById('rankabund-data').value = lines.join('\n');
-        alert(`${av.length} avistamento(s) de ${Object.keys(freq).length} espécie(s) importado(s) com abundância real.`);
+        setTimeout(() => document.getElementById('rankabund-run')?.click(), 50);
     });
 
     // 🔭 Importar avistamentos → Co-ocorrência (cada data = um levantamento)
@@ -12478,7 +13067,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (!text) { alert('Nenhum avistamento registrado.'); return; }
         document.getElementById('cooc-data').value = text;
-        alert(`Avistamentos importados: ${Object.keys({...withDate.reduce((a,r)=>(a[r.date]=1,a),{}), ...(noDate.length?{sem_data:1}:{})}).length} levantamento(s) criado(s).`);
+        setTimeout(() => document.getElementById('cooc-run')?.click(), 50);
     });
 
     document.getElementById('sazon-run')?.addEventListener('click', () => {
@@ -12534,7 +13123,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     { label:'Riqueza de espécies', data:richness, type:'line', borderColor:'#2c3e50', backgroundColor:'transparent', tension:0.3, pointRadius:4, pointBackgroundColor:'#2c3e50', yAxisID:'y2' }
                 ]},
                 options:{ responsive:true, maintainAspectRatio:false,
-                    plugins:{ legend:{position:'top'}, datalabels:{display:false},
+                    plugins:{ legend:{position:'top'},
+                        datalabels:{
+                            display: ctx => ctx.datasetIndex === 0 && ctx.dataset.data[ctx.dataIndex] > 0,
+                            color:'#ffffff', font:{size:10, weight:'700'},
+                            anchor:'center', align:'center',
+                            formatter: v => v
+                        },
                         tooltip:{ callbacks:{ afterLabel:(c)=>{ if(c.datasetIndex===0) return `Estação: ${ESTACOES[periodMap[sortedKeys[c.dataIndex]].month]}`; return ''; } } }
                     },
                     scales:{
@@ -12557,7 +13152,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     { label:'Riqueza de espécies', data:richByMonth, type:'line', borderColor:'#2c3e50', backgroundColor:'transparent', tension:0.3, pointRadius:5, pointBackgroundColor:'#2c3e50', yAxisID:'y2' }
                 ]},
                 options:{ responsive:true, maintainAspectRatio:false,
-                    plugins:{ legend:{position:'top'}, datalabels:{display:false},
+                    plugins:{ legend:{position:'top'},
+                        datalabels:{
+                            display: ctx => ctx.datasetIndex === 0 && ctx.dataset.data[ctx.dataIndex] > 0,
+                            color:'#ffffff', font:{size:10, weight:'700'},
+                            anchor:'center', align:'center',
+                            formatter: v => v
+                        },
                         tooltip:{ callbacks:{ afterLabel:(c)=>{ if(c.datasetIndex===0) return `Estação: ${ESTACOES[c.dataIndex+1]}`; return ''; } } }
                     },
                     scales:{ y:{title:{display:true,text:'Registros'},beginAtZero:true}, y2:{position:'right',title:{display:true,text:'Riqueza'},beginAtZero:true,grid:{drawOnChartArea:false}} }
@@ -12579,7 +13180,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const richMap = {};
         rowsFull.forEach(r=>{ if(!richMap[r.month])richMap[r.month]=new Set(); richMap[r.month].add(r.sp); });
         const mPico = Object.entries(richMap).sort((a,b)=>b[1].size-a[1].size)[0];
-        document.getElementById('sazon-stats').innerHTML = `<strong>Total de registros:</strong> ${rowsFull.length} | <strong>Mês de maior riqueza:</strong> ${mPico?MESES[parseInt(mPico[0])-1]:'-'} (${mPico?mPico[1].size:0} spp) | <strong>Espécies únicas:</strong> ${new Set(rowsFull.map(r=>r.sp)).size} | <span style="color:#e74c3c;">■</span> Verão <span style="color:#e67e22;">■</span> Outono <span style="color:#3498db;">■</span> Inverno <span style="color:#27ae60;">■</span> Primavera`;
+        const totalReg = rowsFull.length;
+        const unicas = new Set(rowsFull.map(r=>r.sp)).size;
+        const estCounts = {Verão:0,Outono:0,Inverno:0,Primavera:0};
+        rowsFull.forEach(({month:m})=>{ estCounts[ESTACOES[m]]++; });
+        const estDom = Object.entries(estCounts).sort((a,b)=>b[1]-a[1])[0];
+        document.getElementById('sazon-stats').innerHTML = `<div style="background:var(--green-mist);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 18px;font-size:13px;line-height:1.8;color:var(--text-mid);">
+            <strong style="color:var(--green-deep);font-size:14px;">🔬 Análise de Sazonalidade</strong><br>
+            Total de registros: <strong>${totalReg}</strong> · Espécies únicas: <strong>${unicas}</strong><br>
+            Mês de maior riqueza: <strong>${mPico ? MESES[parseInt(mPico[0])-1] : '—'}</strong> (${mPico ? mPico[1].size : 0} spp) · Estação dominante: <strong>${estDom[0]}</strong> (${estDom[1]} reg.)<br>
+            <span style="color:#e74c3c;font-weight:700;">■</span> Verão: ${estCounts['Verão']} &nbsp;
+            <span style="color:#e67e22;font-weight:700;">■</span> Outono: ${estCounts['Outono']} &nbsp;
+            <span style="color:#3498db;font-weight:700;">■</span> Inverno: ${estCounts['Inverno']} &nbsp;
+            <span style="color:#27ae60;font-weight:700;">■</span> Primavera: ${estCounts['Primavera']}
+        </div>`;
     });
 });
 
@@ -12726,6 +13340,24 @@ window.sortFenol = function(mode) {
     renderFenolTable(sorted);
 };
 
+function renderFenolAnalysis(entries) {
+    const el = document.getElementById('fenol-analysis');
+    if (!el || !entries.length) return;
+    const durations = entries.map(e => Math.max(0, Math.round((e.last - e.first) / 86400000)));
+    const avgDur = (durations.reduce((a,b)=>a+b,0) / durations.length).toFixed(1);
+    const maxE = entries.reduce((a,b) => b.last - b.first > a.last - a.first ? b : a);
+    const minE = entries.reduce((a,b) => b.last - b.first < a.last - a.first ? b : a);
+    const byEst = {};
+    entries.forEach(e => { const s = ESTACOES[e.first.getMonth()+1]; byEst[s] = (byEst[s]||0)+1; });
+    const estDom = Object.entries(byEst).sort((a,b)=>b[1]-a[1])[0];
+    el.innerHTML = `<div style="background:var(--green-mist);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 18px;font-size:13px;line-height:1.8;color:var(--text-mid);">
+        <strong style="color:var(--green-deep);font-size:14px;">🔬 Análise Fenológica</strong><br>
+        Espécies analisadas: <strong>${entries.length}</strong> · Duração média de atividade: <strong>${avgDur} dias</strong><br>
+        Maior período: <strong>${maxE.sp}</strong> (${Math.round((maxE.last-maxE.first)/86400000)}d) · Menor: <strong>${minE.sp}</strong> (${Math.round((minE.last-minE.first)/86400000)}d)<br>
+        Estação de início mais frequente: <strong>${estDom[0]}</strong> (${estDom[1]} espécies)
+    </div>`;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('fenol-run')?.addEventListener('click', () => {
         const raw = document.getElementById('fenol-data').value.trim();
@@ -12746,6 +13378,7 @@ document.addEventListener('DOMContentLoaded', () => {
         _fenolSortMode = 'added';
         renderFenolChart(_fenolEntries);
         renderFenolTable(_fenolEntries);
+        renderFenolAnalysis(_fenolEntries);
     });
 });
 
@@ -12794,158 +13427,182 @@ document.addEventListener('DOMContentLoaded', () => {
                 { label:'Ganhos (entrada)', data:gains, backgroundColor:'rgba(46,204,113,0.75)', borderColor:'#27ae60', borderWidth:1 },
                 { label:'Perdas (saída)', data:losses, backgroundColor:'rgba(231,76,60,0.75)', borderColor:'#c0392b', borderWidth:1 }
             ]},
-            options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{position:'top'} }, scales:{ y:{title:{display:true,text:'Nº espécies'}} } }
+            options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{position:'top'}, datalabels:{display:false} }, scales:{ y:{title:{display:true,text:'Nº espécies'}} } }
         });
 
         let html = `<table style="width:100%;border-collapse:collapse;"><thead><tr><th style="background:var(--green-mid);color:white;padding:9px 14px;">Transição</th><th style="background:var(--green-mid);color:white;padding:9px 14px;">Ganhos</th><th style="background:var(--green-mid);color:white;padding:9px 14px;">Perdas</th><th style="background:var(--green-mid);color:white;padding:9px 14px;">Taxa turnover</th></tr></thead><tbody>`;
+        const turnRates = [];
+        const gainsList = [];
+        const lossesList = [];
         for (let i = 1; i < periods.length; i++) {
             const prev = periods[i-1].species, curr = periods[i].species;
             const g = [...curr].filter(s=>!prev.has(s)).length;
             const l = [...prev].filter(s=>!curr.has(s)).length;
             const union = new Set([...prev,...curr]).size;
-            const T = union > 0 ? ((g+l)/(2*union)*100).toFixed(1) : '0.0';
-            html += `<tr><td style="padding:8px 14px;border-bottom:1px solid var(--border-light);">${periods[i-1].name} → ${periods[i].name}</td><td style="padding:8px 14px;border-bottom:1px solid var(--border-light);color:#27ae60;font-weight:700;">+${g}</td><td style="padding:8px 14px;border-bottom:1px solid var(--border-light);color:#c0392b;font-weight:700;">-${l}</td><td style="padding:8px 14px;border-bottom:1px solid var(--border-light);">${T}%</td></tr>`;
+            const T = union > 0 ? ((g+l)/(2*union)*100) : 0;
+            turnRates.push(T); gainsList.push(g); lossesList.push(l);
+            html += `<tr><td style="padding:8px 14px;border-bottom:1px solid var(--border-light);">${periods[i-1].name} → ${periods[i].name}</td><td style="padding:8px 14px;border-bottom:1px solid var(--border-light);color:#27ae60;font-weight:700;">+${g}</td><td style="padding:8px 14px;border-bottom:1px solid var(--border-light);color:#c0392b;font-weight:700;">-${l}</td><td style="padding:8px 14px;border-bottom:1px solid var(--border-light);">${T.toFixed(2)}%</td></tr>`;
         }
         html += '</tbody></table>';
         document.getElementById('turnover-results').innerHTML = html;
+
+        // Resumo e análise numa tabela separada abaixo
+        const avgG = gainsList.reduce((a,b)=>a+b,0)/gainsList.length;
+        const avgL = lossesList.reduce((a,b)=>a+b,0)/lossesList.length;
+        const avgT = turnRates.reduce((a,b)=>a+b,0)/turnRates.length;
+        const maxT = Math.max(...turnRates);
+        const minT = Math.min(...turnRates);
+        document.getElementById('turnover-summary').innerHTML = `<div style="background:var(--green-mist);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 18px;">
+            <strong style="color:var(--green-deep);font-size:14px;">📊 Resumo das Transições</strong>
+            <table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:13px;">
+                <tr style="background:rgba(42,125,82,0.12);">
+                    <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);">Métrica</th>
+                    <th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);">Média</th>
+                    <th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);">Mín.</th>
+                    <th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);">Máx.</th>
+                </tr>
+                <tr><td style="padding:7px 8px;border-bottom:1px solid var(--border-light);">Ganhos (espécies/transição)</td><td style="padding:7px 8px;text-align:center;color:#27ae60;font-weight:700;">${avgG.toFixed(2)}</td><td style="padding:7px 8px;text-align:center;">${Math.min(...gainsList)}</td><td style="padding:7px 8px;text-align:center;">${Math.max(...gainsList)}</td></tr>
+                <tr><td style="padding:7px 8px;border-bottom:1px solid var(--border-light);">Perdas (espécies/transição)</td><td style="padding:7px 8px;text-align:center;color:#c0392b;font-weight:700;">${avgL.toFixed(2)}</td><td style="padding:7px 8px;text-align:center;">${Math.min(...lossesList)}</td><td style="padding:7px 8px;text-align:center;">${Math.max(...lossesList)}</td></tr>
+                <tr><td style="padding:7px 8px;">Taxa de Turnover (%)</td><td style="padding:7px 8px;text-align:center;font-weight:700;">${avgT.toFixed(2)}%</td><td style="padding:7px 8px;text-align:center;">${minT.toFixed(2)}%</td><td style="padding:7px 8px;text-align:center;">${maxT.toFixed(2)}%</td></tr>
+            </table>
+            <div style="margin-top:12px;font-size:13px;line-height:1.7;color:var(--text-mid);">
+                <strong>🔬 Análise:</strong>
+                ${avgT < 15 ? 'Taxa de turnover <strong>baixa</strong> (média < 15%) — comunidade estável, com poucas substituições de espécies entre períodos.' :
+                  avgT < 35 ? 'Taxa de turnover <strong>moderada</strong> (média entre 15–35%) — renovação parcial da comunidade; espécies residentes convivem com visitantes sazonais.' :
+                  'Taxa de turnover <strong>alta</strong> (média > 35%) — comunidade muito dinâmica, com renovação expressiva de espécies entre períodos.'}
+                ${gainsList.reduce((a,b)=>a+b,0) > lossesList.reduce((a,b)=>a+b,0) ? ' Tendência de <strong>acréscimo</strong> de espécies ao longo do período.' : gainsList.reduce((a,b)=>a+b,0) < lossesList.reduce((a,b)=>a+b,0) ? ' Tendência de <strong>declínio</strong> de espécies ao longo do período.' : ' Ganhos e perdas em <strong>equilíbrio</strong>.'}
+            </div>
+        </div>`;
     });
 });
 
 // ==================== ESPÉCIES INDICADORAS ====================
 let indicadorasChart = null;
 const IUCN_ORDER = {'LC':0,'NT':1,'VU':2,'EN':3,'CR':4,'DD':-1,'NE':-1};
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('indicadoras-run')?.addEventListener('click', () => {
-        const iucnMin = document.getElementById('indicadoras-iucn-min').value;
-        const minScore = IUCN_ORDER[iucnMin] ?? 0;
-        const imported = new Set();
-        document.querySelectorAll('#table-body tr').forEach(tr => {
-            const spCell = tr.querySelector('td.species-col');
-            if (spCell) { const inp = spCell.querySelector('input'); const val = inp ? inp.value.trim() : spCell.textContent.trim(); if (val) imported.add(val); }
-        });
-        if (imported.size === 0) { document.getElementById('indicadoras-results').innerHTML = '<p style="padding:14px; color:var(--text-muted);">Nenhuma espécie importada. Vá até a aba 📥 Importação primeiro.</p>'; return; }
 
-        // ── Sistema de pontuação multi-critério de sensibilidade à perturbação ──
-        // Baseado em: Karr (1982), Stouffer & Bierregaard (1995), Sekercioglu et al. (2004),
-        // Willis (1979), Laurance et al. (2004), Stotz et al. (1996 — Neotropical Birds Ecological
-        // and Conservation). Critérios: (1) especialização dietética, (2) dependência de habitat,
-        // (3) nível trófico, (4) status IUCN/SC como validação empírica.
-        //
-        // Pontuação (0–6 possível):
-        //  GUILDA (especialização dietética):
-        //    Nectarívoro       = 3 (altamente especializado, sensível à perda floral)
-        //    Piscívoro         = 3 (sensível à degradação aquática/ripária)
-        //    Malacófago        = 3 (restrito a ambientes úmidos preservados)
-        //    Insetívoro-aéreo  = 2 (migrante, sensível a perturbação atmosférica e de habitat)
-        //    Carnívoro         = 2 (predador de topo, biomassa alta, territory grande)
-        //    Insetívoro        = 2 (sub-bosque, primeiro a sumir com fragmentação)
-        //    Frugívoro         = 2 (dependente de florestas com árvores frutíferas nativas)
-        //    Herbívoro         = 1
-        //    Granívoro         = 1 (campestre, tolerante mas dependente de áreas abertas nativas)
-        //    Filtrador         = 1 (aquático especializado)
-        //    Onívoro           = 0 (mais resiliente por flexibilidade)
-        //    Detritívoro       = 0 (necrófagos como urubus são altamente resilientes)
-        //    Cleptoparasita    = 1
-        //
-        //  HABITAT (dependência de ecossistema específico):
-        //    Florestal  = 3 (maior sensibilidade à fragmentação: Laurance et al. 2004)
-        //    Aquático   = 3 (sensível a poluição, assoreamento, drenagem)
-        //    Costeiro   = 2 (sensível a desenvolvimento costeiro)
-        //    Campestre  = 1 (declínio por conversão agrícola, mas mais tolerante)
-        //    Aéreo      = 1
-        //    Generalista= 0
-        //
-        //  Pontuação final → Nível de sensibilidade:
-        //    ≥ 5 → 🔴 Crítica   (espécie altamente especializada E dependente de habitat preservado)
-        //    3–4 → 🟠 Alta      (especializada OU fortemente dependente de habitat)
-        //    2   → 🟡 Média     (moderada especialização ou dependência)
-        //    ≤ 1 → 🟢 Baixa     (generalista, resiliente)
-
-        const GUILD_SCORE = {
-            'Nectarívoro': 3, 'Piscívoro': 3, 'Malacófago': 3,
-            'Insetívoro-aéreo': 2, 'Carnívoro': 2, 'Insetívoro': 2, 'Frugívoro': 2,
-            'Herbívoro': 1, 'Granívoro': 1, 'Filtrador': 1, 'Cleptoparasita': 1,
-            'Onívoro': 0, 'Detritívoro': 0
-        };
-        const HABITAT_SCORE = {
-            'Florestal': 3, 'Aquático': 3,
-            'Costeiro': 2,
-            'Campestre': 1, 'Aéreo': 1,
-            'Generalista': 0
-        };
-
-        function calcSensitivity(guilda, habitat) {
-            if (!guilda || guilda === '-') return { level: '?', score: -1, label: '?', icon: '❓' };
-            // Match guild score (partial matching for compound guilds)
-            let gScore = 0;
-            Object.entries(GUILD_SCORE).forEach(([key, val]) => {
-                if (guilda.includes(key) && val > gScore) gScore = val;
-            });
-            let hScore = 0;
-            Object.entries(HABITAT_SCORE).forEach(([key, val]) => {
-                if ((habitat||'').includes(key) && val > hScore) hScore = val;
-            });
-            const total = gScore + hScore;
-            if (total >= 5) return { level: 'Crítica', score: total, label: `🔴 Crítica (${total}pts)`, icon: '🔴', bg: '#f8d7d7' };
-            if (total >= 3) return { level: 'Alta',    score: total, label: `🟠 Alta (${total}pts)`,    icon: '🟠', bg: '#fde8c8' };
-            if (total >= 2) return { level: 'Média',   score: total, label: `🟡 Média (${total}pts)`,   icon: '🟡', bg: '#fdf3dc' };
-            return               { level: 'Baixa',   score: total, label: `🟢 Baixa (${total}pts)`,  icon: '🟢', bg: '#eef4e4' };
+function runIndicadoras() {
+    const iucnMin = document.getElementById('indicadoras-iucn-min')?.value || 'VU';
+    const minScore = IUCN_ORDER[iucnMin] ?? 0;
+    const imported = new Set();
+    document.querySelectorAll('#table-body tr').forEach(tr => {
+        const spCell = tr.querySelector('td.species-col');
+        if (spCell) { const inp = spCell.querySelector('input'); const val = inp ? inp.value.trim() : spCell.textContent.trim(); if (val) imported.add(val); }
+    });
+    if (imported.size === 0) {
+        document.getElementById('indicadoras-results').innerHTML = '<p style="padding:14px; color:var(--text-muted);">Nenhuma espécie importada. Vá até a aba 📥 Importação primeiro.</p>';
+        const analEl = document.getElementById('indicadoras-analysis');
+        if (analEl) analEl.innerHTML = '';
+        return;
+    }
+    const GUILD_SCORE = {
+        'Nectarívoro': 3, 'Piscívoro': 3, 'Malacófago': 3,
+        'Insetívoro-aéreo': 2, 'Carnívoro': 2, 'Insetívoro': 2, 'Frugívoro': 2,
+        'Herbívoro': 1, 'Granívoro': 1, 'Filtrador': 1, 'Cleptoparasita': 1,
+        'Onívoro': 0, 'Detritívoro': 0
+    };
+    const HABITAT_SCORE = {'Florestal': 3, 'Aquático': 3, 'Costeiro': 2, 'Campestre': 1, 'Aéreo': 1, 'Generalista': 0};
+    function calcSensitivity(guilda, habitat) {
+        if (!guilda || guilda === '-') return { level: '?', score: -1, label: '?', bg: '#f5f5f5' };
+        let gScore = 0;
+        Object.entries(GUILD_SCORE).forEach(([key, val]) => { if (guilda.includes(key) && val > gScore) gScore = val; });
+        let hScore = 0;
+        Object.entries(HABITAT_SCORE).forEach(([key, val]) => { if ((habitat||'').includes(key) && val > hScore) hScore = val; });
+        const total = gScore + hScore;
+        if (total >= 5) return { level: 'Crítica', score: total, label: `🔴 Crítica (${total}pts)`, bg: '#f8d7d7' };
+        if (total >= 3) return { level: 'Alta',    score: total, label: `🟠 Alta (${total}pts)`,    bg: '#fde8c8' };
+        if (total >= 2) return { level: 'Média',   score: total, label: `🟡 Média (${total}pts)`,   bg: '#fdf3dc' };
+        return               { level: 'Baixa',   score: total, label: `🟢 Baixa (${total}pts)`,  bg: '#eef4e4' };
+    }
+    const results = [];
+    imported.forEach(sp => {
+        const guild = typeof GUILDA_DB !== 'undefined' ? GUILDA_DB[sp] : null;
+        const cons = typeof conservationData !== 'undefined' ? conservationData.find(c=>c.especie===sp) : null;
+        const iucnScore = cons ? (IUCN_ORDER[cons.iucn] ?? -1) : -1;
+        const scScore = cons ? (IUCN_ORDER[cons.sc] ?? -1) : -1;
+        if (iucnScore >= minScore || scScore >= minScore) {
+            const sens = calcSensitivity(guild?.guilda || '-', guild?.habitat || '-');
+            results.push({ sp, nomePopular: cons?.nomePopular||'-', iucn: cons?.iucn||'NE', sc: cons?.sc||'NE', guilda: guild?.guilda||'-', habitat: guild?.habitat||'-', sensitivity: sens.level, sensLabel: sens.label, sensBg: sens.bg, sensScore: sens.score });
         }
-
-        const results = [];
-        imported.forEach(sp => {
-            const guild = typeof GUILDA_DB !== 'undefined' ? GUILDA_DB[sp] : null;
-            const cons = typeof conservationData !== 'undefined' ? conservationData.find(c=>c.especie===sp) : null;
-            const iucnScore = cons ? (IUCN_ORDER[cons.iucn] ?? -1) : -1;
-            const scScore = cons ? (IUCN_ORDER[cons.sc] ?? -1) : -1;
-            if (iucnScore >= minScore || scScore >= minScore) {
-                const sens = calcSensitivity(guild?.guilda || '-', guild?.habitat || '-');
-                results.push({ sp, nomePopular: cons?.nomePopular||'-', iucn: cons?.iucn||'NE', sc: cons?.sc||'NE', guilda: guild?.guilda||'-', habitat: guild?.habitat||'-', sensitivity: sens.level, sensLabel: sens.label, sensBg: sens.bg, sensScore: sens.score });
+    });
+    results.sort((a,b) => {
+        const sOrd = {'Crítica':4,'Alta':3,'Média':2,'Baixa':1,'?':0};
+        const sd = (sOrd[b.sensitivity]||0) - (sOrd[a.sensitivity]||0);
+        if (sd !== 0) return sd;
+        return (IUCN_ORDER[b.iucn]??-1) - (IUCN_ORDER[a.iucn]??-1);
+    });
+    const COLOR = {'LC':'#1e8449','NT':'#d4860e','VU':'#c0650a','EN':'#c0392b','CR':'#922b21','DD':'#717d7e','NE':'#9eaeb0'};
+    let html = `<table style="width:100%;border-collapse:collapse;"><thead><tr>${['Espécie','Nome Popular','IUCN','SC','Guilda','Habitat','Sensibilidade (pontos)'].map(h=>`<th style="background:var(--green-mid);color:white;padding:9px 14px;font-size:12px;">${h}</th>`).join('')}</tr></thead><tbody>`;
+    results.forEach(r => {
+        html += `<tr>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--border-light);"><em style="font-size:13px;">${r.sp}</em></td>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--border-light);font-size:13px;">${r.nomePopular}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--border-light);font-weight:700;color:${COLOR[r.iucn]||'#333'};">${r.iucn}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--border-light);font-weight:700;color:${COLOR[r.sc]||'#333'};">${r.sc}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--border-light);font-size:12px;">${r.guilda}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--border-light);font-size:12px;">${r.habitat}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--border-light);background:${r.sensBg||'#f5f5f5'};font-weight:700;font-size:12px;text-align:center;">${r.sensLabel||r.sensitivity}</td>
+        </tr>`;
+    });
+    html += '</tbody></table>';
+    html += `<div style="margin-top:12px;padding:10px 14px;background:var(--green-mist);border-radius:6px;font-size:11.5px;color:var(--text-mid);line-height:1.8;">
+        <strong>Pontuação:</strong> Nectarívoro/Piscívoro/Malacófago=3 · Carnívoro/Insetívoro/Frugívoro=2 · Granívoro/Herbívoro=1 · Onívoro/Detritívoro=0
+        + Florestal/Aquático=3 · Costeiro=2 · Campestre/Aéreo=1 · Generalista=0
+        → 🔴 Crítica(≥5) · 🟠 Alta(3–4) · 🟡 Média(2) · 🟢 Baixa(≤1)
+    </div>`;
+    document.getElementById('indicadoras-results').innerHTML = results.length ? html : '<p style="padding:14px;color:var(--text-muted);">Nenhuma espécie atende ao limiar selecionado.</p>';
+    // Gráfico
+    const countBySens = {}; results.forEach(r=>{ countBySens[r.sensitivity]=(countBySens[r.sensitivity]||0)+1; });
+    const SENS_COLOR = {'Crítica':'#c0392b','Alta':'#e67e22','Média':'#f1c40f','Baixa':'#27ae60','?':'#95a5a6'};
+    const ctx = document.getElementById('indicadorasChart')?.getContext('2d');
+    if (ctx) {
+        if (indicadorasChart) indicadorasChart.destroy();
+        indicadorasChart = new Chart(ctx, { type:'doughnut',
+            data:{ labels:Object.keys(countBySens), datasets:[{ data:Object.values(countBySens), backgroundColor:Object.keys(countBySens).map(k=>SENS_COLOR[k]||'#999'), borderWidth:2, borderColor:'#fff' }] },
+            options:{ responsive:true, maintainAspectRatio:false,
+                plugins:{ legend:{position:'right'}, title:{display:true, text:`${results.length} espécies indicadoras`},
+                    datalabels:{ color:'#fff', font:{weight:'700',size:12}, formatter:(v,c)=>{ const t=c.dataset.data.reduce((a,b)=>a+b,0); return t>0&&v>0?v:''; } }
+                }
             }
         });
-
-        results.sort((a,b) => {
-            // Ordena: primeiro por sensibilidade (Crítica>Alta>Média>Baixa), depois por IUCN
-            const sOrd = {'Crítica':4,'Alta':3,'Média':2,'Baixa':1,'?':0};
-            const sd = (sOrd[b.sensitivity]||0) - (sOrd[a.sensitivity]||0);
-            if (sd !== 0) return sd;
-            return (IUCN_ORDER[b.iucn]??-1) - (IUCN_ORDER[a.iucn]??-1);
-        });
-
-        const COLOR = {'LC':'#1e8449','NT':'#d4860e','VU':'#c0650a','EN':'#c0392b','CR':'#922b21','DD':'#717d7e','NE':'#9eaeb0'};
-        let html = `<table style="width:100%;border-collapse:collapse;"><thead><tr>${['Espécie','Nome Popular','IUCN','SC','Guilda','Habitat','Sensibilidade (pontos)'].map(h=>`<th style="background:var(--green-mid);color:white;padding:9px 14px;font-size:12px;">${h}</th>`).join('')}</tr></thead><tbody>`;
-        results.forEach(r => {
-            html += `<tr>
-                <td style="padding:8px 12px;border-bottom:1px solid var(--border-light);"><em style="font-size:13px;">${r.sp}</em></td>
-                <td style="padding:8px 12px;border-bottom:1px solid var(--border-light);font-size:13px;">${r.nomePopular}</td>
-                <td style="padding:8px 12px;border-bottom:1px solid var(--border-light);font-weight:700;color:${COLOR[r.iucn]||'#333'};">${r.iucn}</td>
-                <td style="padding:8px 12px;border-bottom:1px solid var(--border-light);font-weight:700;color:${COLOR[r.sc]||'#333'};">${r.sc}</td>
-                <td style="padding:8px 12px;border-bottom:1px solid var(--border-light);font-size:12px;">${r.guilda}</td>
-                <td style="padding:8px 12px;border-bottom:1px solid var(--border-light);font-size:12px;">${r.habitat}</td>
-                <td style="padding:8px 12px;border-bottom:1px solid var(--border-light);background:${r.sensBg||'#f5f5f5'};font-weight:700;font-size:12px;text-align:center;">${r.sensLabel||r.sensitivity}</td>
-            </tr>`;
-        });
-        html += `</tbody></table>`;
-        // Legenda do sistema de pontuação
-        html += `<div style="margin-top:14px;padding:12px 16px;background:var(--green-mist);border-radius:8px;font-size:12px;color:var(--text-mid);line-height:1.9;">
-            <strong>Sistema de pontuação (guilda + habitat):</strong>
-            Nectarívoro/Piscívoro/Malacófago=3pts · Carnívoro/Insetívoro/Frugívoro/Insetívoro-aéreo=2pts · Granívoro/Herbívoro/Filtrador=1pt · Onívoro/Detritívoro=0pts
-            &nbsp;&nbsp;+&nbsp;&nbsp;
-            Florestal/Aquático=3pts · Costeiro=2pts · Campestre/Aéreo=1pt · Generalista=0pts
-            &nbsp;&nbsp;→&nbsp;&nbsp;
-            🔴 Crítica(≥5) · 🟠 Alta(3–4) · 🟡 Média(2) · 🟢 Baixa(≤1)
+    }
+    // Análise separada
+    const analEl = document.getElementById('indicadoras-analysis');
+    if (analEl) {
+        if (results.length === 0) { analEl.innerHTML = ''; return; }
+        const nCrit  = results.filter(r=>r.sensitivity==='Crítica').length;
+        const nAlta  = results.filter(r=>r.sensitivity==='Alta').length;
+        const nMedia = results.filter(r=>r.sensitivity==='Média').length;
+        const nBaixa = results.filter(r=>r.sensitivity==='Baixa').length;
+        const pctCrit = (nCrit/imported.size*100).toFixed(1);
+        const topCrit = results.filter(r=>r.sensitivity==='Crítica').slice(0,3).map(r=>r.nomePopular!=='-'?r.nomePopular:r.sp).join(', ');
+        analEl.innerHTML = `<div style="background:var(--green-mist);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 18px;font-size:13px;line-height:1.9;color:var(--text-mid);">
+            <strong style="color:var(--green-deep);font-size:14px;">🔬 Análise de Espécies Indicadoras</strong><br>
+            Espécies importadas: <strong>${imported.size}</strong> · Enquadradas no limiar ${iucnMin}+: <strong>${results.length}</strong><br>
+            🔴 Crítica: <strong>${nCrit}</strong> · 🟠 Alta: <strong>${nAlta}</strong> · 🟡 Média: <strong>${nMedia}</strong> · 🟢 Baixa: <strong>${nBaixa}</strong><br>
+            Sensibilidade crítica representa <strong>${pctCrit}%</strong> do total importado.
+            ${nCrit > 0 ? `<br>Exemplos críticos: <strong>${topCrit}</strong>` : ''}
+            <br>${nCrit >= 3 ? '⚠️ Alta proporção de espécies sensíveis — ecossistema bem preservado e por isso especialmente vulnerável a perturbações.' : nCrit > 0 ? '🔶 Presença de espécies críticas requer atenção ao manejo da área.' : '✅ Nenhuma espécie de sensibilidade crítica no limiar selecionado.'}
         </div>`;
-        document.getElementById('indicadoras-results').innerHTML = results.length ? html : '<p style="padding:14px;color:var(--text-muted);">Nenhuma espécie atende ao limiar selecionado.</p>';
+    }
+}
+window.runIndicadoras = runIndicadoras;
 
-        // Gráfico por nível de sensibilidade
-        const countBySens = {}; results.forEach(r=>{ countBySens[r.sensitivity]=(countBySens[r.sensitivity]||0)+1; });
-        const SENS_COLOR = {'Crítica':'#c0392b','Alta':'#e67e22','Média':'#f1c40f','Baixa':'#27ae60','?':'#95a5a6'};
-        const ctx = document.getElementById('indicadorasChart').getContext('2d');
-        if (indicadorasChart) indicadorasChart.destroy();
-        indicadorasChart = new Chart(ctx, { type:'doughnut', data:{ labels:Object.keys(countBySens), datasets:[{ data:Object.values(countBySens), backgroundColor:Object.keys(countBySens).map(k=>SENS_COLOR[k]||'#999'), borderWidth:2, borderColor:'#fff' }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{position:'right'}, title:{display:true, text:`${results.length} espécies indicadoras — por sensibilidade`} } } });
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('indicadoras-run')?.addEventListener('click', runIndicadoras);
+    document.getElementById('indicadoras-iucn-min')?.addEventListener('change', runIndicadoras);
+    // Auto-run when tab becomes active
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        if (btn.dataset.tab === 'indicadoras-section') btn.addEventListener('click', () => setTimeout(runIndicadoras, 120));
     });
+    // Auto-update when species table changes
+    const tableBody = document.getElementById('table-body');
+    if (tableBody) {
+        const obs = new MutationObserver(() => {
+            if (document.getElementById('indicadoras-section')?.classList.contains('tab-active')) runIndicadoras();
+        });
+        obs.observe(tableBody, { childList: true, subtree: true });
+    }
 });
-
 // ==================== CLUSTER HIERÁRQUICO ====================
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('cluster-run')?.addEventListener('click', () => {
@@ -13073,17 +13730,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 responsive:true, maintainAspectRatio:false,
                 plugins:{
                     legend:{position:'top'},
+                    datalabels:{ display: false },
                     tooltip:{ callbacks:{
                         title:(items) => sorted[items[0].dataIndex][0],
-                        label:(item)  => `Abundância relativa: ${item.raw.toFixed(2)}% (n=${sorted[item.dataIndex][1]})`
+                        label:(item)  => `Abundância relativa: ${Number(item.raw).toFixed(2)}% (n=${sorted[item.dataIndex][1]})`
                     }}
                 },
                 scales:{
-                    x:{ title:{display:true, text:'Rank de abundância'} },
+                    x:{ title:{display:true, text:'Rank de abundância'}, ticks:{ callback: v => Number(v).toFixed(0) } },
                     y:{
                         title:{display:true, text:'Abundância relativa (%)'},
                         beginAtZero:true,
-                        ticks:{ callback: v => v.toFixed(2) + '%' }
+                        ticks:{ callback: v => Number(v).toFixed(2) + '%' }
                     }
                 }
             }
@@ -13096,6 +13754,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const indEl = document.getElementById('rankabund-indices');
         const cards = [{l:'Riqueza (S)',v:sorted.length},{l:"Shannon (H')",v:H.toFixed(3)},{l:"Simpson (1-D)",v:D1.toFixed(3)},{l:"Equitabilidade (J')",v:isNaN(E)?'—':E.toFixed(3)},{l:'Total registros',v:total}];
         indEl.innerHTML = cards.map(c=>`<div style="background:white;border:1px solid var(--border-light);border-radius:var(--radius-md);padding:12px 18px;min-width:130px;box-shadow:var(--shadow-card);flex:1;text-align:center;"><div style="font-size:22px;font-weight:700;color:var(--green-base);">${c.v}</div><div style="font-size:12px;color:var(--text-muted);margin-top:3px;">${c.l}</div></div>`).join('');
+
+        // Análise automática — tabela separada abaixo dos índices
+        const dom = sorted[0], dom2 = sorted[1];
+        const domPct = (dom[1]/total*100).toFixed(2);
+        const top5pct = (sorted.slice(0,5).reduce((s,[,v])=>s+v,0)/total*100).toFixed(1);
+        const eqDesc = isNaN(E) ? '' : E > 0.8 ? 'alta equitabilidade (comunidade bem distribuída)' : E > 0.5 ? 'equitabilidade moderada' : 'baixa equitabilidade (forte dominância)';
+        const analiseEl = document.getElementById('rankabund-analysis');
+        if (analiseEl) analiseEl.innerHTML = `<div style="background:var(--green-mist);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 18px;font-size:13px;line-height:1.8;color:var(--text-mid);">
+            <strong style="color:var(--green-deep);font-size:14px;">🔬 Análise de Rank-Abundância</strong><br>
+            Riqueza total: <strong>${sorted.length} espécies</strong> · <strong>${total}</strong> registros.<br>
+            Espécie dominante: <strong>${dom[0]}</strong> com <strong>${domPct}%</strong> da abundância relativa.
+            ${dom2 ? ` Co-dominante: <strong>${dom2[0]}</strong> (${(dom2[1]/total*100).toFixed(2)}%).` : ''}
+            Top 5 espécies = <strong>${top5pct}%</strong> dos registros.<br>
+            Shannon H' = <strong>${H.toFixed(3)}</strong> · Simpson 1−D = <strong>${D1.toFixed(3)}</strong> · J' = <strong>${isNaN(E)?'—':E.toFixed(3)}</strong> → ${eqDesc}.<br>
+            ${E < 0.5 ? '⚠️ Curva íngreme: poucas espécies dominam — típico de ambientes perturbados.' : '✅ Curva suave: distribuição mais equitativa entre espécies.'}
+        </div>`;
     });
 });
 
@@ -13173,6 +13847,21 @@ function runCooc(minCooc) {
     }
     document.getElementById('cooc-top-pairs').innerHTML = topHtml;
 
+    // Análise da matriz — tabela separada
+    const coocAnalEl = document.getElementById('cooc-matrix-analysis');
+    if (coocAnalEl && allSp.length) {
+        const totalPairs = pairs.length;
+        const topPair = topPairs[0];
+        const avgCooc = totalPairs > 0 ? (topPairs.reduce((s,p)=>s+p.n,0)/totalPairs).toFixed(1) : '0';
+        coocAnalEl.innerHTML = `<div style="background:var(--green-mist);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 18px;font-size:13px;line-height:1.8;color:var(--text-mid);">
+            <strong style="color:var(--green-deep);font-size:14px;">🔬 Análise de Co-ocorrência</strong><br>
+            Espécies analisadas: <strong>${allSp.length}</strong> · Levantamentos: <strong>${surveys.length}</strong><br>
+            Pares com ≥${minCooc} co-ocorrência(s): <strong>${totalPairs}</strong>${topPair ? ` · Par mais frequente: <strong>${spDisplayName(topPair.a)} + ${spDisplayName(topPair.b)}</strong> (${topPair.n}×)` : ''}<br>
+            ${totalPairs > 0 ? `Média de co-ocorrências por par: <strong>${avgCooc}</strong>` : 'Nenhum par com co-ocorrência suficiente — tente reduzir o mínimo.'}<br>
+            ${allSp.length > 20 ? 'ℹ️ A matriz exibe as 20 espécies mais abundantes. Use a rede de co-ocorrência abaixo para visualizar todas.' : ''}
+        </div>`;
+    }
+
     // Store for copy
     window._coocTopPairs = topPairs;
     window._coocSpDisplayName = spDisplayName;
@@ -13191,7 +13880,7 @@ function runCooc(minCooc) {
                 data:{ labels:chartLabels, datasets:[{ label:'Co-ocorrências', data:topPairs.map(p=>p.n), backgroundColor:'rgba(42,125,82,0.75)', borderColor:'#1d6140', borderWidth:1, borderRadius:3 }] },
                 options:{
                     indexAxis:'y', responsive:true, maintainAspectRatio:false,
-                    plugins:{ legend:{display:false}, tooltip:{ callbacks:{ title:(items)=>`${topPairs[items[0].dataIndex].a} + ${topPairs[items[0].dataIndex].b}`, label:(item)=>`${item.raw} co-ocorrência(s)` } } },
+                    plugins:{ legend:{display:false}, datalabels:{display:false}, tooltip:{ callbacks:{ title:(items)=>`${topPairs[items[0].dataIndex].a} + ${topPairs[items[0].dataIndex].b}`, label:(item)=>`${item.raw} co-ocorrência(s)` } } },
                     scales:{ x:{beginAtZero:true, title:{display:true,text:'Nº de levantamentos compartilhados'}}, y:{ticks:{font:{size:10}}} }
                 }
             });
@@ -13232,7 +13921,7 @@ function buildCoocNetwork(minEdge) {
     const nodes = {};
     coocAllSp.forEach(sp => {
         const deg = coocAllSp.reduce((s,b)=>s+(coocMatrix[sp]?.[b]||0),0);
-        nodes[sp] = { label:spDisplayShort(sp), fullName:sp, degree:deg, color:getNodeColor(sp), x:0,y:0,vx:0,vy:0 };
+        nodes[sp] = { label:spDisplayShort(sp), fullName:sp, degree:deg, color:getNodeColor(sp), x:0,y:0,vx:0,vy:0, visible:true };
     });
     const edges = [];
     coocAllSp.forEach((a,i)=>coocAllSp.forEach((b,j)=>{
@@ -13244,38 +13933,45 @@ function buildCoocNetwork(minEdge) {
 
     const spList = Object.keys(nodes);
     const n = spList.length;
-    const R = Math.min(W,H)*0.38;
+    // Spread radius scales with node count for better distribution
+    const R = Math.min(W,H) * Math.min(0.45, 0.15 + n * 0.008);
+    const jitter = () => (Math.random()-0.5)*R*0.5;
     spList.forEach((sp,i) => {
         const angle = (2*Math.PI*i)/n - Math.PI/2;
-        nodes[sp].x = W/2 + R*Math.cos(angle);
-        nodes[sp].y = H/2 + R*Math.sin(angle);
+        nodes[sp].x = W/2 + R*Math.cos(angle) + jitter();
+        nodes[sp].y = H/2 + R*Math.sin(angle) + jitter();
     });
     const maxDeg = Math.max(1,...spList.map(sp=>nodes[sp].degree));
-    const nodeR = sp => 6 + (nodes[sp].degree/maxDeg)*16;
+    const nodeR = sp => nodes[sp].visible ? 5 + (nodes[sp].degree/maxDeg)*18 : 0;
     const maxW = Math.max(1,...edges.map(e=>e.w));
-    for(let iter=0;iter<120;iter++){
-        const k = Math.sqrt((W*H)/(n+1))*0.8;
-        const damp = iter<60?0.8:0.9;
+    // More iterations and stronger repulsion for large networks
+    const iters = Math.min(300, 120 + n * 2);
+    for(let iter=0;iter<iters;iter++){
+        // Stronger k as n grows to spread nodes further apart
+        const k = Math.sqrt((W*H)/(n+1)) * (0.9 + n*0.012);
+        const damp = iter < iters*0.5 ? 0.75 : 0.92;
         spList.forEach(a=>spList.forEach(b=>{
             if(a===b) return;
             const dx=nodes[a].x-nodes[b].x, dy=nodes[a].y-nodes[b].y;
             const d=Math.max(1,Math.sqrt(dx*dx+dy*dy));
-            const f=(k*k)/d*0.6;
+            // Repulsion stronger for large networks
+            const f=(k*k)/d * (0.6 + n*0.003);
             nodes[a].vx+=(dx/d)*f; nodes[a].vy+=(dy/d)*f;
         }));
         edges.forEach(e=>{
+            if(!nodes[e.a].visible||!nodes[e.b].visible) return;
             const dx=nodes[e.a].x-nodes[e.b].x, dy=nodes[e.a].y-nodes[e.b].y;
             const d=Math.max(1,Math.sqrt(dx*dx+dy*dy));
-            const f=(d*d)/k*0.25;
+            const f=(d*d)/k*0.2;
             nodes[e.a].vx-=(dx/d)*f; nodes[e.a].vy-=(dy/d)*f;
             nodes[e.b].vx+=(dx/d)*f; nodes[e.b].vy+=(dy/d)*f;
         });
         spList.forEach(sp=>{
-            nodes[sp].vx+=(W/2-nodes[sp].x)*0.002;
-            nodes[sp].vy+=(H/2-nodes[sp].y)*0.002;
+            nodes[sp].vx+=(W/2-nodes[sp].x)*0.001;
+            nodes[sp].vy+=(H/2-nodes[sp].y)*0.001;
         });
         spList.forEach(sp=>{
-            const pad=nodeR(sp)+5;
+            const pad=(nodeR(sp)||8)+5;
             nodes[sp].x=Math.max(pad,Math.min(W-pad,nodes[sp].x+nodes[sp].vx));
             nodes[sp].y=Math.max(pad,Math.min(H-pad,nodes[sp].y+nodes[sp].vy));
             nodes[sp].vx*=damp; nodes[sp].vy*=damp;
@@ -13292,6 +13988,7 @@ function buildCoocNetwork(minEdge) {
         ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--green-mist').trim()||'#eaf4ed';
         ctx.fillRect(0,0,W,H);
         edges.forEach(e=>{
+            if(!nodes[e.a].visible||!nodes[e.b].visible) return;
             const [ax,ay]=toCanvas(nodes[e.a].x,nodes[e.a].y);
             const [bx,by]=toCanvas(nodes[e.b].x,nodes[e.b].y);
             const isHov=(hoveredNode===e.a||hoveredNode===e.b);
@@ -13307,6 +14004,7 @@ function buildCoocNetwork(minEdge) {
             }
         });
         spList.forEach(sp=>{
+            if(!nodes[sp].visible) return;
             const r=nodeR(sp)*camScale;
             const [x,y]=toCanvas(nodes[sp].x,nodes[sp].y);
             const isHov=hoveredNode===sp;
@@ -13359,13 +14057,92 @@ function buildCoocNetwork(minEdge) {
     };
     canvas.onmouseup=()=>{draggingNode=null;isPanning=false;};
     canvas.onmouseleave=()=>{draggingNode=null;isPanning=false;hoveredNode=null;draw();};
-    canvas.onwheel=e=>{e.preventDefault();camScale=Math.max(0.2,Math.min(4,camScale*(e.deltaY<0?1.12:0.89)));draw();};
+    canvas.onwheel=e=>{e.preventDefault();camScale=Math.max(0.01,camScale*(e.deltaY<0?1.12:0.89));draw();};
     draw();
     const legendEl=document.getElementById('cooc-net-legend');
     const seen={};
     spList.forEach(sp=>{const c=nodes[sp].color;if(!seen[c])seen[c]=0;seen[c]++;});
     const gN={'#2a9d5c':'Insetívoro','#3490d4':'Insetívoro aéreo','#e07820':'Frugívoro','#c8a010':'Granívoro','#c030a0':'Nectarívoro','#d03030':'Carnívoro','#2060d0':'Piscívoro','#6040c0':'Onívoro','#707060':'Detritívoro','#20a0a0':'Filtrador','#50a030':'Herbívoro','#a06030':'Malacófago','#2a7d52':'Outro'};
     legendEl.innerHTML=Object.keys(seen).map(c=>`<span style="display:inline-flex;align-items:center;gap:4px;background:white;border:1px solid var(--border-light);border-radius:10px;padding:3px 10px;"><span style="width:10px;height:10px;border-radius:50%;background:${c};display:inline-block;"></span><span style="font-size:11px;">${gN[c]||'Outro'}</span></span>`).join('');
+
+    // Taxon visibility table
+    const taxonTableWrap = document.getElementById('cooc-net-taxon-table-wrap');
+    const taxonTableEl = document.getElementById('cooc-net-taxon-table');
+    if (taxonTableWrap && taxonTableEl) {
+        taxonTableWrap.style.display = '';
+        function buildTaxonTable() {
+            const pop = typeof speciesInfo !== 'undefined' ? speciesInfo : {};
+            const rows = spList.map(sp => {
+                const edgeCount = edges.filter(e=>e.a===sp||e.b===sp).length;
+                const popName = pop[sp]?.nomePopular || '';
+                return `<tr>
+                    <td style="padding:6px 10px;font-size:12px;">${sp}</td>
+                    <td style="padding:6px 10px;font-size:12px;color:var(--text-muted);">${popName}</td>
+                    <td style="padding:6px 10px;font-size:12px;text-align:center;">${nodes[sp].degree}</td>
+                    <td style="padding:6px 10px;font-size:12px;text-align:center;">${edgeCount}</td>
+                    <td style="padding:6px 10px;text-align:center;">
+                        <button onclick="window._coocToggleNode('${sp.replace(/'/g,"\\'")}',this)" 
+                            style="background:${nodes[sp].visible?'var(--green-base)':'#aaa'};color:white;border:none;border-radius:4px;padding:3px 10px;font-size:12px;cursor:pointer;">
+                            ${nodes[sp].visible?'👁️ Visível':'🚫 Oculto'}
+                        </button>
+                    </td>
+                </tr>`;
+            }).join('');
+            taxonTableEl.innerHTML = `<table style="width:100%;border-collapse:collapse;">
+                <thead><tr style="background:var(--green-mid);color:white;">
+                    <th style="padding:7px 10px;font-size:12px;text-align:left;">Espécie</th>
+                    <th style="padding:7px 10px;font-size:12px;text-align:left;">Nome popular</th>
+                    <th style="padding:7px 10px;font-size:12px;text-align:center;">Co-oc. total</th>
+                    <th style="padding:7px 10px;font-size:12px;text-align:center;">Arestas</th>
+                    <th style="padding:7px 10px;font-size:12px;text-align:center;">Visibilidade</th>
+                </tr></thead><tbody>${rows}</tbody></table>`;
+        }
+        buildTaxonTable();
+        window._coocToggleNode = function(sp, btn) {
+            nodes[sp].visible = !nodes[sp].visible;
+            btn.textContent = nodes[sp].visible ? '👁️ Visível' : '🚫 Oculto';
+            btn.style.background = nodes[sp].visible ? 'var(--green-base)' : '#aaa';
+            draw();
+        };
+    }
+
+    // Análise da rede
+    const analysisEl = document.getElementById('cooc-net-analysis');
+    if (analysisEl) {
+        const hub = spList.reduce((a,b)=>nodes[a].degree>nodes[b].degree?a:b);
+        const avgDeg = (spList.reduce((s,sp)=>s+nodes[sp].degree,0)/spList.length).toFixed(1);
+        const density = spList.length > 1 ? (edges.length / (spList.length*(spList.length-1)/2) * 100).toFixed(1) : '0.0';
+        const pop = typeof speciesInfo !== 'undefined' && speciesInfo[hub] ? ` (${speciesInfo[hub].nomePopular})` : '';
+        analysisEl.innerHTML = `<div style="background:var(--green-mist);border-left:4px solid var(--green-base);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:12px 16px;font-size:13px;line-height:1.8;color:var(--text-mid);margin-top:4px;">
+            <strong style="color:var(--green-deep);">🔬 Análise da Rede de Co-ocorrência</strong><br>
+            Nós: <strong>${spList.length} espécies</strong> · Arestas: <strong>${edges.length}</strong> · Densidade: <strong>${density}%</strong><br>
+            Espécie-hub (maior grau): <strong>${hub}${pop}</strong> com <strong>${nodes[hub].degree}</strong> co-ocorrências totais.<br>
+            Grau médio por espécie: <strong>${avgDeg}</strong> co-ocorrências.<br>
+            ${parseFloat(density) > 30 ? '✅ Rede densa — alta conectividade entre espécies, indicando comunidade coesa.' : parseFloat(density) > 10 ? '🔶 Rede moderadamente conectada — núcleo central de espécies co-ocorrentes com satélites periféricos.' : '⚠️ Rede esparsa — poucas conexões; aumente o esforço amostral ou reduza o mínimo de co-ocorrências para revelar mais padrões.'}
+            Use a tabela acima para ocultar taxons e focar em grupos específicos.
+        </div>`;
+    }
+
+    // Expõe função de separar pontos para o botão externo
+    window._coocSpreadNodes = function() {
+        // Zoom out e randomiza posições com espaçamento amplo e sem limite de borda
+        camScale = Math.max(0.15, Math.min(0.6, 0.8 / Math.pow(spList.length, 0.35)));
+        const spread = Math.max(W, H) * (1.5 + spList.length * 0.04);
+        spList.forEach(sp => {
+            // Posição aleatória num campo grande sem limite
+            const angle = Math.random() * Math.PI * 2;
+            const dist  = (0.2 + Math.random() * 0.8) * spread * 0.5;
+            nodes[sp].x = W/2 + Math.cos(angle) * dist;
+            nodes[sp].y = H/2 + Math.sin(angle) * dist;
+            nodes[sp].vx = 0;
+            nodes[sp].vy = 0;
+        });
+        // Centraliza câmera
+        const cx = spList.reduce((s, sp) => s + nodes[sp].x, 0) / spList.length;
+        const cy = spList.reduce((s, sp) => s + nodes[sp].y, 0) / spList.length;
+        camX = cx; camY = cy;
+        draw();
+    };
 }
 
 // Interceptar runCooc para expor _coocMatrix e _coocAllSp no escopo window
@@ -13417,6 +14194,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('cooc-net-reset')?.addEventListener('click', () => {
         if (window._patchCoocMatrix) buildCoocNetwork(parseInt(document.getElementById('cooc-net-min').value)||2);
+    });
+    document.getElementById('cooc-net-spread')?.addEventListener('click', () => {
+        if (typeof window._coocSpreadNodes === 'function') window._coocSpreadNodes();
+        else if (window._patchCoocMatrix) buildCoocNetwork(parseInt(document.getElementById('cooc-net-min').value)||2);
     });
     // Também hookear quando a aba for aberta
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -13543,23 +14324,51 @@ window.correcaoAutocomplete = function(input, idx) {
     const ac = document.getElementById(`correcao-ac-${idx}`);
     if (!ac) return;
     if (trimmed.length < 2) { ac.style.display = 'none'; return; }
-    // Accent-insensitive search using the same normalizer as the main engine
-    const norm = trimmed.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[-\s]+/g, ' ');
-    const matches = (typeof BIRD_DATABASE !== 'undefined' ? BIRD_DATABASE : [])
-        .filter(b => {
-            const ns = b.scientificName.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-            const nc = (b.commonName||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-            return ns.includes(norm) || nc.includes(norm);
-        })
-        .slice(0, 10);
+
+    // Usa o mesmo motor fuzzy da busca principal (normalizeForSearch + fuzzySearchCandidates)
+    // ambos expostos globalmente pelo módulo de importação
+    let matches = [];
+    if (typeof window.fuzzySearchCandidates === 'function' && typeof window.normalizeForSearch === 'function') {
+        const norm = window.normalizeForSearch(trimmed);
+        matches = window.fuzzySearchCandidates(norm, 12).map(item => item.data || item);
+    } else {
+        // Fallback robusto caso o motor principal ainda não esteja exposto
+        function normFallback(s) {
+            return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase().replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
+        }
+        const q = normFallback(trimmed);
+        const tokens = q.split(' ').filter(t => t.length > 0);
+        const db = typeof BIRD_DATABASE !== 'undefined' ? BIRD_DATABASE : [];
+        const scored = [];
+        for (const b of db) {
+            const ns = normFallback(b.scientificName);
+            const nc = normFallback(b.commonName || '');
+            let score = 0;
+            if (nc.startsWith(q) || ns.startsWith(q)) score = 100;
+            else if (nc.includes(q) || ns.includes(q)) score = 80;
+            else {
+                if (!tokens.every(t => (nc + ' ' + ns).includes(t))) continue;
+                score = tokens.filter(t => nc.startsWith(t) || ns.startsWith(t)).length * 10 + 30;
+            }
+            scored.push({ b, score });
+        }
+        scored.sort((a, b) => b.score - a.score);
+        matches = scored.slice(0, 12).map(s => s.b);
+    }
+
     if (!matches.length) { ac.style.display = 'none'; return; }
-    ac.innerHTML = matches.map(b => `
-        <div onclick="correcaoSelectSuggestion(${idx},'${b.scientificName.replace(/'/g,"\\'")}','${(b.commonName||'').replace(/'/g,"\\'")}')"
-             style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border-light);font-size:13px;"
+
+    ac.innerHTML = matches.map(b => {
+        const sci     = b.scientificName || b.scientific || '';
+        const common  = b.commonName     || b.common     || '';
+        return `<div onclick="correcaoSelectSuggestion(${idx},'${sci.replace(/'/g,"\\'")}','${common.replace(/'/g,"\\'")}')"
+             style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border-light);font-size:13px;line-height:1.4;"
              onmouseover="this.style.background='var(--green-mist)'" onmouseout="this.style.background=''">
-            <em>${b.scientificName}</em>
-            ${b.commonName ? `<small style="color:var(--text-muted);margin-left:6px;">${b.commonName}</small>` : ''}
-        </div>`).join('');
+            <em style="color:var(--green-deep);">${sci}</em>
+            ${common ? `<small style="color:var(--text-muted);margin-left:6px;">${common}</small>` : ''}
+        </div>`;
+    }).join('');
     ac.style.display = 'block';
 };
 
@@ -13643,263 +14452,415 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <!-- Modal de Ajuda -->
 <div id="help-modal" class="modal">
-    <div class="modal-content" style="max-width: 900px;">
+    <div class="modal-content" style="max-width: 940px;">
         <span class="close-modal" id="close-help-modal">&times;</span>
 
-        <!-- BANNER DE BOAS-VINDAS PRINCIPAL -->
-        <div style="text-align:center; padding: 32px 24px 24px; background: linear-gradient(135deg, var(--green-deep) 0%, #0f2e1e 100%); border-radius: 10px 10px 0 0; margin: -24px -24px 28px -24px; position:relative; overflow:hidden;">
-            <div style="position:absolute;inset:0;background:url('https://img.lightshot.app/1hoA8uRfRcuwwCsfjjPjYw.png') center/120px no-repeat; opacity:0.06;"></div>
-            <div style="font-size: 48px; margin-bottom: 8px; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));">🦜</div>
-            <h1 style="font-family:'Playfair Display',serif; font-size:32px; font-weight:700; color:#ffffff; margin:0 0 8px; letter-spacing:-0.5px; text-shadow: 0 2px 16px rgba(0,0,0,0.5);">
-                Ornitologia Avançada de Santa Catarina
-            </h1>
-            <p style="font-size:15px; color: rgba(255,255,255,0.80); max-width:620px; margin:0 auto 18px; line-height:1.65;">
-                Plataforma científica de análise ornitológica — filogenia, conservação, diversidade e distribuição de aves de SC, tudo direto no seu navegador.
-            </p>
-            <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:4px;">
-                <span style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25); border-radius:20px; padding:5px 14px; font-size:12.5px; color:white; font-weight:600;">~800 espécies de SC</span>
-                <span style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25); border-radius:20px; padding:5px 14px; font-size:12.5px; color:white; font-weight:600;">19 ferramentas de análise</span>
-                <span style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25); border-radius:20px; padding:5px 14px; font-size:12.5px; color:white; font-weight:600;">100% no navegador</span>
-                <span style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25); border-radius:20px; padding:5px 14px; font-size:12.5px; color:white; font-weight:600;">TCC · Biologia · 2026</span>
+        <!-- BANNER -->
+        <div style="text-align:center; padding:32px 24px 24px; background:linear-gradient(135deg,var(--green-deep) 0%,#0f2e1e 100%); border-radius:10px 10px 0 0; margin:-24px -24px 0 -24px; position:relative; overflow:hidden;">
+            <div style="position:absolute;inset:0;background:url('https://img.lightshot.app/1hoA8uRfRcuwwCsfjjPjYw.png') center/120px no-repeat;opacity:0.06;"></div>
+            <div style="font-size:52px;margin-bottom:8px;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.4));">🦜</div>
+            <h1 style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:#fff;margin:0 0 8px;text-shadow:0 2px 16px rgba(0,0,0,0.5);">Guia Completo da Plataforma</h1>
+            <p style="font-size:14px;color:rgba(255,255,255,0.82);max-width:580px;margin:0 auto 16px;line-height:1.6;">Ornitologia Avançada de Santa Catarina · ~800 espécies · 20 ferramentas de análise · 100% no navegador</p>
+            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+                <span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:20px;padding:4px 14px;font-size:12px;color:white;font-weight:600;">Sem instalação</span>
+                <span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:20px;padding:4px 14px;font-size:12px;color:white;font-weight:600;">Sem cadastro</span>
+                <span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:20px;padding:4px 14px;font-size:12px;color:white;font-weight:600;">Sem enviar dados a servidores</span>
             </div>
         </div>
 
-        <h2 class="modal-title" style="display:none;">Guia de Uso</h2>
-        <div class="sources-list" style="max-height: 65vh; overflow-y: auto; padding-right: 14px; line-height: 1.7;">
+        <div class="sources-list" style="max-height:68vh;overflow-y:auto;padding:24px 18px 8px;line-height:1.72;">
 
-<!-- ===================== FLUXO RECOMENDADO ===================== -->
-<div style="background:#fff8e8; border:1px solid var(--amber-light); border-radius:8px; padding:14px 18px; margin-bottom:24px;">
-  <h3 style="color:#8a5a00; margin:0 0 10px; font-size:15px;">🗺️ Por onde começar? Fluxo recomendado</h3>
-  <ol style="margin-left:20px; font-size:13.5px; color:#5a4000; line-height:1.9;">
-    <li><strong>📥 Importar Espécies</strong> — cole a lista de aves que você identificou (ou use a aba 🔭 Avistamentos para registros com data)</li>
-    <li><strong>🔭 Avistamentos</strong> — se tiver datas de campo, registre aqui para desbloquear análises temporais</li>
-    <li><strong>📋 Cálculo</strong> — veja imediatamente quantas vezes cada espécie foi registrada</li>
-    <li><strong>🛡️ Conservação / 🍽️ Guilda / 🏷️ Descritores</strong> — explore informações ecológicas automaticamente</li>
-    <li><strong>📊 📈 🔀 e análises avançadas</strong> — gráficos, curvas, comparações e estatísticas</li>
-  </ol>
-</div>
-
-<!-- ===================== 1. IMPORTAR ESPÉCIES ===================== -->
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:5px;">1. 📥 Importar Espécies</h3>
-<p style="font-size:13.5px;">Esta é a porta de entrada principal. Aqui você informa quais aves fez parte do seu estudo — sem precisar preencher taxonomia manualmente. O sistema reconhece nomes populares (<em>"sabiá barranco"</em>) e científicos (<em>"Turdus leucomelas"</em>) automaticamente.</p>
-<div style="background:#f5faf6; border:1px solid var(--border-light); border-radius:6px; padding:12px 16px; margin:10px 0; font-size:13px;">
-  <strong>📌 Regra de ouro:</strong> <em>uma espécie por linha.</em> Não coloque vírgulas entre espécies — cada linha é um registro separado.
-</div>
-<ul style="margin-left:20px; font-size:13.5px;">
-  <li>✏️ <strong>Autocomplete:</strong> enquanto você digita, aparecem sugestões. Use as setas ↑↓ do teclado e pressione <kbd>Enter</kbd> ou <kbd>Tab</kbd> para confirmar.</li>
-  <li>🧪 <strong>Carregar Exemplo:</strong> insere algumas espécies de teste para você ver como funciona antes de usar seus próprios dados.</li>
-  <li>⚙️ <strong>Modo Básico</strong> (padrão): só o nome, uma espécie por linha. <strong>Modo Avançado:</strong> para quem tem planilhas com colunas separadas por tabulação (Filo, Classe, Ordem, Família, Subfamília, Espécie).</li>
-  <li>🔄 Ao processar, as espécies reconhecidas são automaticamente sincronizadas com a aba <strong>🔀 Comparar</strong> (Lista 1).</li>
-  <li>📅 <strong>Tem datas?</strong> Use a aba <strong>🔭 Avistamentos</strong> em vez desta — ela é específica para registros com data.</li>
-</ul>
-
-<!-- ===================== 2. AVISTAMENTOS ===================== -->
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:5px; margin-top:24px;">2. 🔭 Avistamentos</h3>
-<p style="font-size:13.5px;">Use esta aba quando você tem registros de campo — especialmente quando quer fazer análises ao longo do tempo (sazonalidade, fenologia, turnover). Há dois modos:</p>
-<div style="display:flex; gap:12px; flex-wrap:wrap; margin:10px 0;">
-  <div style="flex:1; min-width:240px; background:#f0f8f2; border:1px solid var(--border-light); border-radius:6px; padding:12px;">
-    <strong style="color:var(--green-deep);">🐦 Apenas Avistamentos</strong><br>
-    <span style="font-size:13px;">Um nome por linha, sem data. Bom para listas simples de campo.<br>
-    Exemplo:<br>
-    <code>sabiá barranco<br>bem-te-vi<br>urubu preto</code></span>
-  </div>
-  <div style="flex:1; min-width:240px; background:#fff8e8; border:1px solid var(--amber-light); border-radius:6px; padding:12px;">
-    <strong style="color:#7a4800;">📅 Com Data</strong><br>
-    <span style="font-size:13px;">Formato: <code>DD/MM/AAAA nome da espécie</code><br>
-    Data e nome separados por <strong>um espaço</strong>. Um avistamento por linha.<br>
-    Exemplo:<br>
-    <code>01/03/2026 sabiá barranco<br>01/03/2026 bem-te-vi<br>28/02/2026 urubu preto</code></span>
-  </div>
-</div>
-<ul style="margin-left:20px; font-size:13.5px;">
-  <li>🧠 O sistema reconhece nomes automaticamente — incluindo nomes com acentos e pequenos erros de digitação.</li>
-  <li>⚠️ <strong>Nomes não reconhecidos</strong> aparecem em um modal de correção após adicionar. Cada linha mostra: o nome que você digitou (em vermelho) · a sugestão automática (em amarelo) · um campo para corrigir manualmente com autocomplete. Botão <strong>✓ confirma</strong>, <strong>✕ remove</strong> o avistamento da lista.</li>
-  <li>📤 <strong>Banner pós-adição:</strong> aparece um botão para enviar as espécies diretamente à aba 📥 Importação de Espécies com um clique.</li>
-  <li>⬇️ Exporta para CSV. Dados ficam armazenados durante a sessão (até fechar o navegador).</li>
-  <li>🔭 O botão <strong>"Importar avistamentos"</strong> aparece nas abas: Sazonalidade, Fenologia, Turnover, Rank-Abundância e Co-ocorrência.</li>
-</ul>
-
-<!-- ===================== 3. CÁLCULO ===================== -->
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:5px; margin-top:24px;">3. 📋 Cálculo de Avistamentos</h3>
-<p style="font-size:13.5px;">Resumo visual e numérico dos avistamentos registrados na aba 🔭. Atualiza automaticamente ao entrar na aba.</p>
-<ul style="margin-left:20px; font-size:13.5px;">
-  <li>📊 <strong>Gráfico de barras</strong> mostra as 20 espécies mais frequentes.</li>
-  <li>🥧 <strong>Gráfico de pizza</strong> mostra a proporção de cada espécie no total.</li>
-  <li>📅 <strong>Gráfico por data</strong> aparece quando há avistamentos com data — mostra quantos registros foram feitos em cada dia.</li>
-  <li>Tabela com frequência absoluta (nº de vezes) e relativa (%) de cada espécie, com barra visual de proporção.</li>
-</ul>
-
-<!-- ===================== 4. ÁRVORE ===================== -->
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:5px; margin-top:24px;">4. 🌳 Árvore Taxonômica</h3>
-<p style="font-size:13.5px;">Mostra as espécies importadas organizadas em forma de árvore, do grupo mais amplo ao mais específico.</p>
-<ul style="margin-left:20px; font-size:13.5px;">
-  <li>🗂️ <strong>Árvore Hierárquica:</strong> visão em blocos, fácil de ler. Útil para ter uma ideia rápida da diversidade de grupos.</li>
-  <li>🧬 <strong>Árvore Filogenética:</strong> diagrama interativo baseado em estudos genômicos modernos (Jarvis 2014, Prum 2015). Use o scroll para dar zoom e arraste para navegar. Pode mostrar apenas as espécies que você adicionou ou toda a filogenia das aves.</li>
-  <li>📸 Exporta como imagem PNG ou como arquivo HTML interativo para compartilhar.</li>
-</ul>
-
-<!-- ===================== 5. CONSERVAÇÃO ===================== -->
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:5px; margin-top:24px;">5. 🛡️ Status de Conservação</h3>
-<p style="font-size:13.5px;">Para cada espécie importada, mostra automaticamente o status de ameaça em três listas oficiais:</p>
-<ul style="margin-left:20px; font-size:13.5px;">
-  <li>🏔️ <strong>SC:</strong> Lista de Santa Catarina (FATMA/IGNIS)</li>
-  <li>🇧🇷 <strong>ICMBio:</strong> Lista Nacional de Espécies Ameaçadas</li>
-  <li>🌎 <strong>IUCN:</strong> União Internacional para a Conservação da Natureza (global)</li>
-</ul>
-<p style="font-size:13px; margin-top:6px;">Categorias: <strong style="color:#1e8449">LC</strong> = segura · <strong style="color:#d4860e">NT</strong> = quase ameaçada · <strong style="color:#c0650a">VU</strong> = vulnerável · <strong style="color:#c0392b">EN</strong> = em perigo · <strong style="color:#922b21">CR</strong> = criticamente em perigo · <strong style="color:#717d7e">DD</strong> = dados insuficientes · <strong style="color:#9eaeb0">NE</strong> = não avaliada.</p>
-<ul style="margin-left:20px; font-size:13.5px;">
-  <li>Ordene por A-Z ou por grau de ameaça. Clique em "Mais informações" para abrir a ficha da espécie no WikiAves.</li>
-  <li>Três gráficos de pizza mostram a distribuição dos status. Exporta como CSV.</li>
-</ul>
-
-<!-- ===================== 6. DISTRIBUIÇÃO ===================== -->
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:5px; margin-top:24px;">6. 📊 Distribuição Taxonômica</h3>
-<p style="font-size:13.5px;">Gráficos de barras e pizza mostrando quantas espécies pertencem a cada Ordem e Família. Atualiza automaticamente quando você adiciona espécies. Ótimo para ter uma visão rápida da diversidade da sua lista.</p>
-
-<!-- ===================== 7. MAPA ===================== -->
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:5px; margin-top:24px;">7. 🗺️ Mapa de Ocorrências</h3>
-<p style="font-size:13.5px;">Mapa interativo para posicionar e analisar onde cada espécie foi observada.</p>
-<ul style="margin-left:20px; font-size:13.5px;">
-  <li>🖱️ <strong>Arrastar:</strong> arraste o nome de uma espécie do painel lateral para colocá-la no mapa.</li>
-  <li>👁️ <strong>Visibilidade:</strong> o botão olho ao lado de cada espécie mostra/oculta seus pontos no mapa.</li>
-  <li>🔷 <strong>Desenhar área:</strong> crie polígonos para delimitar sua área de estudo. O botão "Calcular" conta quantas espécies estão dentro de cada polígono.</li>
-  <li>📁 <strong>Shapefile:</strong> importe arquivos .zip com shapefiles para sobrepor ao mapa.</li>
-  <li>🌍 <strong>GBIF / 🐦 eBird:</strong> busca até 2.000 registros georreferenciados por espécie nos maiores bancos de dados de biodiversidade do mundo (requer internet).</li>
-</ul>
-
-<!-- ===================== 8. CURVA ===================== -->
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:5px; margin-top:24px;">8. 📈 Curva do Coletor</h3>
-<p style="font-size:13.5px;">Responde a pergunta: <em>"Quantas espécies novas eu ainda estaria encontrando se continuasse amostrando?"</em> A curva mostra o acúmulo de espécies ao longo das saídas de campo. Quando a curva começa a achatar, significa que o esforço amostral foi suficiente.</p>
-<ul style="margin-left:20px; font-size:13.5px;">
-  <li>Configure um intervalo de datas ou informe cada saída de campo com quantas espécies novas foram encontradas.</li>
-  <li>📈 <strong>Estimadores de riqueza</strong> (Chao2, Jackknife, Bootstrap): calculam quantas espécies <em>provavelmente existem</em> na área mas ainda não foram detectadas. Aparecem automaticamente abaixo da curva.</li>
-</ul>
-
-<!-- ===================== 9. COMPARAR ===================== -->
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:5px; margin-top:24px;">9. 🔀 Comparar Listas</h3>
-<p style="font-size:13.5px;">Compare a composição de espécies entre duas ou mais listas (ex: áreas diferentes, períodos diferentes, pesquisadores diferentes). A Lista 1 é preenchida automaticamente com o que você importou.</p>
-<ul style="margin-left:20px; font-size:13.5px;">
-  <li>Cole nomes nas caixas de cada lista → <strong>Processar Lista</strong> → <strong>▶ Executar Comparação</strong>.</li>
-  <li>Resultado: tabela com ✅/❌ por lista, índice de Jaccard (quanto as listas se parecem, de 0 a 1) e gráficos.</li>
-  <li>🔍 Filtros: <strong>Todas</strong>, <strong>Presentes em todas</strong>, <strong>Ausentes de alguma</strong>, e o seletor <strong>"Únicas por lista"</strong> que mostra só as espécies exclusivas de uma lista específica.</li>
-</ul>
-
-<!-- ===================== 10. GUILDA ===================== -->
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:5px; margin-top:24px;">10. 🍽️ Guilda Alimentar</h3>
-<p style="font-size:13.5px;">Mostra o que cada espécie come e em que ambiente vive. A "guilda alimentar" é a categoria ecológica baseada na dieta (ex: Insetívoro, Frugívoro, Carnívoro). Abre automaticamente nas espécies que você importou.</p>
-<ul style="margin-left:20px; font-size:13.5px;">
-  <li>Filtre por guilda ou habitat usando os menus. Útil para perceber se sua área tem muitos predadores de topo, ou se é dominada por frugívoros — o que diz muito sobre a saúde do ecossistema.</li>
-  <li>Gráficos de rosca mostram a composição da comunidade por dieta e por tipo de habitat.</li>
-</ul>
-
-<!-- ===================== 11. DESCRITORES ===================== -->
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:5px; margin-top:24px;">11. 🏷️ Descritores Taxonômicos</h3>
-<p style="font-size:13.5px;">Curiosidade histórica: quem deu o nome científico a cada espécie e em que ano? Por exemplo, <em>Turdus rufiventris</em> foi descrito por Vieillot em 1818. Filtros por século, autor e busca textual.</p>
-
-<!-- ===================== 12. RAREFAÇÃO ===================== -->
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:5px; margin-top:24px;">12. 📉 Rarefação</h3>
-<p style="font-size:13.5px;"><strong>Para quê serve?</strong> Imagine que você amostrou a Floresta A em 3 dias e a Floresta B em 10 dias, e encontrou mais espécies na B. Isso é por causa do esforço diferente — ou porque B realmente é mais rica? A rarefação padroniza esse esforço para a comparação ser justa. Muito usada em artigos científicos.</p>
-<ul style="margin-left:20px; font-size:13.5px;">
-  <li>Clique em "➕ Adicionar Área", defina o número de amostras e a riqueza estimada de cada área, e compare as curvas lado a lado.</li>
-</ul>
-
-<!-- ===================== 13. SAZONALIDADE ===================== -->
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:5px; margin-top:24px;">13. 📅 Sazonalidade</h3>
-<p style="font-size:13.5px;">Mostra em quais meses do ano cada espécie aparece mais. SC tem quatro estações bem marcadas e muitas aves migratórias — esta aba revela esse padrão.</p>
-<ul style="margin-left:20px; font-size:13.5px;">
-  <li>📥 <strong>Importar da tabela principal:</strong> usa as espécies já importadas e distribui os meses automaticamente (edite depois com os meses reais).</li>
-  <li>🔭 <strong>Importar avistamentos:</strong> se você registrou avistamentos com data, o mês real é detectado automaticamente.</li>
-  <li>Formato manual: <code>Nome da espécie, Mês</code> onde mês é um número de 1 (janeiro) a 12 (dezembro). Um registro por linha.</li>
-  <li>Dois gráficos: barras mensais (quantidade de registros + riqueza de espécies) e rosca por estação do ano.</li>
-</ul>
-
-<!-- ===================== 14. FENOLOGIA ===================== -->
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:5px; margin-top:24px;">14. 🌸 Fenologia</h3>
-<p style="font-size:13.5px;">Mostra o <strong>período de atividade</strong> de cada espécie — da primeira à última detecção. O gráfico é um fenograma Gantt colorido por estação (🔴 Verão, 🟠 Outono, 🔵 Inverno, 🟢 Primavera).</p>
-<ul style="margin-left:20px; font-size:13.5px;">
-  <li>🔭 <strong>Importar avistamentos:</strong> o jeito mais fácil — usa os avistamentos com data já registrados.</li>
-  <li>Formato manual: <code>Nome da espécie, AAAA-MM-DD</code> — insira quantas datas quiser por espécie.</li>
-  <li>📊 <strong>Ordenação da tabela:</strong> botões para ordenar por Ordem adicionada, A→Z, Início ↑↓, Fim ↑↓.</li>
-  <li>ℹ️ <strong>Números negativos no gráfico</strong> são apenas para melhor visualização — representam o deslocamento relativo das barras. Os valores reais de duração são mostrados no tooltip e na tabela.</li>
-</ul>
-
-<!-- ===================== 15. TURNOVER ===================== -->
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:5px; margin-top:24px;">15. 🔄 Turnover Temporal</h3>
-<p style="font-size:13.5px;"><strong>Para quê serve?</strong> Mede a renovação da comunidade ao longo do tempo — quantas espécies novas entraram e quantas sumiram entre dois períodos (ex: meses, estações, anos). Uma taxa de turnover alta indica uma comunidade muito dinâmica.</p>
-<ul style="margin-left:20px; font-size:13.5px;">
-  <li>🔭 <strong>Importar avistamentos por data:</strong> cada data de campo vira um período automaticamente.</li>
-  <li>Ou adicione períodos manualmente: cole a lista de espécies de cada período e clique em ▶.</li>
-  <li>Fórmula: Taxa = (ganhos + perdas) ÷ (2 × total de espécies únicas) × 100%.</li>
-</ul>
-
-<!-- ===================== 16. INDICADORAS ===================== -->
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:5px; margin-top:24px;">16. ⚠️ Espécies Indicadoras</h3>
-<p style="font-size:13.5px;">Identifica, entre as espécies importadas, aquelas mais <strong>sensíveis à perturbação ambiental</strong> — as primeiras a desaparecer com fragmentação, poluição ou degradação. Baseado em Karr (1982), Stouffer &amp; Bierregaard (1995) e Sekercioglu et al. (2004).</p>
-<ul style="margin-left:20px; font-size:13.5px;">
-  <li>Escolha o limiar mínimo de ameaça (ex: "VU ou mais") e clique em ▶.</li>
-  <li><strong>Sistema de pontuação dupla (guilda + habitat):</strong> cada espécie recebe até 6 pontos no total. A guilda alimentar revela grau de especialização dietética (Nectarívoros e Piscívoros = 3pts; Carnívoros/Insetívoros/Frugívoros = 2pts; Onívoros/Detritívoros = 0pts). O habitat revela dependência de ecossistema (Florestal/Aquático = 3pts; Generalista = 0pts). O resultado é a soma.</li>
-  <li>🔴 <strong>Crítica</strong> (≥5 pts) — ex: Nectarívoro Florestal, Piscívoro Aquático. Primeiros a sumir.</li>
-  <li>🟠 <strong>Alta</strong> (3–4 pts) — ex: Insetívoro Florestal, Frugívoro Aquático.</li>
-  <li>🟡 <strong>Média</strong> (2 pts) — ex: Carnívoro Generalista, Insetívoro Campestre.</li>
-  <li>🟢 <strong>Baixa</strong> (≤1 pt) — ex: Onívoro Generalista (urubu, quero-quero). Altamente resilientes.</li>
-</ul>
-
-<!-- ===================== 17. CLUSTER ===================== -->
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:5px; margin-top:24px;">17. 🌿 Cluster Hierárquico (Dendrograma)</h3>
-<p style="font-size:13.5px;">Cria um <strong>dendrograma</strong> — diagrama em árvore que mostra quais áreas/listas são mais parecidas entre si. Ramos que se juntam cedo = comunidades muito similares. Ramos que só se juntam no final = muito diferentes. Usa o índice de Jaccard.</p>
-<ul style="margin-left:20px; font-size:13.5px;">
-  <li>Requer pelo menos 2 listas processadas na aba 🔀 Comparar.</li>
-  <li>Três métodos de ligação disponíveis (escolha "UPGMA" se tiver dúvida — é o mais comum em ecologia).</li>
-  <li>Os nomes das listas aparecem à direita do dendrograma sem sobrepor as linhas.</li>
-  <li>Também exibe a matriz de distâncias de Jaccard entre todas as listas.</li>
-</ul>
-
-<!-- ===================== 18. RANK-ABUNDÂNCIA ===================== -->
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:5px; margin-top:24px;">18. 📊 Rank-Abundância (Whittaker Plot)</h3>
-<p style="font-size:13.5px;">Coloca as espécies em ordem da mais para a menos abundante e plota essa curva. <strong>Uma curva íngreme</strong> = poucas espécies dominam (baixa equitabilidade). <strong>Uma curva suave</strong> = todas as espécies têm abundâncias parecidas (comunidade mais equilibrada).</p>
-<ul style="margin-left:20px; font-size:13.5px;">
-  <li>🔭 <strong>Importar avistamentos:</strong> usa a contagem real de cada espécie nos avistamentos — muito mais preciso do que atribuir 1 para cada espécie.</li>
-  <li>O eixo Y mostra abundância relativa com <strong>2 casas decimais</strong> (ex: 4.25%) para melhor leitura.</li>
-  <li>Calcula automaticamente: Shannon (H'), Simpson (1−D) e Equitabilidade de Pielou (J') — os índices de diversidade mais usados em ecologia.</li>
-</ul>
-
-<!-- ===================== 19. CO-OCORRÊNCIA ===================== -->
-<h3 style="color:#2d5a2d; border-bottom:2px solid #c5d0b5; padding-bottom:5px; margin-top:24px;">19. 🔗 Matriz de Co-ocorrência</h3>
-<p style="font-size:13.5px;">Mostra quais espécies tendem a aparecer juntas nos mesmos levantamentos. Alta co-ocorrência pode indicar que as espécies compartilham habitat, têm relação ecológica ou simplesmente têm distribuições sobrepostas.</p>
-<ul style="margin-left:20px; font-size:13.5px;">
-  <li>🔭 <strong>Importar avistamentos por data:</strong> cada data vira um "levantamento" automático.</li>
-  <li>Formato manual: separe levantamentos por uma linha em branco. A célula mais escura = maior co-ocorrência.</li>
-  <li>📊 <strong>Gráfico de barras</strong> abaixo da matriz mostra os pares mais frequentes em ordem decrescente com <strong>nomes completos</strong> das espécies.</li>
-  <li>📋 <strong>Botão "Copiar lista"</strong> copia os top pares para a área de transferência com um clique.</li>
-  <li>↺ <strong>Botão "Aplicar"</strong> ao lado do campo "Mín. co-ocorrências": mude o número e clique para recalcular os pares sem precisar reprocessar toda a matriz. Também funciona pressionando <kbd>Enter</kbd> no campo.</li>
-  <li>Os nomes das colunas na matriz usam nome científico + popular quando disponível.</li>
-</ul>
-
-<!-- ===================== DICAS ===================== -->
-<div style="background:#f5f5f5; border-radius:8px; padding:14px 18px; margin-top:24px;">
-<h3 style="color:#2d5a2d; margin:0 0 10px; font-size:15px;">💡 Dicas práticas</h3>
-<ul style="margin-left:20px; font-size:13.5px; line-height:1.9;">
-  <li>🌐 Use <strong>Chrome ou Firefox</strong> atualizados para melhor desempenho.</li>
-  <li>💾 <strong>Salve sua sessão</strong> na aba ⚙️ Configurações → "Exportar Sessão (.json)" antes de fechar. Importe de volta depois para continuar exatamente onde parou.</li>
-  <li>🌙 Use o botão <strong>☀️/🌙</strong> no canto superior direito para alternar entre modo claro e escuro. O tema é lembrado automaticamente.</li>
-  <li>🔭 Os avistamentos também ficam na sessão — exporte pela aba 📋 Cálculo ou 🔭 Avistamentos antes de fechar.</li>
-  <li>🔍 A maioria das abas tem um campo de busca — use para filtrar rapidamente por nome de espécie.</li>
-  <li>📥 Se um nome não for reconhecido automaticamente, tente o nome científico (ex: <em>Turdus rufiventris</em> em vez de "sabiá" — pode ter variações regionais).</li>
-  <li>🔀 A aba Comparar exige que você clique em <strong>"Processar Lista"</strong> em cada lista antes de executar a comparação.</li>
-</ul>
-</div>
-
-<p style="text-align:center; margin-top:28px; padding:14px; background:#eef4e4; border-radius:8px; color:#2d5a2d; font-size:13.5px;">
-  <strong>Desenvolvido por Brenno Alef Benk — Projeto de TCC em Biologia (2026)</strong><br>
-  <span style="font-size:12.5px; color:#5a7a5a;">Banco de dados: ~800 espécies de aves de Santa Catarina · Fontes: CBRO, WikiAves, GBIF, eBird, FATMA/IGNIS, ICMBio, IUCN</span><br>
-  <span style="font-size:12px; color:#8a9a8a; margin-top:4px; display:block;">Dúvidas ou sugestões? Entre em contato com o autor.</span>
-</p>
-
+        <!-- ── ÍNDICE RÁPIDO ── -->
+        <div style="background:var(--green-mist);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:26px;">
+            <p style="font-size:12.5px;font-weight:700;color:var(--green-deep);margin-bottom:10px;letter-spacing:0.3px;">📑 ÍNDICE — clique para ir direto à seção</p>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:12.5px;">
+                <a href="#h-inicio" style="color:var(--green-base);text-decoration:none;background:white;border:1px solid var(--border-light);border-radius:12px;padding:3px 10px;">🚀 Por onde começar</a>
+                <a href="#h-importar" style="color:var(--green-base);text-decoration:none;background:white;border:1px solid var(--border-light);border-radius:12px;padding:3px 10px;">📥 Importar Espécies</a>
+                <a href="#h-avist" style="color:var(--green-base);text-decoration:none;background:white;border:1px solid var(--border-light);border-radius:12px;padding:3px 10px;">🔭 Avistamentos</a>
+                <a href="#h-calculo" style="color:var(--green-base);text-decoration:none;background:white;border:1px solid var(--border-light);border-radius:12px;padding:3px 10px;">📋 Cálculo</a>
+                <a href="#h-arvore" style="color:var(--green-base);text-decoration:none;background:white;border:1px solid var(--border-light);border-radius:12px;padding:3px 10px;">🌳 Árvore</a>
+                <a href="#h-conserv" style="color:var(--green-base);text-decoration:none;background:white;border:1px solid var(--border-light);border-radius:12px;padding:3px 10px;">🛡️ Conservação</a>
+                <a href="#h-distrib" style="color:var(--green-base);text-decoration:none;background:white;border:1px solid var(--border-light);border-radius:12px;padding:3px 10px;">📊 Distribuição</a>
+                <a href="#h-mapa" style="color:var(--green-base);text-decoration:none;background:white;border:1px solid var(--border-light);border-radius:12px;padding:3px 10px;">🗺️ Mapa</a>
+                <a href="#h-curva" style="color:var(--green-base);text-decoration:none;background:white;border:1px solid var(--border-light);border-radius:12px;padding:3px 10px;">📈 Curva do Coletor</a>
+                <a href="#h-comparar" style="color:var(--green-base);text-decoration:none;background:white;border:1px solid var(--border-light);border-radius:12px;padding:3px 10px;">🔀 Comparar</a>
+                <a href="#h-guilda" style="color:var(--green-base);text-decoration:none;background:white;border:1px solid var(--border-light);border-radius:12px;padding:3px 10px;">🍽️ Guilda</a>
+                <a href="#h-descrit" style="color:var(--green-base);text-decoration:none;background:white;border:1px solid var(--border-light);border-radius:12px;padding:3px 10px;">🏷️ Descritores</a>
+                <a href="#h-raref" style="color:var(--green-base);text-decoration:none;background:white;border:1px solid var(--border-light);border-radius:12px;padding:3px 10px;">📉 Rarefação</a>
+                <a href="#h-sazon" style="color:var(--green-base);text-decoration:none;background:white;border:1px solid var(--border-light);border-radius:12px;padding:3px 10px;">📅 Sazonalidade</a>
+                <a href="#h-fenol" style="color:var(--green-base);text-decoration:none;background:white;border:1px solid var(--border-light);border-radius:12px;padding:3px 10px;">🌸 Fenologia</a>
+                <a href="#h-turnover" style="color:var(--green-base);text-decoration:none;background:white;border:1px solid var(--border-light);border-radius:12px;padding:3px 10px;">🔄 Turnover</a>
+                <a href="#h-indicad" style="color:var(--green-base);text-decoration:none;background:white;border:1px solid var(--border-light);border-radius:12px;padding:3px 10px;">⚠️ Indicadoras</a>
+                <a href="#h-cluster" style="color:var(--green-base);text-decoration:none;background:white;border:1px solid var(--border-light);border-radius:12px;padding:3px 10px;">🌿 Cluster</a>
+                <a href="#h-rank" style="color:var(--green-base);text-decoration:none;background:white;border:1px solid var(--border-light);border-radius:12px;padding:3px 10px;">📊 Rank-Abundância</a>
+                <a href="#h-cooc" style="color:var(--green-base);text-decoration:none;background:white;border:1px solid var(--border-light);border-radius:12px;padding:3px 10px;">🔗 Co-ocorrência</a>
+                <a href="#h-picos" style="color:var(--green-base);text-decoration:none;background:white;border:1px solid var(--border-light);border-radius:12px;padding:3px 10px;">🕐 Picos de Horários</a>
+                <a href="#h-dicas" style="color:var(--green-base);text-decoration:none;background:white;border:1px solid var(--border-light);border-radius:12px;padding:3px 10px;">💡 Dicas</a>
+            </div>
         </div>
-    </div>
-</div>
+
+        <!-- ── POR ONDE COMEÇAR ── -->
+        <div id="h-inicio" style="background:#fff8e8;border:1px solid var(--amber-light);border-radius:10px;padding:16px 20px;margin-bottom:26px;">
+            <h3 style="color:#7a4800;margin:0 0 12px;font-size:15.5px;">🚀 Por onde começar? — Fluxo recomendado</h3>
+            <div style="display:flex;flex-direction:column;gap:10px;font-size:13.5px;color:#5a4000;">
+                <div style="display:flex;gap:12px;align-items:flex-start;"><span style="background:#e07820;color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">1</span><div><strong>📥 Importar Espécies</strong> — cole os nomes das aves que você identificou. O sistema reconhece nomes populares e científicos automaticamente. Clique em <em>"Processar Dados"</em> para confirmar.</div></div>
+                <div style="display:flex;gap:12px;align-items:flex-start;"><span style="background:#e07820;color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">2</span><div><strong>🔭 Avistamentos</strong> (opcional, mas recomendado) — se você tem datas e horários dos registros, use esta aba. Formato: <code>28/05/2024 06:40 saracura do mato</code>. Isso desbloqueia análises temporais avançadas.</div></div>
+                <div style="display:flex;gap:12px;align-items:flex-start;"><span style="background:#e07820;color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">3</span><div><strong>🛡️ Conservação · 🍽️ Guilda · 🏷️ Descritores</strong> — explore informações ecológicas de cada espécie preenchidas automaticamente a partir do banco de dados.</div></div>
+                <div style="display:flex;gap:12px;align-items:flex-start;"><span style="background:#e07820;color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">4</span><div><strong>Análises avançadas</strong> — acesse Rarefação, Sazonalidade, Turnover, Rank-Abundância, Co-ocorrência e mais para explorar a diversidade da sua área.</div></div>
+                <div style="display:flex;gap:12px;align-items:flex-start;"><span style="background:#e07820;color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">5</span><div><strong>💾 Salvar sessão</strong> — antes de fechar o navegador, vá em ⚙️ Configurações → <em>"Exportar Sessão (.json)"</em> para guardar tudo e continuar depois.</div></div>
+            </div>
+        </div>
+
+        <!-- ── 1. IMPORTAR ── -->
+        <h3 id="h-importar" style="color:var(--green-deep);border-bottom:2px solid var(--border);padding-bottom:6px;font-size:15px;">1. 📥 Importar Espécies</h3>
+        <p style="font-size:13.5px;">A porta de entrada principal. Cole os nomes das aves do seu estudo — um nome por linha. O sistema identifica automaticamente nomes populares (<em>"sabiá barranco"</em>) e científicos (<em>"Turdus leucomelas"</em>), corrigindo pequenos erros de digitação.</p>
+        <div style="background:var(--green-mist);border-left:3px solid var(--green-base);border-radius:0 6px 6px 0;padding:10px 14px;margin:10px 0;font-size:13px;">
+            <strong>📌 Regra de ouro:</strong> uma espécie por linha, sem vírgulas separando nomes. Ex:<br>
+            <code>sabiá barranco<br>bem-te-vi<br>urubu preto</code>
+        </div>
+        <ul style="margin-left:20px;font-size:13.5px;">
+            <li>✏️ <strong>Autocomplete:</strong> sugestões aparecem enquanto você digita. Use ↑↓ e Enter para selecionar.</li>
+            <li>🧪 <strong>Carregar Exemplo:</strong> insere espécies de teste para explorar o sistema antes de usar seus dados.</li>
+            <li>⚙️ <strong>Modo Básico</strong> (padrão) — só o nome. <strong>Modo Avançado</strong> — para planilhas com colunas separadas por tabulação (Filo, Classe, Ordem, Família, Subfamília, Espécie).</li>
+            <li>🔄 As espécies processadas vão automaticamente para a aba 🔀 Comparar (Lista 1).</li>
+            <li>📅 <strong>Tem datas e horários?</strong> Use diretamente a aba 🔭 <strong>Avistamentos</strong> — ela é mais completa para registros de campo.</li>
+        </ul>
+
+        <!-- ── 2. AVISTAMENTOS ── -->
+        <h3 id="h-avist" style="color:var(--green-deep);border-bottom:2px solid var(--border);padding-bottom:6px;font-size:15px;margin-top:24px;">2. 🔭 Avistamentos com Data e Hora</h3>
+        <p style="font-size:13.5px;">Registre seus avistamentos de campo com data e hora para desbloquear todas as análises temporais (Sazonalidade, Fenologia, Turnover, Picos de Horários, Rank-Abundância, Co-ocorrência). Os gráficos são gerados automaticamente ao importar.</p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin:10px 0;">
+            <div style="flex:1;min-width:240px;background:var(--green-mist);border:1px solid var(--border);border-radius:8px;padding:12px;">
+                <strong style="color:var(--green-deep);font-size:13px;">📅 Com data e hora (recomendado)</strong><br>
+                <span style="font-size:12.5px;color:var(--text-mid);">Formato: <code>DD/MM/AAAA HH:MM nome da espécie</code></span><br>
+                <code style="font-size:12px;display:block;margin-top:6px;line-height:1.7;">28/05/2024 06:40 saracura do mato<br>28/05/2024 06:45 socó-dorminhoco<br>28/05/2024 06:53 quero quero</code>
+            </div>
+            <div style="flex:1;min-width:240px;background:var(--amber-pale);border:1px solid var(--amber-light);border-radius:8px;padding:12px;">
+                <strong style="color:#7a4800;font-size:13px;">📅 Só com data (hora opcional)</strong><br>
+                <span style="font-size:12.5px;color:var(--text-mid);">Formato: <code>DD/MM/AAAA nome da espécie</code></span><br>
+                <code style="font-size:12px;display:block;margin-top:6px;line-height:1.7;">01/03/2026 sabiá barranco<br>01/03/2026 urubu preto<br>28/02/2026 quero-quero</code>
+            </div>
+        </div>
+        <ul style="margin-left:20px;font-size:13.5px;">
+            <li>🧠 Nomes com pequenos erros de digitação são reconhecidos automaticamente. Se não reconhecer, um modal de correção aparece — você pode confirmar a sugestão ou digitar o nome correto com autocomplete.</li>
+            <li>⚡ <strong>Auto-gráfico:</strong> ao clicar em "Importar avistamentos" dentro de qualquer aba de análise, o gráfico é gerado automaticamente — sem precisar clicar em "Gerar".</li>
+            <li>📤 Após adicionar, aparece um botão para enviar as espécies diretamente para a aba 📥 Importação com um clique.</li>
+            <li>🕐 <strong>Picos de Horários:</strong> disponível como aba própria no grupo 🔭. Mostra em quais horários do dia você fez mais registros (requer hora no formato HH:MM).</li>
+            <li>🔍 Use o campo de busca e o filtro por data para localizar registros específicos na tabela.</li>
+            <li>⬇️ Exporta todos os registros como CSV com data, hora, nome inserido, nome científico e nome popular.</li>
+            <li>🔭 O botão <strong>"Importar avistamentos"</strong> aparece nas abas: Sazonalidade, Fenologia, Turnover, Rank-Abundância, Co-ocorrência e Rarefação — carrega e processa seus dados automaticamente.</li>
+        </ul>
+
+        <!-- ── 3. PICOS ── -->
+        <h3 id="h-picos" style="color:var(--green-deep);border-bottom:2px solid var(--border);padding-bottom:6px;font-size:15px;margin-top:24px;">3. 🕐 Picos de Horários</h3>
+        <p style="font-size:13.5px;">Mostra em quais horários do dia você fez mais registros. Gráfico de barras com as 24 horas — as barras mais escuras são os 3 horários mais ativos. Só funciona com avistamentos que têm hora registrada.</p>
+        <ul style="margin-left:20px;font-size:13.5px;">
+            <li>A análise abaixo do gráfico informa o pico máximo, quantas horas do dia tiveram atividade, e o período dominante (manhã, tarde ou noturno/crepuscular).</li>
+            <li>Útil para saber o melhor horário para saídas de campo e identificar espécies crepusculares.</li>
+        </ul>
+
+        <!-- ── 4. CÁLCULO ── -->
+        <h3 id="h-calculo" style="color:var(--green-deep);border-bottom:2px solid var(--border);padding-bottom:6px;font-size:15px;margin-top:24px;">4. 📋 Cálculo dos Avistamentos</h3>
+        <p style="font-size:13.5px;">Resumo numérico e visual dos avistamentos registrados. Atualiza automaticamente ao entrar na aba.</p>
+        <ul style="margin-left:20px;font-size:13.5px;">
+            <li>📊 Gráfico de barras das 20 espécies mais frequentes.</li>
+            <li>🥧 Gráfico de pizza com a proporção de cada espécie no total.</li>
+            <li>📅 Gráfico por data (quando há avistamentos com data) — quantos registros por dia de campo.</li>
+            <li>Tabela completa com frequência absoluta (número de vezes) e relativa (%) de cada espécie, com barra visual de proporção. Exporta como CSV.</li>
+        </ul>
+
+        <!-- ── 5. ÁRVORE ── -->
+        <h3 id="h-arvore" style="color:var(--green-deep);border-bottom:2px solid var(--border);padding-bottom:6px;font-size:15px;margin-top:24px;">5. 🌳 Árvore Taxonômica</h3>
+        <p style="font-size:13.5px;">Organiza as espécies importadas em forma de árvore, do grupo mais amplo ao mais específico — do Filo até a espécie.</p>
+        <ul style="margin-left:20px;font-size:13.5px;">
+            <li>🗂️ <strong>Árvore Hierárquica:</strong> visão em blocos coloridos, fácil de ler. Ideal para ter uma visão rápida da diversidade de grupos taxonômicos.</li>
+            <li>🧬 <strong>Árvore Filogenética:</strong> diagrama interativo baseado em estudos genômicos modernos (Jarvis 2014, Prum 2015). Zoom com scroll do mouse; arraste para navegar. Pode exibir só as espécies importadas ou toda a filogenia de aves.</li>
+            <li>📸 Exporta como imagem PNG ou arquivo HTML interativo para compartilhar.</li>
+        </ul>
+
+        <!-- ── 6. CONSERVAÇÃO ── -->
+        <h3 id="h-conserv" style="color:var(--green-deep);border-bottom:2px solid var(--border);padding-bottom:6px;font-size:15px;margin-top:24px;">6. 🛡️ Status de Conservação</h3>
+        <p style="font-size:13.5px;">Para cada espécie importada, mostra automaticamente o status de ameaça em três listas oficiais:</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0;font-size:13px;">
+            <div style="flex:1;min-width:180px;background:var(--green-mist);border-radius:8px;padding:10px 14px;"><strong>🏔️ SC</strong><br>Lista de Santa Catarina<br><span style="color:var(--text-muted);font-size:12px;">(FATMA / IGNIS)</span></div>
+            <div style="flex:1;min-width:180px;background:var(--green-mist);border-radius:8px;padding:10px 14px;"><strong>🇧🇷 ICMBio</strong><br>Lista Nacional<br><span style="color:var(--text-muted);font-size:12px;">Espécies Ameaçadas do Brasil</span></div>
+            <div style="flex:1;min-width:180px;background:var(--green-mist);border-radius:8px;padding:10px 14px;"><strong>🌎 IUCN</strong><br>Lista Global<br><span style="color:var(--text-muted);font-size:12px;">União Internacional para a Conservação</span></div>
+        </div>
+        <p style="font-size:13px;"><strong>Categorias:</strong> <span style="color:#1e8449;font-weight:700;">LC</span> = segura · <span style="color:#d4860e;font-weight:700;">NT</span> = quase ameaçada · <span style="color:#c0650a;font-weight:700;">VU</span> = vulnerável · <span style="color:#c0392b;font-weight:700;">EN</span> = em perigo · <span style="color:#922b21;font-weight:700;">CR</span> = criticamente em perigo · <span style="color:#717d7e;font-weight:700;">DD</span> = dados insuficientes · <span style="color:#9eaeb0;font-weight:700;">NE</span> = não avaliada.</p>
+        <ul style="margin-left:20px;font-size:13.5px;">
+            <li>Ordene por A-Z ou por grau de ameaça com os botões de ordenação.</li>
+            <li>Clique em "Mais informações" para abrir a ficha da espécie no WikiAves.</li>
+            <li>Três gráficos de pizza mostram a distribuição dos status por lista. Exporta como CSV.</li>
+        </ul>
+
+        <!-- ── 7. DISTRIBUIÇÃO ── -->
+        <h3 id="h-distrib" style="color:var(--green-deep);border-bottom:2px solid var(--border);padding-bottom:6px;font-size:15px;margin-top:24px;">7. 📊 Distribuição Taxonômica</h3>
+        <p style="font-size:13.5px;">Gráficos de barras e pizza mostrando quantas espécies pertencem a cada Ordem e Família. Atualiza automaticamente quando você adiciona espécies. Ótimo para ter uma visão rápida da diversidade da sua lista.</p>
+
+        <!-- ── 8. MAPA ── -->
+        <h3 id="h-mapa" style="color:var(--green-deep);border-bottom:2px solid var(--border);padding-bottom:6px;font-size:15px;margin-top:24px;">8. 🗺️ Mapa de Ocorrências</h3>
+        <p style="font-size:13.5px;">Mapa interativo para posicionar e analisar onde cada espécie foi observada.</p>
+        <ul style="margin-left:20px;font-size:13.5px;">
+            <li>🖱️ <strong>Arrastar espécies:</strong> arraste o nome de uma espécie do painel lateral para colocá-la no mapa. Um marcador é criado no local.</li>
+            <li>👁️ <strong>Visibilidade:</strong> o botão olho ao lado de cada espécie mostra/oculta seus pontos no mapa sem apagar os dados.</li>
+            <li>🔷 <strong>Desenhar área:</strong> crie polígonos para delimitar sua área de estudo. Clique em "Calcular" para contar quantas espécies estão dentro de cada polígono.</li>
+            <li>📁 <strong>Shapefile:</strong> importe arquivos .zip com shapefiles para sobrepor ao mapa (ex: unidades de conservação, municípios).</li>
+            <li>🌍 <strong>GBIF / 🐦 eBird:</strong> busca automática de até 2.000 registros georreferenciados por espécie nos maiores bancos de dados de biodiversidade do mundo. <em>Requer conexão com internet.</em></li>
+        </ul>
+
+        <!-- ── 9. CURVA DO COLETOR ── -->
+        <h3 id="h-curva" style="color:var(--green-deep);border-bottom:2px solid var(--border);padding-bottom:6px;font-size:15px;margin-top:24px;">9. 📈 Curva do Coletor</h3>
+        <p style="font-size:13.5px;"><strong>O que é?</strong> A curva responde à pergunta: <em>"Se eu continuasse saindo a campo, ainda encontraria espécies novas?"</em> Ela mostra o acúmulo de espécies ao longo das saídas. Quando começa a achatar, o esforço amostral foi suficiente.</p>
+        <ul style="margin-left:20px;font-size:13.5px;">
+            <li>Configure um intervalo de datas ou informe cada saída de campo e quantas espécies novas foram encontradas.</li>
+            <li>📈 <strong>Estimadores de riqueza</strong> — calculam quantas espécies <em>provavelmente existem</em> na área mas ainda não foram detectadas:
+                <ul style="margin-top:4px;margin-left:16px;font-size:13px;">
+                    <li><strong>Chao2:</strong> baseado em espécies raras (vistas só 1 ou 2 vezes). Conservador.</li>
+                    <li><strong>Jackknife 1ª e 2ª ordem:</strong> mais precisos com muitas amostras.</li>
+                    <li><strong>Bootstrap:</strong> estimativa por reamostragem. Tende a ser o mais baixo.</li>
+                </ul>
+            </li>
+            <li>Uma tabela resumo abaixo mostra a completude amostral estimada (% do total que você já detectou).</li>
+        </ul>
+
+        <!-- ── 10. COMPARAR ── -->
+        <h3 id="h-comparar" style="color:var(--green-deep);border-bottom:2px solid var(--border);padding-bottom:6px;font-size:15px;margin-top:24px;">10. 🔀 Comparar Listas</h3>
+        <p style="font-size:13.5px;">Compare a composição de espécies entre duas ou mais listas — por exemplo, áreas diferentes, períodos diferentes ou dados de pesquisadores diferentes. A Lista 1 é preenchida automaticamente com o que você importou.</p>
+        <ul style="margin-left:20px;font-size:13.5px;">
+            <li>Cole nomes nas caixas de cada lista → clique em <strong>"Processar Lista"</strong> em cada uma → clique em <strong>"▶ Executar Comparação"</strong>.</li>
+            <li>Resultado: tabela com ✅/❌ por lista, <strong>índice de Jaccard</strong> (0 = listas completamente diferentes, 1 = idênticas) e gráficos de comparação.</li>
+            <li>Filtros: <strong>Todas</strong>, <strong>Presentes em todas</strong>, <strong>Ausentes de alguma</strong>, e <strong>"Únicas por lista"</strong> para ver espécies exclusivas de uma área específica.</li>
+        </ul>
+
+        <!-- ── 11. GUILDA ── -->
+        <h3 id="h-guilda" style="color:var(--green-deep);border-bottom:2px solid var(--border);padding-bottom:6px;font-size:15px;margin-top:24px;">11. 🍽️ Guilda Alimentar</h3>
+        <p style="font-size:13.5px;">Mostra o que cada espécie come e em que ambiente vive. A <strong>guilda alimentar</strong> é a categoria ecológica baseada na dieta (ex: Insetívoro, Frugívoro, Granívoro, Carnívoro, Nectarívoro).</p>
+        <ul style="margin-left:20px;font-size:13.5px;">
+            <li>Filtre por guilda ou por tipo de habitat usando os menus suspensos.</li>
+            <li>A presença de muitos frugívoros indica floresta madura; muitos onívoros generalistas pode indicar ambiente degradado.</li>
+            <li>Dois gráficos de rosca mostram a composição por dieta e por tipo de habitat (florestal, aquático, campestre, generalista).</li>
+        </ul>
+
+        <!-- ── 12. DESCRITORES ── -->
+        <h3 id="h-descrit" style="color:var(--green-deep);border-bottom:2px solid var(--border);padding-bottom:6px;font-size:15px;margin-top:24px;">12. 🏷️ Descritores Taxonômicos</h3>
+        <p style="font-size:13.5px;">Quem deu o nome científico a cada espécie e em que ano? Por exemplo, <em>Turdus rufiventris</em> foi descrito por Vieillot em 1818. Curiosidade histórica e dado formal para artigos científicos. Filtros por século, autor e busca textual.</p>
+
+        <!-- ── 13. RAREFAÇÃO ── -->
+        <h3 id="h-raref" style="color:var(--green-deep);border-bottom:2px solid var(--border);padding-bottom:6px;font-size:15px;margin-top:24px;">13. 📉 Rarefação de Riqueza</h3>
+        <p style="font-size:13.5px;"><strong>Problema que resolve:</strong> você amostrou a Floresta A em 3 dias e a Floresta B em 10 dias, e encontrou mais espécies na B. Isso é por causa do esforço diferente — ou porque B realmente é mais rica? A rarefação <em>padroniza</em> o esforço para a comparação ser justa.</p>
+        <ul style="margin-left:20px;font-size:13.5px;">
+            <li>Clique em <strong>"➕ Adicionar Área"</strong>, informe o número de amostras e a riqueza estimada. Compare as curvas lado a lado.</li>
+            <li>🔭 <strong>Importar avistamentos reais:</strong> cada dia de campo vira uma amostra automaticamente. Áreas padrão são removidas e substituídas pelos seus dados reais.</li>
+            <li>A análise abaixo do gráfico indica qual área tem maior riqueza e se as curvas estão se estabilizando.</li>
+        </ul>
+
+        <!-- ── 14. SAZONALIDADE ── -->
+        <h3 id="h-sazon" style="color:var(--green-deep);border-bottom:2px solid var(--border);padding-bottom:6px;font-size:15px;margin-top:24px;">14. 📅 Sazonalidade</h3>
+        <p style="font-size:13.5px;">Mostra em quais meses do ano cada espécie aparece mais. SC tem quatro estações bem marcadas e muitas aves migratórias — esta aba revela esses padrões.</p>
+        <ul style="margin-left:20px;font-size:13.5px;">
+            <li>🔭 <strong>Importar avistamentos:</strong> o mês real é detectado automaticamente a partir da data.</li>
+            <li>Formato manual: <code>Nome da espécie, Mês</code> — mês como número de 1 (janeiro) a 12 (dezembro). Um registro por linha.</li>
+            <li>Dois gráficos: barras mensais (quantidade de registros + riqueza de espécies) e rosca por estação do ano (Verão, Outono, Inverno, Primavera).</li>
+        </ul>
+
+        <!-- ── 15. FENOLOGIA ── -->
+        <h3 id="h-fenol" style="color:var(--green-deep);border-bottom:2px solid var(--border);padding-bottom:6px;font-size:15px;margin-top:24px;">15. 🌸 Fenologia</h3>
+        <p style="font-size:13.5px;">Mostra o <strong>período de atividade</strong> de cada espécie — da primeira à última detecção registrada. O gráfico é um <em>fenograma de Gantt</em> colorido por estação (🔴 Verão · 🟠 Outono · 🔵 Inverno · 🟢 Primavera).</p>
+        <ul style="margin-left:20px;font-size:13.5px;">
+            <li>🔭 <strong>Importar avistamentos:</strong> o jeito mais fácil — usa as datas já registradas.</li>
+            <li>Formato manual: <code>Nome da espécie, AAAA-MM-DD</code> — insira quantas datas quiser por espécie.</li>
+            <li>Botões para ordenar a tabela por: Ordem adicionada, A→Z, Início ↑↓ ou Fim ↑↓.</li>
+            <li><em>Nota: números negativos no gráfico são apenas um recurso visual — os valores reais estão no tooltip ao passar o mouse.</em></li>
+        </ul>
+
+        <!-- ── 16. TURNOVER ── -->
+        <h3 id="h-turnover" style="color:var(--green-deep);border-bottom:2px solid var(--border);padding-bottom:6px;font-size:15px;margin-top:24px;">16. 🔄 Turnover Temporal</h3>
+        <p style="font-size:13.5px;"><strong>O que mede?</strong> A renovação da comunidade ao longo do tempo — quantas espécies <em>entraram</em> e quantas <em>saíram</em> entre dois períodos consecutivos. Uma taxa alta indica uma comunidade muito dinâmica ou instável.</p>
+        <ul style="margin-left:20px;font-size:13.5px;">
+            <li>🔭 <strong>Importar avistamentos por data:</strong> cada data de campo vira um período automaticamente.</li>
+            <li>Ou adicione períodos manualmente: cole a lista de espécies de cada período e clique em ▶.</li>
+            <li>Fórmula: <em>Taxa = (ganhos + perdas) ÷ (2 × total de espécies únicas) × 100%</em></li>
+            <li>A tabela resumo abaixo do gráfico mostra médias de ganhos, perdas e taxa de turnover com análise automática.</li>
+        </ul>
+
+        <!-- ── 17. INDICADORAS ── -->
+        <h3 id="h-indicad" style="color:var(--green-deep);border-bottom:2px solid var(--border);padding-bottom:6px;font-size:15px;margin-top:24px;">17. ⚠️ Espécies Indicadoras</h3>
+        <p style="font-size:13.5px;">Identifica quais espécies importadas são as mais <strong>sensíveis à perturbação ambiental</strong> — as primeiras a desaparecer com fragmentação, poluição ou degradação do habitat. Baseado em critérios científicos (Karr 1982; Stouffer &amp; Bierregaard 1995; Sekercioglu et al. 2004).</p>
+        <ul style="margin-left:20px;font-size:13.5px;">
+            <li>Escolha o limiar mínimo de ameaça (ex: "VU ou mais") e clique em ▶ para executar.</li>
+            <li>Cada espécie recebe até 6 pontos: até 3 pela <strong>guilda alimentar</strong> (nectarívoros/piscívoros = especialistas = maior sensibilidade) + até 3 pelo <strong>habitat</strong> (florestal/aquático = maior dependência).</li>
+            <li>🔴 <strong>Crítica</strong> (≥5 pts) · 🟠 <strong>Alta</strong> (3–4 pts) · 🟡 <strong>Média</strong> (2 pts) · 🟢 <strong>Baixa</strong> (≤1 pt)</li>
+        </ul>
+
+        <!-- ── 18. CLUSTER ── -->
+        <h3 id="h-cluster" style="color:var(--green-deep);border-bottom:2px solid var(--border);padding-bottom:6px;font-size:15px;margin-top:24px;">18. 🌿 Cluster Hierárquico (Dendrograma)</h3>
+        <p style="font-size:13.5px;">Cria um <strong>dendrograma</strong> — diagrama em árvore mostrando quais áreas/listas são mais parecidas entre si. Ramos que se unem cedo = comunidades muito similares. Ramos que só se unem no final = muito diferentes. Usa o índice de Jaccard.</p>
+        <ul style="margin-left:20px;font-size:13.5px;">
+            <li>Requer pelo menos 2 listas processadas na aba 🔀 Comparar.</li>
+            <li>Três métodos de ligação disponíveis. Em caso de dúvida, escolha <strong>UPGMA</strong> — é o mais usado em ecologia.</li>
+            <li>Também exibe a matriz de distâncias de Jaccard entre todas as listas.</li>
+        </ul>
+
+        <!-- ── 19. RANK-ABUNDÂNCIA ── -->
+        <h3 id="h-rank" style="color:var(--green-deep);border-bottom:2px solid var(--border);padding-bottom:6px;font-size:15px;margin-top:24px;">19. 📊 Rank-Abundância (Whittaker Plot)</h3>
+        <p style="font-size:13.5px;">Ordena as espécies da mais para a menos abundante e plota a curva. <strong>Curva íngreme</strong> = poucas espécies dominam (baixa equitabilidade — comum em ambientes perturbados). <strong>Curva suave</strong> = distribuição mais equilibrada.</p>
+        <ul style="margin-left:20px;font-size:13.5px;">
+            <li>🔭 <strong>Importar avistamentos:</strong> usa a contagem real de cada espécie — muito mais preciso que atribuir 1 para cada.</li>
+            <li>Calcula automaticamente: <strong>Shannon (H')</strong>, <strong>Simpson (1−D)</strong> e <strong>Equitabilidade de Pielou (J')</strong> — os três índices de diversidade mais usados em ecologia.</li>
+            <li>A análise abaixo identifica a espécie dominante, co-dominante e interpreta os índices.</li>
+        </ul>
+
+        <!-- ── 20. CO-OCORRÊNCIA ── -->
+        <h3 id="h-cooc" style="color:var(--green-deep);border-bottom:2px solid var(--border);padding-bottom:6px;font-size:15px;margin-top:24px;">20. 🔗 Co-ocorrência e Rede</h3>
+        <p style="font-size:13.5px;">Mostra quais espécies tendem a aparecer juntas nos mesmos levantamentos. Alta co-ocorrência pode indicar habitat compartilhado, relação ecológica ou distribuições sobrepostas.</p>
+        <ul style="margin-left:20px;font-size:13.5px;">
+            <li>🔭 <strong>Importar avistamentos por data:</strong> cada data vira um levantamento automático.</li>
+            <li>A <strong>matriz de co-ocorrência</strong> mostra quantas vezes cada par de espécies foi detectado junto. Células mais escuras = maior co-ocorrência.</li>
+            <li>📊 Gráfico de barras dos pares mais frequentes. Botão "Copiar lista" exporta para área de transferência.</li>
+            <li>🕸️ <strong>Rede de Co-ocorrência:</strong> visualização gráfica interativa. Nós = espécies; espessura da aresta = frequência de co-ocorrência; cor do nó = guilda alimentar. Arraste os nós, use scroll para zoom. A tabela abaixo permite esconder taxons individuais da rede com um clique.</li>
+        </ul>
+
+        <!-- ── DICAS ── -->
+        <div id="h-dicas" style="background:var(--green-mist);border-radius:10px;padding:16px 20px;margin-top:26px;">
+            <h3 style="color:var(--green-deep);margin:0 0 12px;font-size:15px;">💡 Dicas práticas</h3>
+            <ul style="margin-left:20px;font-size:13.5px;line-height:1.9;">
+                <li>🌐 Use <strong>Chrome ou Firefox</strong> atualizados para melhor desempenho.</li>
+                <li>💾 <strong>Salve sua sessão</strong> em ⚙️ Configurações → "Exportar Sessão (.json)" antes de fechar. Importe depois para continuar exatamente onde parou — todos os dados, avistamentos e configurações são preservados.</li>
+                <li>🌙 Use o botão <strong>⚙️</strong> no canto superior direito para acessar configurações e alternar entre modo claro/escuro. O tema é lembrado automaticamente.</li>
+                <li>🔍 A maioria das abas tem um campo de busca para filtrar rapidamente por nome de espécie.</li>
+                <li>📥 Se um nome não for reconhecido, tente o nome científico (ex: <em>Turdus rufiventris</em> em vez de "sabiá") ou verifique a ortografia. O modal de correção de avistamentos também ajuda.</li>
+                <li>🔀 A aba <strong>Comparar</strong> exige clicar em <strong>"Processar Lista"</strong> em cada lista antes de executar a comparação.</li>
+                <li>🦜 A animação do papagaio indica que o sistema está processando. Aguarde — ela desaparece quando terminar.</li>
+                <li>❓ Este guia sempre pode ser acessado pelo botão <strong>?</strong> no canto superior direito.</li>
+            </ul>
+        </div>
+
+        <p style="text-align:center;margin-top:24px;padding:14px;background:#eef4e4;border-radius:8px;color:var(--green-deep);font-size:13.5px;">
+            <strong>Desenvolvido por Brenno Alef Benk — TCC em Biologia (2026)</strong><br>
+            <span style="font-size:12.5px;color:#5a7a5a;">~800 espécies de Santa Catarina · Fontes: CBRO, WikiAves, GBIF, eBird, FATMA/IGNIS, ICMBio, IUCN</span>
+        </p>
+
+        </div><!-- /sources-list -->
+    </div><!-- /modal-content -->
+</div><!-- /help-modal -->
 
 <!-- patch script removido: correções integradas diretamente -->
+
+<script>
+/* ═══════════════════════════════════════════════════
+   LOADING OVERLAY — PAPAGAIO
+   showParrot(fn, [label]) — mostra overlay, roda fn()
+   via setTimeout para deixar o browser renderizar o
+   overlay antes de travar no processamento pesado.
+═══════════════════════════════════════════════════ */
+(function() {
+    const overlay = document.getElementById('parrot-loading-overlay');
+    const labelEl = overlay ? overlay.querySelector('.parrot-label') : null;
+
+    window.showParrot = function(fn, label) {
+        if (!overlay) { fn(); return; }
+        if (labelEl) labelEl.textContent = label || 'Calculando métricas…';
+        overlay.classList.add('active');
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    try { fn(); } catch(e) { console.error(e); }
+                    overlay.classList.remove('active');
+                }, 30);
+            });
+        });
+    };
+
+    /* Envolve um botão já existente para mostrar o overlay antes de disparar.
+       Chamado APÓS o DOMContentLoaded, quando os listeners originais já existem. */
+    function wrapBtn(id, label) {
+        const btn = document.getElementById(id);
+        if (!btn || btn._parrotWrapped) return;
+        btn._parrotWrapped = true;
+        btn.addEventListener('click', function(e) {
+            if (e._parrotSkip) return;          // evita loop
+            e.stopImmediatePropagation();
+            e.preventDefault();
+            if (labelEl) labelEl.textContent = label || 'Calculando métricas…';
+            overlay.classList.add('active');
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                setTimeout(() => {
+                    /* Dispara um evento marcado para não ser interceptado de novo */
+                    const ev = new MouseEvent('click', { bubbles: true, cancelable: true });
+                    ev._parrotSkip = true;
+                    btn.dispatchEvent(ev);
+                    // Remove overlay após o próximo frame pintado
+                    requestAnimationFrame(() => requestAnimationFrame(() => {
+                        overlay.classList.remove('active');
+                    }));
+                }, 30);
+            }));
+        }, true); // capture para correr antes dos outros handlers
+    }
+
+    /* Hook para botões dinâmicos com classe .process-list-btn */
+    document.addEventListener('click', function(e) {
+        if (e._parrotSkip) return;
+        const btn = e.target.closest('.process-list-btn');
+        if (!btn) return;
+        e.stopImmediatePropagation();
+        e.preventDefault();
+        if (labelEl) labelEl.textContent = 'Processando lista…';
+        overlay.classList.add('active');
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            setTimeout(() => {
+                const ev = new MouseEvent('click', { bubbles: true, cancelable: true });
+                ev._parrotSkip = true;
+                btn.dispatchEvent(ev);
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    overlay.classList.remove('active');
+                }));
+            }, 30);
+        }));
+    }, true);
+
+    /* Registra os wraps depois que todos os handlers já foram adicionados */
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            const heavyBtns = [
+                { id: 'avist-date-add',        label: 'Processando avistamentos…'   },
+                { id: 'process-import',         label: 'Processando importação…'     },
+                { id: 'curve-add-date',         label: 'Calculando curva…'           },
+                { id: 'raref-run',              label: 'Calculando rarefação…'       },
+                { id: 'raref-import-avist',     label: 'Importando amostras…'        },
+                { id: 'turnover-run',           label: 'Calculando turnover…'        },
+                { id: 'turnover-import-avist',  label: 'Importando períodos…'        },
+                { id: 'rankabund-run',          label: 'Gerando curva…'              },
+                { id: 'rankabund-import-avist', label: 'Importando abundâncias…'     },
+                { id: 'cooc-run',               label: 'Calculando matriz…'          },
+                { id: 'cooc-net-run',           label: 'Gerando rede…'               },
+                { id: 'sazon-run',              label: 'Calculando sazonalidade…'    },
+                { id: 'sazon-import-avist',     label: 'Importando registros…'       },
+                { id: 'fenol-run',              label: 'Calculando fenologia…'       },
+                { id: 'fenol-import-avist',     label: 'Importando datas…'           },
+                { id: 'indicadoras-run',        label: 'Analisando indicadoras…'     },
+                { id: 'cluster-run',            label: 'Gerando dendrograma…'        },
+            ];
+            heavyBtns.forEach(({ id, label }) => wrapBtn(id, label));
+        }, 500); // espera 500ms para garantir que todos os addEventListener já rodaram
+    });
+
+    /* Picos de Horários — ao entrar na aba */
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            if (btn.dataset.tab === 'picos-horarios-section') {
+                btn.addEventListener('click', () => {
+                    setTimeout(() => {
+                        if (typeof buildPicosHorarios === 'function') {
+                            window.showParrot(() => buildPicosHorarios(), 'Calculando picos de horários…');
+                        }
+                    }, 80);
+                });
+            }
+        });
+    });
+})();
+</script>
 
 </body>
 </html>
