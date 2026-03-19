@@ -15476,46 +15476,31 @@ document.addEventListener('DOMContentLoaded', () => {
 })();
 </script>
 
+
+
 <!-- ══════════════════════════════════════════════════════════
-     SISTEMA DE FOTO DE FUNDO DO CABEÇALHO
-     - Busca lista de arquivos via GitHub Contents API
-     - 3 fotógrafos: Brenno Benk / Gabriel Schroeder / Luiz Alves
-     - Foto aleatória a cada carregamento da página
-     - Crédito clicável (WikiAves) no canto inferior direito
-     - Clique no header (fora de botões/abas) abre lightbox
-     - Botão 🔀 sorteia nova foto sem recarregar
-═══════════════════════════════════════════════════════════ -->
+     SISTEMA DE FOTO DE FUNDO — lê photo_index.json do GitHub
+══════════════════════════════════════════════════════════ -->
 <script>
 (function () {
     'use strict';
 
-    /* ── Configuração fixa — só você edita isso ── */
-    const REPO   = 'brennobenk/OrnitologiaSantaCatarina';
-    const BRANCH = 'main';
-    const RAW    = `https://raw.githubusercontent.com/${REPO}/${BRANCH}`;
-    const API    = `https://api.github.com/repos/${REPO}/contents`;
+    const INDEX_URL = 'https://raw.githubusercontent.com/brennobenk/OrnitologiaSantaCatarina/main/photo_index.json';
+    const CACHE_KEY = 'oasc_photo_index_v3';
+    const CACHE_TTL = 3600 * 1000; // 1 hora
 
-    const PHOTOGRAPHERS = [
-        { folder: 'Brenno Benk',       wikiaves: 'https://www.wikiaves.com.br/perfil_dcc43de6f78f848' },
-        { folder: 'Gabriel Schroeder', wikiaves: 'https://www.wikiaves.com.br/perfil_4cc609de624abb3' },
-        { folder: 'Luiz Alves',        wikiaves: 'https://www.wikiaves.com.br/perfil_c2e0b43568d6f75' }
-    ];
-
-    /* ── Pool de fotos carregado da API ── */
-    let photoPool = []; // [{url, name, author, wikiaves}]
+    let photoPool = [];
     let current   = null;
 
-    /* ── "0011_choca-da-mata.jpg" → "Choca-Da-Mata" ── */
-    function birdName(filename) {
-        return filename
-            .replace(/\.[^.]+$/, '')          // remove extensão
-            .replace(/^\d+[_\-\s]+/, '')       // remove prefixo numérico
-            .replace(/[_\-]+/g, ' ')           // hifens/underscores → espaço
-            .trim()
-            .replace(/\b\w/g, c => c.toUpperCase()); // Title Case
+    /* Tenta carregar imagem percorrendo lista de URLs fallback */
+    function tryLoadImage(urls, idx, onSuccess, onAllFail) {
+        if (idx >= urls.length) { onAllFail(); return; }
+        const img = new Image();
+        img.onload  = function () { onSuccess(urls[idx], img); };
+        img.onerror = function () { tryLoadImage(urls, idx + 1, onSuccess, onAllFail); };
+        img.src = urls[idx];
     }
 
-    /* ── Aplica a foto no header ── */
     function applyPhoto(photo) {
         if (!photo) return;
         current = photo;
@@ -15529,83 +15514,86 @@ document.addEventListener('DOMContentLoaded', () => {
         const bird    = document.getElementById('hdr-cr-bird');
         const author  = document.getElementById('hdr-cr-author');
 
-        /* Fade out → troca imagem → fade in */
         bg.classList.remove('hdr-visible');
         overlay.classList.remove('hdr-visible');
         credit.classList.remove('hdr-visible');
 
-        const img = new Image();
-        img.onload = function () {
-            bg.style.backgroundImage = `url('${photo.url}')`;
-            /* Pequeno delay para o fade funcionar mesmo na primeira vez */
-            setTimeout(() => {
-                bg.classList.add('hdr-visible');
-                overlay.classList.add('hdr-visible');
-                credit.classList.add('hdr-visible');
-            }, 50);
-        };
-        img.onerror = function () {
-            console.warn('[FotoBG] Falha ao carregar imagem:', photo.url);
-        };
-        img.src = photo.url;
+        // Lista de fallbacks: usa photo.urls se disponível, senão [photo.url]
+        const urls = Array.isArray(photo.urls) && photo.urls.length ? photo.urls : [photo.url];
 
-        /* Metadados */
-        bird.textContent   = birdName(photo.name);
+        tryLoadImage(urls, 0,
+            function (urlOk) {
+                bg.style.backgroundImage = 'url("' + urlOk + '")';
+                requestAnimationFrame(function () {
+                    setTimeout(function () {
+                        bg.classList.add('hdr-visible');
+                        overlay.classList.add('hdr-visible');
+                        credit.classList.add('hdr-visible');
+                    }, 30);
+                });
+            },
+            function () {
+                // Todas as URLs falharam — tenta outra foto do pool
+                console.warn('[FotoBG] Todas as URLs falharam para:', photo.especie);
+                var next = pickRandom(photo);
+                if (next) applyPhoto(next);
+            }
+        );
+
+        const nomePrincipal = photo.especie || photo.cientifico || '?';
+        const nomeExtra     = (photo.cientifico && photo.especie)
+                              ? ' (' + photo.cientifico + ')' : '';
+        bird.textContent   = nomePrincipal + nomeExtra;
         author.textContent = photo.author;
-        link.href          = photo.wikiaves;
-
-        /* Ativa estilos */
+        link.href          = photo.wikiaves || '#';
         header.classList.add('hdr-has-photo');
         shuffle.classList.add('hdr-visible');
     }
 
-    /* ── Sorteia foto aleatória do pool ── */
-    function pickRandom() {
+    function pickRandom(excluir) {
         if (!photoPool.length) return null;
-        return photoPool[Math.floor(Math.random() * photoPool.length)];
+        if (photoPool.length === 1) return photoPool[0];
+        var c = excluir ? photoPool.filter(function(p){ return p.url !== excluir.url; }) : photoPool;
+        if (!c.length) c = photoPool;
+        return c[Math.floor(Math.random() * c.length)];
     }
 
-    /* ── Botão shuffle ── */
     window.hdrShuffle = function (e) {
         if (e) e.stopPropagation();
-        const next = pickRandom();
-        if (next && next !== current) applyPhoto(next);
-        else if (next) applyPhoto(next); // só 1 foto? mostra ela de qualquer forma
+        var next = pickRandom(current);
+        if (next) applyPhoto(next);
     };
 
-    /* ── Lightbox ── */
     window.hdrLbClose = function () {
         document.getElementById('hdr-lightbox').classList.remove('lb-open');
     };
 
     function hdrLbOpen() {
         if (!current) return;
-        const lb    = document.getElementById('hdr-lightbox');
-        const img   = document.getElementById('hdr-lb-img');
-        const cap   = document.getElementById('hdr-lb-cap');
-        img.src     = current.url;
-        img.alt     = birdName(current.name) + ' — ' + current.author;
-        cap.innerHTML = `<strong>${birdName(current.name)}</strong> &nbsp;·&nbsp; `
-            + `<a href="${current.wikiaves}" target="_blank" rel="noopener">📷 ${current.author}</a>`;
+        var lb  = document.getElementById('hdr-lightbox');
+        var img = document.getElementById('hdr-lb-img');
+        var cap = document.getElementById('hdr-lb-cap');
+        // Lightbox usa a URL que carregou com sucesso (bg.style.backgroundImage)
+        var bg = document.getElementById('hdr-bg');
+        var bgUrl = bg.style.backgroundImage.replace(/url\(["']?|["']?\)$/g, '');
+        img.src = bgUrl || current.url;
+        img.alt = current.especie || '';
+        var nomePrincipal = current.especie || current.cientifico || '?';
+        var nomeExtra = (current.cientifico && current.especie)
+            ? '<em style="opacity:.72"> &middot; ' + current.cientifico + '</em>' : '';
+        cap.innerHTML = '<strong>' + nomePrincipal + '</strong>' + nomeExtra
+            + ' &nbsp;&middot;&nbsp; '
+            + '<a href="' + (current.wikiaves || '#') + '" target="_blank" rel="noopener">'
+            + '&#128247; ' + current.author + '</a>';
         lb.classList.add('lb-open');
     }
 
-    /* Clique no header → lightbox (ignora botões, abas e crédito) */
     document.addEventListener('DOMContentLoaded', function () {
-        const header = document.getElementById('main-header');
-
-        header.addEventListener('click', function (e) {
+        document.getElementById('main-header').addEventListener('click', function (e) {
             if (!current) return;
-            /* Ignora cliques em qualquer botão, aba, link, input */
-            if (e.target.closest(
-                'button, a, input, select, label, ' +
-                '.tab-btn, .tab-btn-primary, ' +
-                '#hdr-shuffle, #hdr-credit'
-            )) return;
+            if (e.target.closest('button,a,input,select,.tab-btn,.tab-btn-primary,#hdr-shuffle,#hdr-credit')) return;
             hdrLbOpen();
         });
-
-        /* Fecha lightbox ao clicar no fundo ou pressionar ESC */
         document.getElementById('hdr-lightbox').addEventListener('click', function (e) {
             if (e.target === this) hdrLbClose();
         });
@@ -15614,67 +15602,67 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    /* ── Busca lista de arquivos via GitHub Contents API ── */
-    /* Cache em sessionStorage — evita chamada repetida na mesma sessão */
-    async function loadPhotos() {
-        const CACHE_KEY = 'oasc_photo_pool_v1';
-
-        /* Tenta usar cache da sessão */
-        try {
-            const cached = sessionStorage.getItem(CACHE_KEY);
-            if (cached) {
-                photoPool = JSON.parse(cached);
-                if (photoPool.length > 0) {
-                    console.info(`[FotoBG] ${photoPool.length} foto(s) do cache de sessão.`);
-                    applyPhoto(pickRandom());
-                    return;
-                }
-            }
-        } catch(e) {}
-
-        const promises = PHOTOGRAPHERS.map(async (ph) => {
-            try {
-                const url  = `${API}/${encodeURIComponent(ph.folder)}?ref=${BRANCH}`;
-                const resp = await fetch(url, {
-                    headers: { 'Accept': 'application/vnd.github.v3+json' }
+    function parseIndex(data) {
+        var pool = [];
+        Object.keys(data).forEach(function (author) {
+            var info    = data[author];
+            var wikiaves = info.wikiaves || '#';
+            var fotos   = Array.isArray(info.fotos) ? info.fotos : [];
+            fotos.forEach(function (foto) {
+                if (!foto.url && (!foto.urls || !foto.urls.length)) return;
+                pool.push({
+                    url       : foto.url || foto.urls[0],
+                    urls      : foto.urls || [foto.url],
+                    especie   : foto.especie   || '',
+                    cientifico: foto.cientifico || '',
+                    author    : author,
+                    wikiaves  : wikiaves
                 });
-                if (!resp.ok) {
-                    console.warn(`[FotoBG] API retornou ${resp.status} para "${ph.folder}"`);
-                    return [];
-                }
-                const files = await resp.json();
-                return files
-                    .filter(f => f.type === 'file' && /\.(jpg|jpeg|png|webp)$/i.test(f.name))
-                    .map(f => ({
-                        name    : f.name,
-                        url     : `${RAW}/${encodeURIComponent(ph.folder)}/${encodeURIComponent(f.name)}`,
-                        author  : ph.folder,
-                        wikiaves: ph.wikiaves
-                    }));
-            } catch (err) {
-                console.warn(`[FotoBG] Erro ao carregar "${ph.folder}":`, err);
-                return [];
-            }
+            });
         });
-
-        const results = await Promise.all(promises);
-        photoPool = results.flat();
-
-        if (photoPool.length === 0) {
-            console.info('[FotoBG] Nenhuma foto encontrada nas pastas do repositório.');
-            return;
-        }
-
-        /* Salva no cache de sessão */
-        try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(photoPool)); } catch(e) {}
-
-        console.info(`[FotoBG] ${photoPool.length} foto(s) de ${results.filter(r=>r.length).length} fotógrafo(s).`);
-        applyPhoto(pickRandom());
+        return pool;
     }
 
-    /* ── Inicia ── */
-    loadPhotos();
+    function getCache() {
+        try {
+            var raw = sessionStorage.getItem(CACHE_KEY);
+            if (!raw) return null;
+            var obj = JSON.parse(raw);
+            if (Date.now() - obj.ts > CACHE_TTL) return null;
+            return obj.pool;
+        } catch (e) { return null; }
+    }
+    function setCache(pool) {
+        try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), pool: pool })); } catch (e) {}
+    }
 
+    async function init() {
+        // Limpa cache antigo de versões anteriores
+        ['oasc_photo_index_v1','oasc_photo_index_v2','oasc_photo_pool_v1'].forEach(function(k){
+            try { sessionStorage.removeItem(k); } catch(e) {}
+        });
+
+        var cached = getCache();
+        if (cached && cached.length) {
+            photoPool = cached;
+            applyPhoto(pickRandom());
+            return;
+        }
+        try {
+            var resp = await fetch(INDEX_URL, { cache: 'no-store' });
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            var data = await resp.json();
+            photoPool = parseIndex(data);
+            if (!photoPool.length) { console.info('[FotoBG] photo_index.json sem fotos.'); return; }
+            setCache(photoPool);
+            console.info('[FotoBG] ' + photoPool.length + ' foto(s) carregadas de ' + Object.keys(data).length + ' fotografo(s).');
+            applyPhoto(pickRandom());
+        } catch (err) {
+            console.warn('[FotoBG] Nao foi possivel carregar photo_index.json:', err.message);
+        }
+    }
+
+    init();
 })();
 </script>
 
