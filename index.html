@@ -2945,6 +2945,29 @@
 </section>
 
 <!-- ==================== MODAL DOWNLOAD GRÁFICOS ==================== -->
+<!-- ==================== MODAL CONFERIR ESPÉCIES ==================== -->
+<div id="confirm-species-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-mid),0 0 0 1px rgba(20,64,42,0.10);max-width:560px;width:calc(100% - 32px);max-height:88vh;display:flex;flex-direction:column;overflow:hidden;">
+        <!-- Header -->
+        <div style="padding:20px 24px 14px;border-bottom:1px solid var(--border-light);flex-shrink:0;">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:22px;">🦜</span>
+                <div>
+                    <h2 style="font-family:'Playfair Display',serif;font-size:18px;color:var(--green-deep);margin:0;">Conferir Espécies</h2>
+                    <p style="font-size:12.5px;color:var(--text-muted);margin:2px 0 0;" id="confirm-species-subtitle">Revise a lista antes de importar</p>
+                </div>
+            </div>
+        </div>
+        <!-- Lista editável -->
+        <div style="flex:1;overflow-y:auto;padding:16px 24px;" id="confirm-species-list"></div>
+        <!-- Footer -->
+        <div style="padding:14px 24px 20px;border-top:1px solid var(--border-light);display:flex;gap:12px;flex-shrink:0;">
+            <button id="confirm-species-ok" style="flex:1;padding:13px;background:linear-gradient(135deg,var(--green-base),var(--green-mid));color:white;border:none;border-radius:var(--radius-md);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 3px 12px rgba(42,125,82,0.35);">✅ Confirmar Espécies</button>
+            <button id="confirm-species-cancel" style="padding:13px 22px;background:var(--surface);color:var(--text-dark);border:1.5px solid var(--border);border-radius:var(--radius-md);font-family:'DM Sans',sans-serif;font-size:15px;cursor:pointer;">Cancelar</button>
+        </div>
+    </div>
+</div>
+
 <div id="download-charts-modal" class="modal">
     <div class="modal-content" style="max-width:680px;">
         <span class="close-modal" id="close-download-charts-modal">&times;</span>
@@ -5829,6 +5852,9 @@ document.addEventListener('click', (e) => {
     updateImportTextareaStats();
     showImportFeedback(exactFound, fuzzyFixed, notFound);
 
+    // Recalcula indicadoras automaticamente após importar novas espécies
+    setTimeout(() => { if (typeof runIndicadoras === 'function') runIndicadoras(); }, 150);
+
     // Sincroniza automaticamente a Lista 1 da aba Comparar com as espécies importadas
     const allSpecies = [...exactFound.map(f => f.name), ...fuzzyFixed.map(f => f.name)];
     if (allSpecies.length > 0) {
@@ -6011,7 +6037,7 @@ function escapeHtml(str) {
     // ── Pasta de destino selecionada via File System Access API ──
     let _dlFolderHandle = null;
 
-    // Renderiza um gráfico Chart.js em alta resolução (mínimo 1280×720)
+    // Renderiza um gráfico Chart.js em alta resolução preservando a proporção original
     // Redesenha o gráfico num canvas offscreen grande — não tira print da tela
     async function renderChartHQ(canvasId) {
         const canvas = document.getElementById(canvasId);
@@ -6027,15 +6053,18 @@ function escapeHtml(str) {
         }
 
         try {
-            // Dimensão mínima 1280×720
-            const MIN_W = 1280, MIN_H = 720;
-            const srcW = canvas.offsetWidth  || 900;
-            const srcH = canvas.offsetHeight || 450;
-            const scale = Math.max(Math.ceil(MIN_W / srcW), Math.ceil(MIN_H / srcH), 2);
-            const outW = Math.max(srcW * scale, MIN_W);
-            const outH = Math.max(srcH * scale, MIN_H);
+            // Obtém dimensões reais do canvas no layout atual
+            const srcW = canvas.offsetWidth  || canvas.width  || 900;
+            const srcH = canvas.offsetHeight || canvas.height || 450;
 
-            // Cria canvas offscreen de alta resolução
+            // Calcula escala para atingir pelo menos 1920px na dimensão maior,
+            // preservando SEMPRE a proporção original do gráfico
+            const TARGET = 1920;
+            const scale = Math.max(Math.ceil(TARGET / Math.max(srcW, srcH)), 2);
+            const outW = srcW * scale;
+            const outH = srcH * scale;
+
+            // Cria canvas offscreen de alta resolução com proporção preservada
             const off = document.createElement('canvas');
             off.width  = outW;
             off.height = outH;
@@ -6057,7 +6086,7 @@ function escapeHtml(str) {
                         const origStyleW = canvas.style.width;
                         const origStyleH = canvas.style.height;
 
-                        // Redimensiona temporariamente para alta resolução
+                        // Redimensiona temporariamente para alta resolução mantendo proporção
                         canvas.width  = outW;
                         canvas.height = outH;
                         canvas.style.width  = outW + 'px';
@@ -6223,7 +6252,7 @@ function escapeHtml(str) {
             }
         }
         const folderInfo = _dlFolderHandle ? ` na pasta "${_dlFolderHandle.name}"` : ' na pasta Downloads';
-        if (status) status.textContent = `✅ ${done} gráfico(s) exportado(s) em alta resolução (≥1280×720)${folderInfo}${skipped ? ` · ${skipped} pulados` : ''}.`;
+        if (status) status.textContent = `✅ ${done} gráfico(s) exportado(s) em HD (proporção original ×4 — até 1920px)${folderInfo}${skipped ? ` · ${skipped} pulados` : ''}.`;
     });
 
     // Abrir automaticamente ao carregar a página
@@ -7171,6 +7200,7 @@ function fallbackCopy(text) {
 
         // ==================== EVENT LISTENERS ====================
         processImportBtn.addEventListener('click', processImportedData);
+        window.processImportedData = processImportedData; // expõe globalmente
         importExampleBtn.addEventListener('click', loadExampleData);
         clearImportBtn.addEventListener('click', () => { importDataTextarea.value = ""; updateImportTextareaStats(); });
         importDataTextarea.addEventListener('input', updateImportTextareaStats);
@@ -10946,18 +10976,34 @@ function updateCurveLegend() {
             habitatCount[r.habitat] = (habitatCount[r.habitat] || 0) + 1;
         });
 
-        function makeChart(id, title, countObj, palette) {
-            const numItems = Object.keys(countObj).length;
-            // Dynamic height: base 220px + 22px per legend item
-            const chartH = Math.max(220, 120 + numItems * 22);
-            const wrapper = document.createElement('div');
-            wrapper.style.cssText = 'flex:1 1 300px; min-width:260px; max-width:480px; background:var(--surface); border:1px solid var(--border-light); border-radius:var(--radius-md); padding:16px; box-shadow:var(--shadow-soft);';
-            wrapper.innerHTML = `<h4 style="text-align:center; margin-bottom:10px; color:var(--green-deep); font-size:14px;">${title}</h4><div style="height:${chartH}px;"><canvas id="${id}"></canvas></div>`;
-            chartsRow.appendChild(wrapper);
+        // Altura fixa do canvas do donut — igual para ambos os gráficos
+        const DONUT_H = 300;
+        // Altura da legenda HTML calculada pelo maior número de itens (3 itens por linha, 22px/linha)
+        const guildItems   = Object.keys(guildCount).length;
+        const habitatItems = Object.keys(habitatCount).length;
+        const legendLines  = Math.ceil(Math.max(guildItems, habitatItems) / 3);
+        const LEGEND_H     = Math.max(legendLines * 22, 44);
 
+        function makeChart(id, title, countObj, palette) {
             const labels = Object.keys(countObj);
             const data   = Object.values(countObj);
             const colors = labels.map(l => palette[l] || '#999');
+
+            // Legenda HTML externa — mesma altura para ambos
+            const legendHtml = labels.map((lbl, i) =>
+                `<span style="display:inline-flex;align-items:center;gap:4px;margin:2px 6px;font-size:11px;white-space:nowrap;">
+                    <span style="display:inline-block;width:11px;height:11px;border-radius:2px;background:${colors[i]};flex-shrink:0;"></span>
+                    ${lbl} (${data[i]})
+                </span>`
+            ).join('');
+
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = 'flex:1 1 0; min-width:280px; background:var(--surface); border:1px solid var(--border-light); border-radius:var(--radius-md); padding:16px; box-shadow:var(--shadow-soft); display:flex; flex-direction:column;';
+            wrapper.innerHTML = `
+                <h4 style="text-align:center;margin-bottom:10px;color:var(--green-deep);font-size:14px;">${title}</h4>
+                <div style="height:${DONUT_H}px;flex-shrink:0;"><canvas id="${id}"></canvas></div>
+                <div style="min-height:${LEGEND_H}px;margin-top:10px;text-align:center;line-height:1.6;">${legendHtml}</div>`;
+            chartsRow.appendChild(wrapper);
 
             const ctx = document.getElementById(id);
             if (!ctx) return;
@@ -10970,30 +11016,12 @@ function updateCurveLegend() {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    layout: { padding: { bottom: 8 } },
+                    layout: { padding: 8 },
                     plugins: {
-                        legend: {
-                            position: numItems > 8 ? 'bottom' : 'right',
-                            labels: {
-                                font: { size: 11 },
-                                boxWidth: 12,
-                                padding: 6,
-                                generateLabels: chart => {
-                                    const ds = chart.data.datasets[0];
-                                    return chart.data.labels.map((lbl, i) => ({
-                                        text: `${lbl} (${ds.data[i]})`,
-                                        fillStyle: ds.backgroundColor[i],
-                                        strokeStyle: '#fff',
-                                        lineWidth: 1,
-                                        hidden: false,
-                                        index: i
-                                    }));
-                                }
-                            }
-                        },
-                        tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw} (${((ctx.raw/rows.length)*100).toFixed(1)}%)` } },
+                        legend: { display: false },  // legenda via HTML externo
+                        tooltip: { callbacks: { label: c => `${c.label}: ${c.raw} (${((c.raw/rows.length)*100).toFixed(1)}%)` } },
                         datalabels: {
-                            display: ctx => ctx.dataset.data[ctx.dataIndex] > 0,
+                            display: c => c.dataset.data[c.dataIndex] > 0,
                             color: '#ffffff',
                             font: { size: 11, weight: '700' },
                             formatter: (v) => {
@@ -12595,13 +12623,107 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Post-add banner: send to Importação
+    // ── Popup de confirmação de espécies ──────────────────────────
+    function openConfirmSpeciesModal(species, onConfirm) {
+        const modal   = document.getElementById('confirm-species-modal');
+        const listEl  = document.getElementById('confirm-species-list');
+        const subtitle= document.getElementById('confirm-species-subtitle');
+        if (!modal || !listEl) return;
+
+        // Cria array mutável de espécies
+        let items = species.map(s => ({ name: s }));
+
+        function renderList() {
+            subtitle.textContent = `${items.length} espécie${items.length !== 1 ? 's' : ''} para importar — edite ou remova antes de confirmar`;
+            listEl.innerHTML = '';
+            if (items.length === 0) {
+                listEl.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:24px;font-size:14px;">Nenhuma espécie na lista.</p>';
+                return;
+            }
+            items.forEach((item, idx) => {
+                const row = document.createElement('div');
+                row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-light);margin-bottom:6px;background:var(--green-mist);transition:background .15s;';
+
+                // Número
+                const num = document.createElement('span');
+                num.style.cssText = 'font-size:12px;color:var(--text-muted);width:22px;text-align:right;flex-shrink:0;';
+                num.textContent = idx + 1;
+
+                // Input de edição
+                const inp = document.createElement('input');
+                inp.type = 'text';
+                inp.value = item.name;
+                inp.style.cssText = 'flex:1;padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:"DM Sans",sans-serif;font-size:13.5px;font-style:italic;background:var(--surface);color:var(--text-dark);';
+                inp.addEventListener('input', () => { items[idx].name = inp.value.trim(); });
+
+                // Botão lápis (foca no input)
+                const editBtn = document.createElement('button');
+                editBtn.title = 'Editar';
+                editBtn.innerHTML = '✏️';
+                editBtn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:15px;padding:2px 4px;flex-shrink:0;opacity:.75;transition:opacity .15s;';
+                editBtn.addEventListener('click', () => { inp.focus(); inp.select(); });
+                editBtn.addEventListener('mouseover', () => editBtn.style.opacity = '1');
+                editBtn.addEventListener('mouseout',  () => editBtn.style.opacity = '.75');
+
+                // Botão X (remove)
+                const delBtn = document.createElement('button');
+                delBtn.title = 'Remover';
+                delBtn.innerHTML = '✕';
+                delBtn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:14px;color:#c0392b;padding:2px 5px;flex-shrink:0;opacity:.7;transition:opacity .15s;font-weight:700;';
+                delBtn.addEventListener('click', () => { items.splice(idx, 1); renderList(); });
+                delBtn.addEventListener('mouseover', () => delBtn.style.opacity = '1');
+                delBtn.addEventListener('mouseout',  () => delBtn.style.opacity = '.7');
+
+                row.appendChild(num);
+                row.appendChild(inp);
+                row.appendChild(editBtn);
+                row.appendChild(delBtn);
+                listEl.appendChild(row);
+            });
+        }
+
+        renderList();
+        modal.style.display = 'flex';
+
+        // Confirmar
+        const okBtn = document.getElementById('confirm-species-ok');
+        const cancelBtn = document.getElementById('confirm-species-cancel');
+        const closeModal = () => { modal.style.display = 'none'; okBtn.replaceWith(okBtn.cloneNode(true)); cancelBtn.replaceWith(cancelBtn.cloneNode(true)); };
+
+        document.getElementById('confirm-species-ok').addEventListener('click', () => {
+            const valid = items.map(i => i.name).filter(s => s.trim());
+            if (!valid.length) { alert('A lista está vazia.'); return; }
+            closeModal();
+            onConfirm(valid);
+        });
+        document.getElementById('confirm-species-cancel').addEventListener('click', closeModal);
+        modal.addEventListener('click', e => { if (e.target === modal) closeModal(); }, { once: true });
+    }
+
+    function sendSpeciesToImportAndProcess(species) {
+        const ta = document.getElementById('import-data');
+        if (ta) ta.value = species.join('\n');
+        // Muda para aba de importação
+        document.querySelector('.tab-btn[data-tab="import-section"]')?.click();
+        // Processa com animação do papagaio
+        setTimeout(() => {
+            if (typeof window.showParrot === 'function') {
+                window.showParrot(() => {
+                    if (typeof processImportedData === 'function') processImportedData();
+                }, 'Transferindo espécies…');
+            } else if (typeof processImportedData === 'function') {
+                processImportedData();
+            }
+        }, 120);
+    }
+
     document.getElementById('avist-send-now-btn')?.addEventListener('click', () => {
         const unique = [...new Set(AVISTAMENTOS.map(r => r.scientificName).filter(s => s))];
         if (!unique.length) { alert('Nenhuma espécie reconhecida.'); return; }
-        const ta = document.getElementById('import-data');
-        if (ta) ta.value = unique.join('\n');
-        document.querySelector('.tab-btn[data-tab="import-section"]')?.click();
-        document.getElementById('avist-post-add-banner').style.display = 'none';
+        openConfirmSpeciesModal(unique, (confirmed) => {
+            sendSpeciesToImportAndProcess(confirmed);
+            document.getElementById('avist-post-add-banner').style.display = 'none';
+        });
     });
 
     // Limpar campos
@@ -12618,11 +12740,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('avist-export-csv')?.addEventListener('click', exportAvistaCSV);
 
     document.getElementById('avist-send-to-import')?.addEventListener('click', () => {
-        const unique = [...new Set(AVISTAMENTOS.map(r => r.scientificName))];
+        const unique = [...new Set(AVISTAMENTOS.map(r => r.scientificName).filter(s => s))];
         if (!unique.length) { alert('Nenhum avistamento registrado.'); return; }
-        const ta = document.getElementById('import-data');
-        if (ta) ta.value = unique.join('\n');
-        document.querySelector('.tab-btn[data-tab="import-section"]')?.click();
+        openConfirmSpeciesModal(unique, (confirmed) => {
+            sendSpeciesToImportAndProcess(confirmed);
+        });
     });
 
     document.getElementById('avist-search')?.addEventListener('input', buildAvistaTable);
@@ -12943,7 +13065,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const totalSp = [...new Set(av.map(r=>r.scientificName))].length;
         document.getElementById('raref-n').value = sortedDates.length || 1;
         document.getElementById('raref-s').value = totalSp;
-
+        // Calcula rarefação automaticamente após importar
+        setTimeout(rarefacaoRun, 80);
     });
 
     document.getElementById('raref-add-area')?.addEventListener('click', () => {
