@@ -1873,22 +1873,22 @@
 
         /* ── Responsivo mobile ── */
         @media (max-width: 768px) {
-            body { padding: 8px; }
+            body { padding: 8px; font-size: 13px; }
             .container { padding: 14px; border-radius: var(--radius-md); }
             header { flex-direction: column; gap: 10px; padding-bottom: 14px; margin-bottom: 18px; }
-            h1 { font-size: 19px; }
-            .description { font-size: 13px; }
+            h1 { font-size: 17px; }
+            .description { font-size: 12px; }
             .buttons { flex-direction: column; gap: 8px; }
-            .buttons button { width: 100%; font-size: 14px; padding: 10px 14px; }
+            .buttons button { width: 100%; font-size: 13px; padding: 9px 12px; }
             .import-controls { flex-direction: column; gap: 8px; }
-            .import-controls button { width: 100%; font-size: 13px; }
+            .import-controls button { width: 100%; font-size: 12px; }
             .tree-type-selector { flex-direction: column; align-items: stretch; gap: 8px; }
             .tree-type-btn { width: 100%; text-align: center; }
             .genealogical-view-selector { flex-direction: column; margin-left: 0; gap: 6px; }
             .genealogical-view-btn { width: 100%; text-align: center; }
             .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
             table { min-width: 600px; }
-            th, td { padding: 8px 10px; font-size: 12.5px; }
+            th, td { padding: 6px 8px; font-size: 12px; }
             .tree-container { min-height: 300px; padding: 10px; }
             .genealogical-tree { height: 400px; }
             .conservation-controls { flex-direction: column; gap: 8px; }
@@ -1905,7 +1905,7 @@
                 padding: 18px !important;
                 border-radius: var(--radius-md);
             }
-            .modal-title { font-size: 16px; }
+            .modal-title { font-size: 15px; }
             #lists-container { flex-direction: column !important; gap: 12px; }
             .list-item { min-width: 100% !important; }
             .list-item .table-container { max-height: 180px; }
@@ -1920,14 +1920,25 @@
             .tab-group-left { border-radius: var(--radius-md) var(--radius-md) 0 0; }
             .tab-group-right { border-radius: 0 0 var(--radius-md) var(--radius-md); }
             .tab-nav-divider { width: 100%; height: 8px; }
-            .tab-btn { padding: 7px 12px; font-size: 12px; }
+            .tab-btn { padding: 7px 10px; font-size: 11.5px; }
+            .tab-btn-primary { padding: 8px 11px; font-size: 12px; }
+            .generate-btn { font-size: 13px; }
+            /* Help modal — limita altura e esconde botão × do topo direito no mobile (usa o do banner) */
+            #help-modal .modal-content { max-height: 82vh; overflow-y: auto; }
+            #help-modal .modal-content > .close-modal { display: none !important; }
+            #help-modal .sources-list { max-height: 50vh !important; }
+            /* Canvas */
+            canvas { max-width: 100% !important; }
+            /* Guildas em coluna */
+            #guild-charts-row { flex-direction: column !important; }
+            #guild-charts-row > div { min-width: 100% !important; max-width: 100% !important; }
         }
 
         @media (max-width: 400px) {
             body { padding: 4px; }
             .container { padding: 8px; }
-            h1 { font-size: 16px; }
-            button { font-size: 13px; padding: 8px 10px; }
+            h1 { font-size: 15px; }
+            button { font-size: 12px; padding: 7px 9px; }
             th, td { padding: 6px 8px; font-size: 12px; }
             #map-container { height: 260px !important; }
         }
@@ -4314,7 +4325,80 @@ function findBirdByNormalizedName(input) {
                 "Brotogeris": "Psittaciformes", "Pionopsitta": "Psittaciformes", "Triclaria": "Psittaciformes",
                 "Pionus": "Psittaciformes", "Amazona": "Psittaciformes", "Forpus": "Psittaciformes",
                 "Pyrrhura": "Psittaciformes", "Primolius": "Psittaciformes", "Psittacara": "Psittaciformes",
-                "Pyrilia": "Psittaciformes"
+                "Pyrilia": "Psittaciformes",
+                // Passeriformes — listados explicitamente (antes caíam no fallback silencioso)
+                "Terenura": "Passeriformes", "Myrmotherula": "Passeriformes", "Formicivora": "Passeriformes",
+                "Rhopias": "Passeriformes", "Dysithamnus": "Passeriformes", "Herpsilochmus": "Passeriformes",
+                "Thamnophilus": "Passeriformes", "Hypoedaleus": "Passeriformes", "Batara": "Passeriformes",
+                "Mackenziaena": "Passeriformes", "Biatas": "Passeriformes", "Myrmoderus": "Passeriformes",
+                "Pyriglena": "Passeriformes", "Drymophila": "Passeriformes", "Conopophaga": "Passeriformes",
+                "Grallaria": "Passeriformes", "Cryptopezus": "Passeriformes", "Psilorhamphus": "Passeriformes",
+                "Merulaxis": "Passeriformes", "Eleoscytalopus": "Passeriformes", "Scytalopus": "Passeriformes",
+                "Formicarius": "Passeriformes", "Chamaeza": "Passeriformes", "Sclerurus": "Passeriformes",
+                "Geositta": "Passeriformes", "Sittasomus": "Passeriformes", "Dendrocincla": "Passeriformes",
+                "Dendrocolaptes": "Passeriformes", "Xiphocolaptes": "Passeriformes", "Xiphorhynchus": "Passeriformes",
+                "Campylorhamphus": "Passeriformes", "Lepidocolaptes": "Passeriformes", "Xenops": "Passeriformes",
+                "Furnarius": "Passeriformes", "Lochmias": "Passeriformes", "Phleocryptes": "Passeriformes",
+                "Limnornis": "Passeriformes", "Cinclodes": "Passeriformes", "Anabazenops": "Passeriformes",
+                "Cichlocolaptes": "Passeriformes", "Heliobletus": "Passeriformes", "Philydor": "Passeriformes",
+                "Anabacerthia": "Passeriformes", "Syndactyla": "Passeriformes", "Dendroma": "Passeriformes",
+                "Clibanornis": "Passeriformes", "Automolus": "Passeriformes", "Leptasthenura": "Passeriformes",
+                "Phacellodomus": "Passeriformes", "Anumbius": "Passeriformes", "Limnoctites": "Passeriformes",
+                "Cranioleuca": "Passeriformes", "Spartonoica": "Passeriformes", "Certhiaxis": "Passeriformes",
+                "Schoeniophylax": "Passeriformes", "Synallaxis": "Passeriformes", "Ilicura": "Passeriformes",
+                "Chiroxiphia": "Passeriformes", "Manacus": "Passeriformes", "Carpornis": "Passeriformes",
+                "Pyroderus": "Passeriformes", "Lipaugus": "Passeriformes", "Procnias": "Passeriformes",
+                "Phibalura": "Passeriformes", "Cotinga": "Passeriformes", "Schiffornis": "Passeriformes",
+                "Tityra": "Passeriformes", "Pachyramphus": "Passeriformes", "Oxyruncus": "Passeriformes",
+                "Onychorhynchus": "Passeriformes", "Myiobius": "Passeriformes", "Piprites": "Passeriformes",
+                "Platyrinchus": "Passeriformes", "Tachuris": "Passeriformes", "Mionectes": "Passeriformes",
+                "Leptopogon": "Passeriformes", "Corythopis": "Passeriformes", "Phylloscartes": "Passeriformes",
+                "Tolmomyias": "Passeriformes", "Todirostrum": "Passeriformes", "Poecilotriccus": "Passeriformes",
+                "Myiornis": "Passeriformes", "Hemitriccus": "Passeriformes", "Hirundinea": "Passeriformes",
+                "Euscarthmus": "Passeriformes", "Tyranniscus": "Passeriformes", "Camptostoma": "Passeriformes",
+                "Elaenia": "Passeriformes", "Myiopagis": "Passeriformes", "Capsiempis": "Passeriformes",
+                "Phyllomyias": "Passeriformes", "Culicivora": "Passeriformes", "Polystictus": "Passeriformes",
+                "Pseudocolopteryx": "Passeriformes", "Serpophaga": "Passeriformes", "Attila": "Passeriformes",
+                "Legatus": "Passeriformes", "Ramphotrigon": "Passeriformes", "Myiarchus": "Passeriformes",
+                "Sirystes": "Passeriformes", "Pitangus": "Passeriformes", "Machetornis": "Passeriformes",
+                "Myiodynastes": "Passeriformes", "Megarynchus": "Passeriformes", "Myiozetetes": "Passeriformes",
+                "Tyrannus": "Passeriformes", "Griseotyrannus": "Passeriformes", "Empidonomus": "Passeriformes",
+                "Conopias": "Passeriformes", "Colonia": "Passeriformes", "Arundinicola": "Passeriformes",
+                "Fluvicola": "Passeriformes", "Pyrocephalus": "Passeriformes", "Muscipipra": "Passeriformes",
+                "Gubernetes": "Passeriformes", "Heteroxolmis": "Passeriformes", "Myiophobus": "Passeriformes",
+                "Cnemotriccus": "Passeriformes", "Lathrotriccus": "Passeriformes", "Contopus": "Passeriformes",
+                "Satrapa": "Passeriformes", "Lessonia": "Passeriformes", "Hymenops": "Passeriformes",
+                "Knipolegus": "Passeriformes", "Xolmis": "Passeriformes", "Nengetus": "Passeriformes",
+                "Cyclarhis": "Passeriformes", "Hylophilus": "Passeriformes", "Vireo": "Passeriformes",
+                "Cyanocorax": "Passeriformes", "Pygochelidon": "Passeriformes", "Alopochelidon": "Passeriformes",
+                "Stelgidopteryx": "Passeriformes", "Progne": "Passeriformes", "Tachycineta": "Passeriformes",
+                "Riparia": "Passeriformes", "Hirundo": "Passeriformes", "Petrochelidon": "Passeriformes",
+                "Troglodytes": "Passeriformes", "Cistothorus": "Passeriformes", "Campylorhynchus": "Passeriformes",
+                "Cantorchilus": "Passeriformes", "Ramphocaenus": "Passeriformes", "Polioptila": "Passeriformes",
+                "Catharus": "Passeriformes", "Turdus": "Passeriformes", "Mimus": "Passeriformes",
+                "Sturnus": "Passeriformes", "Estrilda": "Passeriformes", "Passer": "Passeriformes",
+                "Anthus": "Passeriformes", "Spinus": "Passeriformes", "Cyanophonia": "Passeriformes",
+                "Chlorophonia": "Passeriformes", "Euphonia": "Passeriformes", "Ammodramus": "Passeriformes",
+                "Arremon": "Passeriformes", "Zonotrichia": "Passeriformes", "Leistes": "Passeriformes",
+                "Cacicus": "Passeriformes", "Psarocolius": "Passeriformes", "Icterus": "Passeriformes",
+                "Molothrus": "Passeriformes", "Amblyramphus": "Passeriformes", "Gnorimopsar": "Passeriformes",
+                "Agelaioides": "Passeriformes", "Agelasticus": "Passeriformes", "Chrysomus": "Passeriformes",
+                "Xanthopsar": "Passeriformes", "Pseudoleistes": "Passeriformes", "Geothlypis": "Passeriformes",
+                "Setophaga": "Passeriformes", "Myiothlypis": "Passeriformes", "Basileuterus": "Passeriformes",
+                "Orthogonys": "Passeriformes", "Piranga": "Passeriformes", "Habia": "Passeriformes",
+                "Amaurospiza": "Passeriformes", "Cyanoloxia": "Passeriformes", "Orchesticus": "Passeriformes",
+                "Nemosia": "Passeriformes", "Embernagra": "Passeriformes", "Emberizoides": "Passeriformes",
+                "Rhopospina": "Passeriformes", "Hemithraupis": "Passeriformes", "Tersina": "Passeriformes",
+                "Cyanerpes": "Passeriformes", "Dacnis": "Passeriformes", "Saltator": "Passeriformes",
+                "Coereba": "Passeriformes", "Asemospiza": "Passeriformes", "Volatinia": "Passeriformes",
+                "Trichothraupis": "Passeriformes", "Loriotus": "Passeriformes", "Coryphospingus": "Passeriformes",
+                "Tachyphonus": "Passeriformes", "Ramphocelus": "Passeriformes", "Sporophila": "Passeriformes",
+                "Poospiza": "Passeriformes", "Thlypopsis": "Passeriformes", "Castanozoster": "Passeriformes",
+                "Donacospiza": "Passeriformes", "Microspingus": "Passeriformes", "Conirostrum": "Passeriformes",
+                "Sicalis": "Passeriformes", "Haplospiza": "Passeriformes", "Pipraeidea": "Passeriformes",
+                "Rauenia": "Passeriformes", "Stephanophorus": "Passeriformes", "Cissopis": "Passeriformes",
+                "Schistochlamys": "Passeriformes", "Paroaria": "Passeriformes", "Thraupis": "Passeriformes",
+                "Stilpnia": "Passeriformes", "Tangara": "Passeriformes", "Chlorophanes": "Passeriformes"
             };
 
             //GÊNERO PARA FAMÍLIA
@@ -4918,7 +5002,8 @@ function findBirdByNormalizedName(input) {
                                             children: [
                                                 { name: "Musophagiformes", taxonLevel: "ordem" },
                                                 { name: "Otidiformes", taxonLevel: "ordem" },
-                                                { name: "Cuculiformes", taxonLevel: "ordem" } // <-- CUCOS AQUI
+                                                { name: "Cuculiformes", taxonLevel: "ordem" },
+                                                { name: "Opisthocomiformes", taxonLevel: "ordem" } // Hoatzin — Prum 2015
                                             ]
                                         },
                                         {
@@ -4941,6 +5026,8 @@ function findBirdByNormalizedName(input) {
                                 {
                                     name: "Aequorlitornithes",
                                     children: [
+                                        { name: "Eurypygiformes", taxonLevel: "ordem" },   // Prum 2015 — Aequorlitornithes
+                                        { name: "Phaethontiformes", taxonLevel: "ordem" }, // Prum 2015 — Aequorlitornithes
                                         { name: "Podicipediformes", taxonLevel: "ordem" },
                                         { name: "Phoenicopteriformes", taxonLevel: "ordem" },
                                         { name: "Pelecaniformes", taxonLevel: "ordem" },
@@ -4985,9 +5072,7 @@ function findBirdByNormalizedName(input) {
                                                 { name: "Passeriformes", taxonLevel: "ordem" }
                                             ]
                                         },
-                                        { name: "Cariamiformes", taxonLevel: "ordem" },
-                                        { name: "Eurypygiformes", taxonLevel: "ordem" },
-                                        { name: "Phaethontiformes", taxonLevel: "ordem" }
+                                        { name: "Cariamiformes", taxonLevel: "ordem" }
                                     ]
                                 }
                             ]
@@ -15072,6 +15157,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <!-- BANNER -->
         <div style="text-align:center; padding:32px 24px 24px; background:linear-gradient(135deg,var(--green-deep) 0%,#0f2e1e 100%); border-radius:10px 10px 0 0; margin:-24px -24px 0 -24px; position:relative; overflow:hidden;">
             <div style="position:absolute;inset:0;background:url('https://img.lightshot.app/1hoA8uRfRcuwwCsfjjPjYw.png') center/120px no-repeat;opacity:0.06;"></div>
+            <button onclick="document.getElementById('help-modal').style.display='none'" style="position:absolute;top:10px;left:12px;background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);border-radius:7px;color:rgba(255,255,255,0.9);font-size:13px;font-weight:600;padding:5px 12px;cursor:pointer;font-family:'DM Sans',sans-serif;z-index:5;">✕ Fechar</button>
             <div style="font-size:52px;margin-bottom:8px;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.4));">🦜</div>
             <h1 style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:#fff;margin:0 0 8px;text-shadow:0 2px 16px rgba(0,0,0,0.5);">Guia Completo da Plataforma</h1>
             <p style="font-size:14px;color:rgba(255,255,255,0.82);max-width:580px;margin:0 auto 16px;line-height:1.6;">Ornitologia Avançada de Santa Catarina · ~800 espécies · 20 ferramentas de análise · 100% no navegador</p>
