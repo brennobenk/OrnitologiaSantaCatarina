@@ -2123,6 +2123,7 @@
         <button id="help-button-fixed" title="Ajuda" style="width:36px;height:36px;font-size:18px;border-radius:50%;background:var(--green-base);border:1.5px solid var(--green-base);color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-soft);">?</button>
         <button id="settings-open-btn" title="Configurações" style="width:36px;height:36px;font-size:18px;border-radius:50%;background:var(--green-base);border:1.5px solid var(--green-base);color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-soft);transition:all var(--transition);">⚙️</button>
         <button id="download-charts-btn" title="Baixar gráficos" style="width:36px;height:36px;font-size:18px;border-radius:50%;background:var(--green-base);border:1.5px solid var(--green-base);color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-soft);transition:all var(--transition);">⬇️</button>
+        <button id="report-btn" title="Relatório Preliminar" style="width:36px;height:36px;font-size:18px;border-radius:50%;background:var(--amber);border:1.5px solid var(--amber);color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-soft);transition:all var(--transition);">📄</button>
     </div>
     <div class="container">
 
@@ -3211,6 +3212,22 @@
             <button onclick="document.getElementById('download-charts-modal').style.display='none'" style="padding:11px 20px;background:var(--surface);color:var(--text-dark);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:inherit;font-size:14px;cursor:pointer;">Fechar</button>
         </div>
         <div id="download-charts-status" style="margin-top:12px;font-size:13px;color:var(--text-muted);text-align:center;"></div>
+    </div>
+</div>
+
+<!-- ==================== MODAL RELATÓRIO PRELIMINAR ==================== -->
+<div id="report-modal" class="modal">
+    <div class="modal-content" style="max-width:720px;">
+        <span class="close-modal" id="close-report-modal">&times;</span>
+        <h2 class="modal-title">📄 Relatório Preliminar</h2>
+        <div style="background:var(--amber-pale);border-left:4px solid var(--amber);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:12px 16px;margin-bottom:16px;font-size:13.5px;color:var(--text-mid);line-height:1.7;">
+            <strong style="color:var(--amber);">Como funciona:</strong> O relatório resume automaticamente tudo que foi analisado — taxonomia, conservação, guildas e avistamentos. Clique em <strong>"⬇️ Baixar .txt"</strong> para salvar o arquivo.
+        </div>
+        <div id="report-preview" style="font-family:'DM Mono',monospace;font-size:12.5px;line-height:1.8;background:var(--green-mist);border:1px solid var(--border-light);border-radius:var(--radius-md);padding:18px 20px;max-height:55vh;overflow-y:auto;white-space:pre-wrap;color:var(--text-dark);"></div>
+        <div style="display:flex;gap:12px;margin-top:20px;justify-content:flex-end;flex-wrap:wrap;">
+            <button id="report-download-btn" style="padding:11px 28px;background:var(--amber);color:white;border:none;border-radius:var(--radius-sm);font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;">⬇️ Baixar .txt</button>
+            <button onclick="document.getElementById('report-modal').style.display='none'" style="padding:11px 20px;background:var(--surface);color:var(--text-dark);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:inherit;font-size:14px;cursor:pointer;">Fechar</button>
+        </div>
     </div>
 </div>
 
@@ -6807,6 +6824,264 @@ function escapeHtml(str) {
             });
         }
     });
+})();
+
+// ══════════════════════════════════════════════════════════════
+//  RELATÓRIO PRELIMINAR
+// ══════════════════════════════════════════════════════════════
+(function() {
+
+    function gerarRelatorio() {
+        const linhas = [];
+        const agora  = new Date();
+        const dataStr = agora.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' });
+        const horaStr = agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+
+        linhas.push('═══════════════════════════════════════════════════════════');
+        linhas.push('   RELATÓRIO PRELIMINAR — ORNITOLOGIA AVANÇADA DE SC');
+        linhas.push('═══════════════════════════════════════════════════════════');
+        linhas.push('Gerado em: ' + dataStr + ' às ' + horaStr);
+        linhas.push('');
+
+        // ── Coletar dados da tabela ──────────────────────────────────────────
+        const tableBody = document.querySelector('#phylo-table tbody') ||
+                          document.querySelector('table tbody');
+        const rows = tableBody ? Array.from(tableBody.querySelectorAll('tr')) : [];
+        const speciesSet   = new Set();
+        const genusSet     = new Set();
+        const familySet    = new Set();
+        const orderSet     = new Set();
+
+        rows.forEach(row => {
+            const inputs = row.querySelectorAll('input');
+            const rowData = {};
+            inputs.forEach(inp => { if (inp.dataset.field) rowData[inp.dataset.field] = inp.value.trim(); });
+            if (rowData.generoEspecie) {
+                speciesSet.add(rowData.generoEspecie);
+                const partes = rowData.generoEspecie.trim().split(' ');
+                if (partes[0]) genusSet.add(partes[0]);
+            }
+            if (rowData.familia && rowData.familia !== 'Não informado') familySet.add(rowData.familia);
+            if (rowData.ordem   && rowData.ordem   !== 'Não informado') orderSet.add(rowData.ordem);
+        });
+
+        linhas.push('───────────────────────────────────────────────────────────');
+        linhas.push('  1. DIVERSIDADE TAXONÔMICA');
+        linhas.push('───────────────────────────────────────────────────────────');
+        if (speciesSet.size === 0) {
+            linhas.push('  Nenhuma espécie importada ainda.');
+        } else {
+            linhas.push('  Número de espécies   : ' + speciesSet.size);
+            linhas.push('  Número de gêneros    : ' + genusSet.size);
+            linhas.push('  Número de famílias   : ' + familySet.size);
+            linhas.push('  Número de ordens     : ' + orderSet.size);
+            linhas.push('');
+            linhas.push('  Espécies registradas:');
+            Array.from(speciesSet).sort().forEach(sp => linhas.push('    • ' + sp));
+            if (familySet.size > 0) {
+                linhas.push('');
+                linhas.push('  Famílias representadas:');
+                Array.from(familySet).sort().forEach(f => linhas.push('    • ' + f));
+            }
+            if (orderSet.size > 0) {
+                linhas.push('');
+                linhas.push('  Ordens representadas:');
+                Array.from(orderSet).sort().forEach(o => linhas.push('    • ' + o));
+            }
+        }
+        linhas.push('');
+
+        // ── Conservação ──────────────────────────────────────────────────────
+        if (speciesSet.size > 0 && typeof conservationData !== 'undefined') {
+            const specsArr = Array.from(speciesSet);
+            const statusOrder = { CR:0, EN:1, VU:2, NT:3, LC:4, EW:5, EX:6, NE:7, DD:8 };
+
+            function contarStatus(fonte) {
+                const counts = {};
+                specsArr.forEach(sp => {
+                    const rec = conservationData.find(c =>
+                        c.especie.toLowerCase() === sp.toLowerCase());
+                    const st = rec ? (rec[fonte] || 'NE') : 'NE';
+                    counts[st] = (counts[st] || 0) + 1;
+                });
+                return counts;
+            }
+
+            function sortedEntries(counts) {
+                return Object.entries(counts).sort((a,b) => {
+                    const oa = statusOrder[a[0]] !== undefined ? statusOrder[a[0]] : 99;
+                    const ob = statusOrder[b[0]] !== undefined ? statusOrder[b[0]] : 99;
+                    return oa - ob;
+                });
+            }
+
+            const scCounts     = contarStatus('sc');
+            const icmbioCounts = contarStatus('icmbio');
+            const iucnCounts   = contarStatus('iucn');
+
+            linhas.push('───────────────────────────────────────────────────────────');
+            linhas.push('  2. STATUS DE CONSERVAÇÃO');
+            linhas.push('───────────────────────────────────────────────────────────');
+            linhas.push('  (CR=Criticamente Em Perigo | EN=Em Perigo | VU=Vulnerável');
+            linhas.push('   NT=Quase Ameaçada | LC=Menos Preocupante | EW=Extinta na Natureza | NE=Não Avaliada)');
+            linhas.push('');
+
+            linhas.push('  ▸ SC — Santa Catarina:');
+            sortedEntries(scCounts).forEach(([k,v]) => linhas.push('       ' + k + ': ' + v + ' espécie(s)'));
+
+            linhas.push('');
+            linhas.push('  ▸ ICMBio — Lista Nacional:');
+            sortedEntries(icmbioCounts).forEach(([k,v]) => linhas.push('       ' + k + ': ' + v + ' espécie(s)'));
+
+            linhas.push('');
+            linhas.push('  ▸ IUCN — Lista Vermelha Global:');
+            sortedEntries(iucnCounts).forEach(([k,v]) => linhas.push('       ' + k + ': ' + v + ' espécie(s)'));
+
+            // Espécies ameaçadas (CR/EN/VU em qualquer fonte)
+            const ameacados = ['CR','EN','VU'];
+            const todasAmeacadasSet = new Set();
+            specsArr.forEach(sp => {
+                const r = conservationData.find(c => c.especie.toLowerCase() === sp.toLowerCase());
+                if (r && (ameacados.includes(r.sc) || ameacados.includes(r.icmbio) || ameacados.includes(r.iucn))) {
+                    todasAmeacadasSet.add(sp);
+                }
+            });
+            if (todasAmeacadasSet.size > 0) {
+                linhas.push('');
+                linhas.push('  ⚠ Espécies ameaçadas (CR/EN/VU em qualquer lista):');
+                Array.from(todasAmeacadasSet).sort().forEach(sp => {
+                    const r = conservationData.find(c => c.especie.toLowerCase() === sp.toLowerCase());
+                    const sc   = r ? r.sc    : 'NE';
+                    const icm  = r ? r.icmbio: 'NE';
+                    const iucn = r ? r.iucn  : 'NE';
+                    linhas.push('    • ' + sp + '  [SC: ' + sc + ' | ICMBio: ' + icm + ' | IUCN: ' + iucn + ']');
+                });
+            }
+            linhas.push('');
+        }
+
+        // ── Guildas ──────────────────────────────────────────────────────────
+        if (speciesSet.size > 0 && typeof GUILDA_DB !== 'undefined') {
+            const guildCounts   = {};
+            const habitatCounts = {};
+            speciesSet.forEach(sp => {
+                const g = GUILDA_DB[sp];
+                if (g) {
+                    guildCounts[g.guilda]    = (guildCounts[g.guilda]    || 0) + 1;
+                    habitatCounts[g.habitat] = (habitatCounts[g.habitat] || 0) + 1;
+                }
+            });
+            if (Object.keys(guildCounts).length > 0) {
+                linhas.push('───────────────────────────────────────────────────────────');
+                linhas.push('  3. GUILDAS ALIMENTARES E HABITATS');
+                linhas.push('───────────────────────────────────────────────────────────');
+                linhas.push('  Guildas alimentares:');
+                Object.entries(guildCounts).sort((a,b) => b[1]-a[1]).forEach(([k,v]) =>
+                    linhas.push('    • ' + k + ': ' + v + ' espécie(s)'));
+                linhas.push('');
+                linhas.push('  Habitats predominantes:');
+                Object.entries(habitatCounts).sort((a,b) => b[1]-a[1]).forEach(([k,v]) =>
+                    linhas.push('    • ' + k + ': ' + v + ' espécie(s)'));
+                linhas.push('');
+            }
+        }
+
+        // ── Avistamentos ─────────────────────────────────────────────────────
+        const av = window.AVISTAMENTOS || [];
+        if (av.length > 0) {
+            const avSpecies = new Set(av.map(a => a.scientificName || a.inputName).filter(Boolean));
+            const avDates   = av.map(a => a.date).filter(Boolean).sort();
+            linhas.push('───────────────────────────────────────────────────────────');
+            linhas.push('  4. AVISTAMENTOS REGISTRADOS');
+            linhas.push('───────────────────────────────────────────────────────────');
+            linhas.push('  Total de registros      : ' + av.length);
+            linhas.push('  Espécies distintas      : ' + avSpecies.size);
+            if (avDates.length > 0) {
+                linhas.push('  Período dos registros   : ' + avDates[0] + ' → ' + avDates[avDates.length - 1]);
+            }
+            const spCount = {};
+            av.forEach(a => {
+                const nm = a.scientificName || a.inputName || '?';
+                spCount[nm] = (spCount[nm] || 0) + 1;
+            });
+            linhas.push('');
+            linhas.push('  Frequência por espécie (top 20):');
+            Object.entries(spCount).sort((a,b) => b[1]-a[1]).slice(0,20).forEach(([k,v]) =>
+                linhas.push('    • ' + k + ': ' + v + ' registro(s)'));
+            linhas.push('');
+        }
+
+        // ── Estimadores de riqueza (busca elementos na página) ───────────────
+        const estimSelectors = [
+            '#estimadores-result', '#estimator-result',
+            '#chao-result', '#chao2-result', '#richness-result'
+        ];
+        let estimText = '';
+        for (const sel of estimSelectors) {
+            const el = document.querySelector(sel);
+            if (el && el.textContent.trim()) { estimText = el.textContent.trim(); break; }
+        }
+        if (estimText) {
+            linhas.push('───────────────────────────────────────────────────────────');
+            linhas.push('  5. ESTIMATIVAS DE RIQUEZA');
+            linhas.push('───────────────────────────────────────────────────────────');
+            estimText.split('\n').forEach(l => linhas.push('  ' + l));
+            linhas.push('');
+        }
+
+        linhas.push('═══════════════════════════════════════════════════════════');
+        linhas.push('  Relatório gerado por Ornitologia Avançada de SC');
+        linhas.push('  https://brennobenk.github.io/OrnitologiaSantaCatarina/');
+        linhas.push('═══════════════════════════════════════════════════════════');
+
+        return linhas.join('\n');
+    }
+
+    function abrirModalRelatorio() {
+        const modal   = document.getElementById('report-modal');
+        const preview = document.getElementById('report-preview');
+        if (!modal || !preview) return;
+        const texto = gerarRelatorio();
+        preview.textContent = texto;
+        ['help-modal','config-modal','download-charts-modal'].forEach(id => {
+            const m = document.getElementById(id);
+            if (m) m.style.display = 'none';
+        });
+        modal.style.display = 'block';
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const btn = document.getElementById('report-btn');
+        if (btn) btn.addEventListener('click', abrirModalRelatorio);
+
+        const closeBtn = document.getElementById('close-report-modal');
+        if (closeBtn) closeBtn.addEventListener('click', function() {
+            document.getElementById('report-modal').style.display = 'none';
+        });
+
+        window.addEventListener('click', function(e) {
+            const modal = document.getElementById('report-modal');
+            if (modal && e.target === modal) modal.style.display = 'none';
+        });
+
+        const dlBtn = document.getElementById('report-download-btn');
+        if (dlBtn) dlBtn.addEventListener('click', function() {
+            const preview = document.getElementById('report-preview');
+            const texto = preview ? preview.textContent : '';
+            if (!texto) return;
+            const blob = new Blob([texto], { type: 'text/plain;charset=utf-8' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            const data = new Date().toISOString().slice(0,10);
+            a.href     = url;
+            a.download = 'relatorio_ornitologia_' + data + '.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 2000);
+        });
+    });
+
 })();
 
         function loadExampleData() {
