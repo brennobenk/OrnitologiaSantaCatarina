@@ -697,6 +697,7 @@ function findBirdByNormalizedName(input) {
             { especie: "Emberizoides herbicola", nomePopular: "canário-do-campo", sc: "LC", icmbio: "LC", iucn: "LC" },
             { especie: "Emberizoides ypiranganus", nomePopular: "canário-do-brejo", sc: "LC", icmbio: "LC", iucn: "LC" },
             { especie: "Rhopospina fruticeti", nomePopular: "canário-andino-negro", sc: "LC", icmbio: "LC", iucn: "LC" },
+            { especie: "Serinus canaria", nomePopular: "canário-doméstico", sc: "LC", icmbio: "LC", iucn: "LC" },
             { especie: "Chlorophanes spiza", nomePopular: "saí-verde", sc: "LC", icmbio: "LC", iucn: "LC" },
             { especie: "Hemithraupis guira", nomePopular: "saíra-de-papo-preto", sc: "LC", icmbio: "LC", iucn: "LC" },
             { especie: "Hemithraupis ruficapilla", nomePopular: "saíra-ferrugem", sc: "LC", icmbio: "LC", iucn: "LC" },
@@ -896,7 +897,7 @@ function findBirdByNormalizedName(input) {
                 "Cantorchilus": "Passeriformes", "Ramphocaenus": "Passeriformes", "Polioptila": "Passeriformes",
                 "Catharus": "Passeriformes", "Turdus": "Passeriformes", "Mimus": "Passeriformes",
                 "Sturnus": "Passeriformes", "Estrilda": "Passeriformes", "Passer": "Passeriformes",
-                "Anthus": "Passeriformes", "Spinus": "Passeriformes", "Cyanophonia": "Passeriformes",
+                "Anthus": "Passeriformes", "Spinus": "Passeriformes", "Serinus": "Passeriformes", "Cyanophonia": "Passeriformes",
                 "Chlorophonia": "Passeriformes", "Euphonia": "Passeriformes", "Ammodramus": "Passeriformes",
                 "Arremon": "Passeriformes", "Zonotrichia": "Passeriformes", "Leistes": "Passeriformes",
                 "Cacicus": "Passeriformes", "Psarocolius": "Passeriformes", "Icterus": "Passeriformes",
@@ -1310,6 +1311,7 @@ function findBirdByNormalizedName(input) {
 "Passer": "Passeridae",
 "Anthus": "Motacillidae",
 "Spinus": "Fringillidae",
+"Serinus": "Fringillidae",
 "Cyanophonia": "Fringillidae",
 "Chlorophonia": "Fringillidae",
 "Euphonia": "Fringillidae",
@@ -1600,6 +1602,8 @@ function findBirdByNormalizedName(input) {
                 }
             ]
         };
+        // Expõe a filogenia globalmente para uso no relatório
+        window.avesPhylogeny = avesPhylogeny;
 
         // ==================== VARIÁVEIS GLOBAIS ====================
         let debugLogs = [];
@@ -3533,59 +3537,133 @@ function escapeHtml(str) {
 
         // ── Árvore Filogenética ──────────────────────────────────────────
         if (speciesSet.size > 0) {
-            // Organizar por Ordem > Família > Gênero a partir da tabela
+            // Organizar por Ordem > Família > Gênero a partir da tabela,
+            // usando BIRD_DATABASE como fallback quando campos estão vazios.
             const treeMap = {}; // { ordem: { familia: { genero: count } } }
-            rows.forEach(row => {
+            rows.forEach(function(row) {
                 const inputs = row.querySelectorAll('input');
                 const d = {};
-                inputs.forEach(inp => { if (inp.dataset.field) d[inp.dataset.field] = inp.value.trim(); });
+                inputs.forEach(function(inp) { if (inp.dataset.field) d[inp.dataset.field] = inp.value.trim(); });
                 if (!d.generoEspecie) return;
-                const ordem   = (d.ordem   && d.ordem   !== 'Não informado') ? d.ordem   : 'Ordem não identificada';
-                const familia = (d.familia && d.familia !== 'Não informado') ? d.familia : 'Família não identificada';
-                const genero  = d.generoEspecie.trim().split(' ')[0] || 'sp.';
+                const genus = d.generoEspecie.trim().split(' ')[0] || 'sp.';
+
+                let ordem   = (d.ordem   && d.ordem   !== 'Não informado') ? d.ordem   : '';
+                let familia = (d.familia && d.familia !== 'Não informado') ? d.familia : '';
+
+                // Fallback: buscar no BIRD_DATABASE pelo gênero
+                if ((!ordem || !familia) && window.BIRD_DATABASE) {
+                    const match = window.BIRD_DATABASE.find(function(b) {
+                        return b.scientificName && b.scientificName.split(' ')[0] === genus;
+                    });
+                    if (match) {
+                        if (!ordem)   ordem   = match.ordem   || '';
+                        if (!familia) familia = match.familia || '';
+                    }
+                }
+
+                if (!ordem)   ordem   = 'Ordem não identificada';
+                if (!familia) familia = 'Família não identificada';
+
                 if (!treeMap[ordem]) treeMap[ordem] = {};
                 if (!treeMap[ordem][familia]) treeMap[ordem][familia] = {};
-                treeMap[ordem][familia][genero] = (treeMap[ordem][familia][genero] || 0) + 1;
+                treeMap[ordem][familia][genus] = (treeMap[ordem][familia][genus] || 0) + 1;
             });
 
-            const ordensArr = Object.keys(treeMap).sort();
-            if (ordensArr.length > 0) {
+            const ordensPresentes = new Set(Object.keys(treeMap));
+
+            if (ordensPresentes.size > 0) {
                 linhas.push('───────────────────────────────────────────────────────────');
                 linhas.push('  6. ÁRVORE FILOGENÉTICA — TAXA REPRESENTADOS');
                 linhas.push('───────────────────────────────────────────────────────────');
                 linhas.push('  Apresenta apenas os taxa adicionados à análise.');
+                linhas.push('  Clados intermediários mostrados quando têm representantes.');
                 linhas.push('  Nível gênero/espécie exibido como contagem (N spp.).');
                 linhas.push('');
 
-                ordensArr.forEach(function(ordem, oi) {
-                    const isLastOrdem = oi === ordensArr.length - 1;
-                    const prefOrdem   = isLastOrdem ? '  └─' : '  ├─';
-                    const barOrdem    = isLastOrdem ? '     ' : '  │  ';
-
-                    linhas.push(prefOrdem + ' Ordem: ' + ordem);
-
+                // ── renderizar ordens dentro de cada nó da filogenia ──────
+                function renderOrdem(ordem, prefix, bar) {
                     const familiasArr = Object.keys(treeMap[ordem]).sort();
+                    linhas.push(prefix + ' Ordem: ' + ordem);
                     familiasArr.forEach(function(familia, fi) {
                         const isLastFam = fi === familiasArr.length - 1;
-                        const prefFam   = barOrdem + (isLastFam ? '└─' : '├─');
-                        const barFam    = barOrdem + (isLastFam ? '   ' : '│  ');
-
-                        const totalFam = Object.values(treeMap[ordem][familia]).reduce(function(a,b){ return a+b; }, 0);
-                        const nGen     = Object.keys(treeMap[ordem][familia]).length;
+                        const prefFam   = bar + (isLastFam ? '└─' : '├─');
+                        const barFam    = bar + (isLastFam ? '   ' : '│  ');
+                        const totalFam  = Object.values(treeMap[ordem][familia]).reduce(function(a,b){ return a+b; }, 0);
+                        const nGen      = Object.keys(treeMap[ordem][familia]).length;
                         linhas.push(prefFam + ' Família: ' + familia +
                             '  [' + nGen + ' gênero(s), ' + totalFam + ' spp.]');
-
                         const generosArr = Object.keys(treeMap[ordem][familia]).sort();
                         generosArr.forEach(function(genero, gi) {
                             const isLastGen = gi === generosArr.length - 1;
                             const prefGen   = barFam + (isLastGen ? '└─' : '├─');
-                            const count     = treeMap[ordem][familia][genero];
-                            linhas.push(prefGen + ' ' + genero + ' (' + count + ' spp.)');
+                            linhas.push(prefGen + ' ' + genero + ' (' + treeMap[ordem][familia][genero] + ' spp.)');
                         });
                     });
+                }
 
+                // ── travessia recursiva da filogenia ──────────────────────
+                // Retorna lista de ordens presentes na sub-árvore deste nó
+                function ordensNoNode(node) {
+                    if (node.taxonLevel === 'ordem') {
+                        return ordensPresentes.has(node.name) ? [node.name] : [];
+                    }
+                    if (!node.children) return [];
+                    const resultado = [];
+                    node.children.forEach(function(c) {
+                        ordensNoNode(c).forEach(function(o) { resultado.push(o); });
+                    });
+                    return resultado;
+                }
+
+                function renderNode(node, indent, isLast) {
+                    const prefix = indent + (isLast ? '└─' : '├─');
+                    const bar    = indent + (isLast ? '   ' : '│  ');
+
+                    if (node.taxonLevel === 'ordem') {
+                        if (ordensPresentes.has(node.name)) {
+                            renderOrdem(node.name, prefix, bar);
+                            linhas.push('');
+                        }
+                        return;
+                    }
+
+                    // Nó intermediário (clado): só mostra se tem ordens presentes
+                    const filhos = (node.children || []).filter(function(c) {
+                        return ordensNoNode(c).length > 0;
+                    });
+                    if (filhos.length === 0) return;
+
+                    linhas.push(prefix + ' [' + node.name + ']');
+                    filhos.forEach(function(filho, i) {
+                        renderNode(filho, bar, i === filhos.length - 1);
+                    });
+                }
+
+                // Ponto de entrada: percorre a raiz da filogenia
+                const phylo = window.avesPhylogeny;
+                if (phylo && phylo.children) {
+                    // Filtra clados de topo com representantes
+                    const tops = phylo.children.filter(function(c) {
+                        return ordensNoNode(c).length > 0;
+                    });
+                    tops.forEach(function(top, i) {
+                        renderNode(top, '  ', i === tops.length - 1);
+                    });
+                } else {
+                    // Fallback simples caso avesPhylogeny não esteja disponível
+                    const ordensArr = Array.from(ordensPresentes).sort();
+                    ordensArr.forEach(function(ordem, oi) {
+                        const isLast = oi === ordensArr.length - 1;
+                        renderOrdem(ordem, '  ' + (isLast ? '└─' : '├─'), '  ' + (isLast ? '   ' : '│  '));
+                        linhas.push('');
+                    });
+                }
+
+                // Ordens não identificadas ficam no final
+                if (treeMap['Ordem não identificada']) {
+                    renderOrdem('Ordem não identificada', '  └─', '     ');
                     linhas.push('');
-                });
+                }
             }
         }
 
