@@ -5340,7 +5340,6 @@ function exportHTML() {
         setupCollapsibleSections();
         setupTabNavigation();
         setMode('basic');
-        loadExampleData();
         logDebug('Aplicação inicializada com todas as funções e banco de dados completo');
 
         // ==================== FUNÇÕES DE COMPARAÇÃO DE TABELAS ====================
@@ -9581,12 +9580,12 @@ function computeEstimatorsFromIncidence(incidence) {
             else if (f === 2) q2++;
         });
 
-        // Chao2
+        // Chao2 (fórmula bias-corrected: Chao 1984)
+        // Chao2_bc = Sobs + (k-1)/k * Q1*(Q1-1) / (2*(Q2+1))
+        // Esta fórmula evita extrapolação extrema quando Q2 é muito pequeno
         let chaoVal = sObs;
-        if (q2 > 0) {
-            chaoVal = sObs + (q1 * q1) / (2 * q2);
-        } else if (q1 > 0) {
-            chaoVal = sObs + (q1 * (q1 - 1)) / 2;
+        if (k > 1 && q1 > 0) {
+            chaoVal = sObs + ((k - 1) / k) * (q1 * (q1 - 1)) / (2 * (q2 + 1));
         }
         chao.push(chaoVal);
 
@@ -9657,12 +9656,11 @@ function computeEstimators(incidence) {
             else if (f === 2) q2++;
         });
 
-        // Chao2
+        // Chao2 (fórmula bias-corrected: Chao 1984)
+        // Chao2_bc = Sobs + (k-1)/k * Q1*(Q1-1) / (2*(Q2+1))
         let chaoVal = sObs;
-        if (q2 > 0) {
-            chaoVal = sObs + (q1 * q1) / (2 * q2);
-        } else if (q1 > 0) {
-            chaoVal = sObs + (q1 * (q1 - 1)) / 2;
+        if (k > 1 && q1 > 0) {
+            chaoVal = sObs + ((k - 1) / k) * (q1 * (q1 - 1)) / (2 * (q2 + 1));
         }
         chao.push(chaoVal);
 
@@ -12356,3 +12354,156 @@ document.addEventListener('DOMContentLoaded', () => {
 })();
 
 
+
+
+// ==================== DARWIN CORE ====================
+(function () {
+    'use strict';
+
+    function buildDarwinCore() {
+        const data = (typeof collectTableData === 'function') ? collectTableData() : [];
+        if (!data || data.length === 0) {
+            document.getElementById('darwincore-result').innerHTML =
+                '<p style="color:var(--text-muted);padding:14px;">Nenhuma espécie importada. Vá até a aba 📥 Importação primeiro.</p>';
+            document.getElementById('darwincore-copy').style.display = 'none';
+            document.getElementById('darwincore-csv').style.display = 'none';
+            return;
+        }
+
+        const db = (typeof BIRD_DATABASE !== 'undefined') ? BIRD_DATABASE : [];
+
+        const rows = data.map(item => {
+            const sci = (item.generoEspecie || '').trim();
+            const parts = sci.split(' ');
+            const genus = parts[0] || '';
+            const specificEpithet = parts[1] || '';
+            const infraspecificEpithet = parts.slice(2).join(' ') || '';
+
+            // Taxonomia da tabela ou fallback do banco
+            let order = (item.ordem || '').trim();
+            let family = (item.familia || '').trim();
+            let klass = (item.classe || 'Aves').trim() || 'Aves';
+            let phylum = (item.filo || 'Chordata').trim() || 'Chordata';
+
+            // Fallback no BIRD_DATABASE
+            if ((!order || !family) && genus) {
+                const match = db.find(b => b.scientificName && b.scientificName.startsWith(genus));
+                if (match) {
+                    if (!order) order = match.order || match.ordem || '';
+                    if (!family) family = match.family || match.familia || '';
+                }
+            }
+
+            // Nome popular
+            let vernacular = '';
+            const dbMatch = db.find(b => b.scientificName && b.scientificName.trim().toLowerCase() === sci.toLowerCase());
+            if (dbMatch) {
+                vernacular = dbMatch.commonName || dbMatch.nomePopular || '';
+            }
+
+            const taxonRank = infraspecificEpithet ? 'subespécie' : 'espécie';
+
+            return {
+                kingdom: 'Animalia',
+                phylum: phylum || 'Chordata',
+                class: klass || 'Aves',
+                order: order,
+                family: family,
+                genus: genus,
+                specificEpithet: specificEpithet,
+                infraspecificEpithet: infraspecificEpithet,
+                identificationQualifier: '',
+                scientificName: sci,
+                vernacularName: vernacular,
+                taxonRank: taxonRank
+            };
+        });
+
+        const cols = [
+            { key: 'kingdom',                label: 'kingdom' },
+            { key: 'phylum',                 label: 'phylum' },
+            { key: 'class',                  label: 'class' },
+            { key: 'order',                  label: 'order' },
+            { key: 'family',                 label: 'family' },
+            { key: 'genus',                  label: 'genus' },
+            { key: 'specificEpithet',        label: 'specificEpithet' },
+            { key: 'infraspecificEpithet',   label: 'infraspecificEpithet' },
+            { key: 'identificationQualifier',label: 'identificationQualifier' },
+            { key: 'scientificName',         label: 'scientificName' },
+            { key: 'vernacularName',         label: 'vernacularName' },
+            { key: 'taxonRank',              label: 'taxonRank' }
+        ];
+
+        const headerHtml = cols.map(c =>
+            `<th style="background:var(--green-mid);color:white;padding:8px 12px;white-space:nowrap;font-size:12px;">${c.label}</th>`
+        ).join('');
+
+        const bodyHtml = rows.map(r =>
+            `<tr>${cols.map(c => `<td style="padding:6px 12px;border-bottom:1px solid var(--border-light);font-size:12.5px;white-space:nowrap;">${r[c.key] || ''}</td>`).join('')}</tr>`
+        ).join('');
+
+        const tableHtml = `
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">
+                ${rows.length} registro${rows.length !== 1 ? 's' : ''} · padrão Darwin Core (Wieczorek et al. 2012)
+            </p>
+            <div style="overflow-x:auto;max-height:500px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm);">
+                <table id="darwincore-table" style="width:100%;border-collapse:collapse;">
+                    <thead><tr>${headerHtml}</tr></thead>
+                    <tbody>${bodyHtml}</tbody>
+                </table>
+            </div>`;
+
+        document.getElementById('darwincore-result').innerHTML = tableHtml;
+        document.getElementById('darwincore-copy').style.display = '';
+        document.getElementById('darwincore-csv').style.display = '';
+
+        // Store rows for export
+        window._darwinCoreRows = rows;
+        window._darwinCoreCols = cols;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const genBtn = document.getElementById('darwincore-generate');
+        const copyBtn = document.getElementById('darwincore-copy');
+        const csvBtn = document.getElementById('darwincore-csv');
+
+        if (genBtn) genBtn.addEventListener('click', buildDarwinCore);
+
+        if (copyBtn) copyBtn.addEventListener('click', () => {
+            if (!window._darwinCoreRows) return;
+            const cols = window._darwinCoreCols;
+            const rows = window._darwinCoreRows;
+            const header = cols.map(c => c.label).join('\t');
+            const body = rows.map(r => cols.map(c => r[c.key] || '').join('\t')).join('\n');
+            const text = header + '\n' + body;
+            navigator.clipboard.writeText(text).then(() => alert('Tabela Darwin Core copiada!')).catch(() => {
+                const ta = document.createElement('textarea');
+                ta.value = text; document.body.appendChild(ta); ta.select();
+                document.execCommand('copy'); ta.remove(); alert('Tabela Darwin Core copiada!');
+            });
+        });
+
+        if (csvBtn) csvBtn.addEventListener('click', () => {
+            if (!window._darwinCoreRows) return;
+            const cols = window._darwinCoreCols;
+            const rows = window._darwinCoreRows;
+            const header = cols.map(c => c.label).join(',');
+            const body = rows.map(r => cols.map(c => `"${(r[c.key] || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+            const csv = header + '\n' + body;
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'darwin_core.csv';
+            document.body.appendChild(a); a.click();
+            document.body.removeChild(a); URL.revokeObjectURL(url);
+        });
+
+        // Auto-generate when tab is clicked
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            if (btn.dataset.tab === 'darwincore-section') {
+                btn.addEventListener('click', () => setTimeout(buildDarwinCore, 120));
+            }
+        });
+    });
+})();
+// ==================== FIM DARWIN CORE ====================
