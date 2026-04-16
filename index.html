@@ -130,6 +130,7 @@
                 <button class="tab-btn" data-tab="descriptor-section">🏷️ Descritores</button>
                 <button class="tab-btn" data-tab="indicadoras-section">⚠️ Indicadoras</button>
                 <button class="tab-btn" data-tab="cluster-section">🌿 Cluster</button>
+                <button class="tab-btn" data-tab="darwincore-section">🧬 Darwin Core</button>
             </div>
 
             <!-- BARRA DIVISÓRIA VERDE -->
@@ -970,6 +971,24 @@
         <div id="indicadoras-results" class="table-container" style="max-height:420px; overflow-y:auto; margin-top:14px;"></div>
         <div style="margin-top:18px;"><canvas id="indicadorasChart" style="width:100%; max-height:320px; height:320px;"></canvas></div>
         <div id="indicadoras-analysis" style="margin-top:18px;"></div>
+    </div>
+</section>
+
+
+<!-- ==================== DARWIN CORE ==================== -->
+<section class="app-section tab-section" id="darwincore-section">
+    <div class="section-inner">
+        <h2>🧬 Darwin Core</h2>
+        <p style="font-size:13.5px;color:var(--text-muted);margin-bottom:14px;">
+            Gera uma tabela no padrão <strong>Darwin Core</strong> (DwC) a partir das espécies importadas. 
+            Compatível com GBIF, SpeciesLink e outros repositórios de biodiversidade.
+        </p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+            <button id="darwincore-generate" class="generate-btn">▶ Gerar Tabela Darwin Core</button>
+            <button id="darwincore-copy" class="export-btn" style="display:none;">📋 Copiar Tabela</button>
+            <button id="darwincore-csv" class="export-btn" style="display:none;">📥 Exportar CSV</button>
+        </div>
+        <div id="darwincore-result" style="overflow-x:auto;"></div>
     </div>
 </section>
 
